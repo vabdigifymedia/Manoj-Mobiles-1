@@ -259,7 +259,7 @@ export const apiClient = {
     axiosInstance.get<ApiResponse<PageResponse<import('./types').ReviewResponseDTO>>>(`/api/public/products/${productId}/reviews?page=${page}&size=${size}`),
 
   getRatingSummary: (productId: string) =>
-    axiosInstance.get<ApiResponse<import('./types').RatingSummaryDTO>>(`/api/public/products/${productId}/reviews/summary`),
+    axiosInstance.get<ApiResponse<import('./types').RatingSummaryDTO>>(`/api/public/products/${productId}/ratings-summary`),
 
   createReview: (dto: import('./types').CreateReviewRequestDTO) =>
     axiosInstance.post<ApiResponse<import('./types').ReviewResponseDTO>>('/api/user/reviews', dto),
