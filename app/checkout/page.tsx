@@ -1,16 +1,17 @@
+
 'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle2, CreditCard, Banknote, Wallet, Smartphone } from 'lucide-react'
 import { useStore } from '@/components/store-provider'
-import { formatINR } from '@/lib/api'
+import { formatINR } from '@/lib/apiClient'
 
 export default function CheckoutPage() {
   const { cart } = useStore()
   const [paymentMethod, setPaymentMethod] = useState('card')
   
-  const subtotal = cart.reduce((acc, item) => acc + (item.product.price * item.quantity), 0)
+  const subtotal = cart?.items.reduce((acc, item) => acc + (item.variant.sellingPrice * item.quantity), 0) || 0
   const tax = subtotal * 0.18 // Assuming 18% GST for display
   const total = subtotal + tax
 
@@ -87,16 +88,19 @@ export default function CheckoutPage() {
             <h2 className="text-lg font-bold">Order Summary</h2>
             
             <div className="mt-6 flex flex-col gap-4 border-b border-border pb-6">
-              {cart.map(item => (
-                <div key={item.id} className="flex items-start gap-4">
-                  <img src={item.product.image} alt={item.product.name} className="size-16 rounded-xl bg-muted object-contain p-1" />
-                  <div className="flex-1">
-                    <p className="text-sm font-bold leading-tight">{item.product.name}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Qty: {item.quantity}</p>
+              {cart?.items.map(item => {
+                const primaryImage = item.variant.images?.find(img => img.isPrimary)?.url || item.variant.imageUrls?.[0] || '/placeholder.png'
+                return (
+                  <div key={item.id} className="flex items-start gap-4">
+                    <img src={primaryImage} alt={item.productName} className="size-16 rounded-xl bg-muted object-contain p-1" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold leading-tight">{item.productName}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                    </div>
+                    <p className="text-sm font-bold">{formatINR(item.variant.sellingPrice * item.quantity)}</p>
                   </div>
-                  <p className="text-sm font-bold">{formatINR(item.product.price * item.quantity)}</p>
-                </div>
-              ))}
+                )
+              })}
             </div>
             
             <div className="mt-6 flex flex-col gap-3 text-sm">
