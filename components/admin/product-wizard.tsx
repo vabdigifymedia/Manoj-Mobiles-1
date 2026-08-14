@@ -41,6 +41,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   // Step 2: Highlights
   const [highlights, setHighlights] = useState<Highlight[]>([])
+  const [deletedHighlightIds, setDeletedHighlightIds] = useState<string[]>([])
   const [showHighlightForm, setShowHighlightForm] = useState(false)
   const [highlightForm, setHighlightForm] = useState({ iconName: 'CheckCircle', text: '' })
 
@@ -139,6 +140,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
   }
 
   const handleDeleteHighlight = (id: string) => {
+    if (!id.startsWith('h')) {
+      setDeletedHighlightIds([...deletedHighlightIds, id])
+    }
     setHighlights(highlights.filter(h => h.id !== id))
   }
 
@@ -234,12 +238,19 @@ export function ProductWizard({ productId }: { productId?: string }) {
       }
 
       // 2. Highlights
-      // Simple approach: if editing, we might need to delete old ones, but backend doesn't have a bulk replace endpoint.
-      // Assuming new highlights are added. For MVP, we will only add highlights if it's a new product, or add new ones.
-      // Actually, if it's a new product, we just add them.
-      if (!productId) {
-        for (const h of highlights) {
+      for (const id of deletedHighlightIds) {
+        await apiClient.deleteHighlight(id).catch(() => {})
+      }
+
+      for (const h of highlights) {
+        if (h.id.startsWith('h')) {
           await apiClient.addHighlight(finalProductId, {
+            iconName: h.iconName as IconName,
+            text: h.text,
+            displayOrder: h.displayOrder
+          })
+        } else {
+          await apiClient.updateHighlight(h.id, {
             iconName: h.iconName as IconName,
             text: h.text,
             displayOrder: h.displayOrder

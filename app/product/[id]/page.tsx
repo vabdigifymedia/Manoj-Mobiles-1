@@ -246,7 +246,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
           <div className="rounded-2xl border border-border bg-card p-5 mt-4">
             <h2 className="font-bold text-lg">Description</h2>
-            <div className="mt-3 prose prose-sm dark:prose-invert max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: product.description }} />
+            <div className="mt-3 prose prose-sm dark:prose-invert max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: product.description || '' }} />
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-5 mt-4">
