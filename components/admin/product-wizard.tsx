@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { 
   PackagePlus, Info, CheckCircle, Package, Settings, Image as ImageIcon, 
   Trash2, Plus, PenTool, Check, Star, ShieldCheck, Battery, Cpu, 
-  Camera, Smartphone, Wifi, Truck, Zap, Bluetooth, ChevronLeft,
+  Camera, Smartphone, Wifi, Truck, Zap, Bluetooth, ChevronLeft, ChevronRight,
   MemoryStick, HardDrive, Microchip
 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
@@ -253,6 +253,18 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   const handleDeleteSpec = (specIndex: number) => {
     setGlobalSpecs(globalSpecs.filter((_, i) => i !== specIndex))
+  }
+
+  const handleMoveImage = (color: string, fromIndex: number, toIndex: number) => {
+    setVariants(variants.map(varItem => {
+      if ((varItem.color || 'Default Color') === color) {
+        const newImages = [...(varItem.images || [])];
+        const [movedItem] = newImages.splice(fromIndex, 1);
+        newImages.splice(toIndex, 0, movedItem);
+        return { ...varItem, images: newImages };
+      }
+      return varItem;
+    }));
   }
 
   // Publish Product
@@ -674,6 +686,30 @@ export function ProductWizard({ productId }: { productId?: string }) {
                           </button>
                           {imgIdx === 0 && (
                             <span className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">Primary</span>
+                          )}
+                          {imgIdx > 0 && (
+                            <button 
+                              onClick={(e) => { e.preventDefault(); handleMoveImage(color, imgIdx, imgIdx - 1); }}
+                              className="absolute top-1/2 left-1 -translate-y-1/2 bg-black/50 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <ChevronLeft size={12} />
+                            </button>
+                          )}
+                          {imgIdx < currentImages.length - 1 && (
+                            <button 
+                              onClick={(e) => { e.preventDefault(); handleMoveImage(color, imgIdx, imgIdx + 1); }}
+                              className="absolute top-1/2 right-1 -translate-y-1/2 bg-black/50 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <ChevronRight size={12} />
+                            </button>
+                          )}
+                          {imgIdx > 0 && (
+                            <button 
+                              onClick={(e) => { e.preventDefault(); handleMoveImage(color, imgIdx, 0); }}
+                              className="absolute top-1 left-1 bg-blue-500 text-white rounded-sm px-1.5 py-0.5 text-[10px] font-bold shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            >
+                              Set Primary
+                            </button>
                           )}
                         </div>
                       ))}
