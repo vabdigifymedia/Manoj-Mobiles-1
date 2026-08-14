@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, Search, ShoppingBag, Smartphone, X } from 'lucide-react'
+import { Menu, Search, ShoppingBag, Smartphone, X, Sun, Moon } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { useEffect } from 'react'
 import { useStore } from './store-provider'
 import { useAuth } from '@/lib/auth-context'
 
@@ -19,6 +21,12 @@ export function Header() {
   const pathname = usePathname()
   const { cartCount } = useStore()
   const { isAuthenticated } = useAuth()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   if (pathname?.startsWith('/admin')) {
     return null
@@ -64,6 +72,16 @@ export function Header() {
           </div>
           
           <div className="flex items-center gap-2 ml-2">
+            {mounted && (
+              <button 
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="relative flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" 
+                aria-label="Toggle Theme"
+              >
+                {theme === 'dark' ? <Sun size={22} strokeWidth={1.5} /> : <Moon size={22} strokeWidth={1.5} />}
+              </button>
+            )}
+
             <Link href="/wishlist" className="relative flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Wishlist">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
             </Link>

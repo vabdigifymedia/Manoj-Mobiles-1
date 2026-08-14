@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { StoreProvider } from '@/components/store-provider'
+import { ThemeProvider } from '@/components/theme-provider'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Toaster } from 'sonner'
@@ -39,17 +40,19 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased flex min-h-screen flex-col bg-background">
-        <StoreProvider>
-          <Header />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
-        </StoreProvider>
-        {process.env.NODE_ENV === 'production' && <Analytics />}
-        <Toaster position="top-right" richColors />
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+          <StoreProvider>
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+          </StoreProvider>
+          {process.env.NODE_ENV === 'production' && <Analytics />}
+          <Toaster position="top-right" richColors />
+        </ThemeProvider>
       </body>
     </html>
   )
