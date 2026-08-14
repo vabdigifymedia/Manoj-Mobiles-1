@@ -72,6 +72,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
     variantName: '', sku: '', color: '', mrp: '', sellingPrice: '',
     gstPercent: 0, stockQty: 0, codAvailable: true
   })
+  const [draggedImage, setDraggedImage] = useState<{color: string, index: number} | null>(null)
 
   // Step 4: Global Specs
   const [globalSpecs, setGlobalSpecs] = useState<{specGroup: string, specKey: string, specValue: string}[]>([])
@@ -668,7 +669,25 @@ export function ProductWizard({ productId }: { productId?: string }) {
                     
                     <div className="flex flex-wrap gap-4 pb-2">
                       {currentImages.map((img, imgIdx) => (
-                        <div key={imgIdx} className="relative shrink-0 group">
+                        <div 
+                          key={imgIdx} 
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedImage({ color, index: imgIdx })
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault()
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            if (draggedImage && draggedImage.color === color && draggedImage.index !== imgIdx) {
+                              handleMoveImage(color, draggedImage.index, imgIdx)
+                              setDraggedImage(null)
+                            }
+                          }}
+                          onDragEnd={() => setDraggedImage(null)}
+                          className={`relative shrink-0 group cursor-move transition-all ${draggedImage?.color === color && draggedImage?.index === imgIdx ? 'opacity-50 scale-95' : ''}`}
+                        >
                           <img src={img} alt="Variant" className="w-24 h-24 object-cover rounded-lg border border-border" />
                           <button 
                             onClick={() => {
