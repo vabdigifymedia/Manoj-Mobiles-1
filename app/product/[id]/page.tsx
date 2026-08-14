@@ -126,7 +126,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           
           <div>
             <p className="text-3xl font-black">{formatINR(selectedVariant.sellingPrice)}</p>
-            <p className="mt-1 text-sm text-muted-foreground">MRP <span className="line-through">{formatINR(selectedVariant.mrp)}</span> · Inclusive of all taxes</p>
+            <p className="mt-1 text-sm text-muted-foreground">MRP <span className="line-through">{formatINR(selectedVariant.mrp)}</span></p>
           </div>
           
           {availableColors.length > 0 && (

@@ -8,8 +8,27 @@ import {
   Camera, Smartphone, Wifi, Truck, Zap, Bluetooth, ChevronLeft,
   MemoryStick, HardDrive, Microchip
 } from 'lucide-react'
-import { Highlight, Variant } from '@/lib/api' // Keeping for types if needed, or better use real DTOs
 import { apiClient } from '@/lib/apiClient'
+
+interface LocalHighlight {
+  id: string;
+  iconName: string;
+  text: string;
+  displayOrder: number;
+}
+
+interface LocalVariant {
+  id: string;
+  variantName: string;
+  sku: string;
+  color: string;
+  mrp: number;
+  sellingPrice: number;
+  gstPercent: number;
+  stockQty: number;
+  codAvailable: boolean;
+  images: string[];
+}
 import { CategoryResponseDTO, BrandResponseDTO, IconName } from '@/lib/types'
 import { RichTextEditor } from './rich-text-editor'
 import Link from 'next/link'
@@ -40,18 +59,18 @@ export function ProductWizard({ productId }: { productId?: string }) {
   })
 
   // Step 2: Highlights
-  const [highlights, setHighlights] = useState<Highlight[]>([])
+  const [highlights, setHighlights] = useState<LocalHighlight[]>([])
   const [deletedHighlightIds, setDeletedHighlightIds] = useState<string[]>([])
   const [showHighlightForm, setShowHighlightForm] = useState(false)
   const [highlightForm, setHighlightForm] = useState({ iconName: 'CheckCircle', text: '' })
 
   // Step 3: Variants
-  const [variants, setVariants] = useState<Variant[]>([])
+  const [variants, setVariants] = useState<LocalVariant[]>([])
   const [showVariantForm, setShowVariantForm] = useState(false)
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null)
   const [variantForm, setVariantForm] = useState({
     variantName: '', sku: '', color: '', mrp: '', sellingPrice: '',
-    gstPercent: 18, stockQty: 0, codAvailable: true
+    gstPercent: 0, stockQty: 0, codAvailable: true
   })
 
   // Step 4: Global Specs
@@ -100,10 +119,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
             color: v.color || '',
             mrp: v.mrp,
             sellingPrice: v.sellingPrice,
-            gstPercent: v.gstPercent || 18,
+            gstPercent: v.gstPercent || 0,
             stockQty: v.stockQty,
             codAvailable: v.codAvailable,
-            specifications: [],
             images: v.imageUrls || []
           })))
 
@@ -172,15 +190,14 @@ export function ProductWizard({ productId }: { productId?: string }) {
         gstPercent: Number(variantForm.gstPercent),
         stockQty: Number(variantForm.stockQty),
         codAvailable: variantForm.codAvailable,
-        specifications: [],
         images: []
       }])
     }
     setShowVariantForm(false)
-    setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 18, stockQty: 0, codAvailable: true })
+    setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true })
   }
 
-  const handleEditVariantClick = (v: Variant) => {
+  const handleEditVariantClick = (v: LocalVariant) => {
     setVariantForm({
       variantName: v.variantName,
       sku: v.sku,
@@ -197,6 +214,26 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   const handleDeleteVariant = (id: string) => {
     setVariants(variants.filter(v => v.id !== id))
+  }
+
+  const handleOpenAddVariant = () => {
+    if (variants.length > 0) {
+      const lastVariant = variants[variants.length - 1]
+      setVariantForm({
+        variantName: lastVariant.variantName,
+        sku: '',
+        color: '',
+        mrp: lastVariant.mrp.toString(),
+        sellingPrice: lastVariant.sellingPrice.toString(),
+        gstPercent: lastVariant.gstPercent,
+        stockQty: lastVariant.stockQty,
+        codAvailable: lastVariant.codAvailable
+      })
+    } else {
+      setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true })
+    }
+    setEditingVariantId(null)
+    setShowVariantForm(true)
   }
 
   // Simplified: Global Spec updates
@@ -373,11 +410,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
               </div>
               <div>
                 <label className="text-sm font-semibold mb-1 block">Brand</label>
-                <Select value={baseInfo.brandId} onValueChange={val => setBaseInfo({...baseInfo, brandId: val})}>
+                <Select value={baseInfo.brandId || undefined} onValueChange={val => setBaseInfo({...baseInfo, brandId: val || ''})}>
                   <SelectTrigger className="w-full h-10 rounded-xl border bg-background px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary">
-                    <SelectValue placeholder="Select Brand...">
-                      {baseInfo.brandId ? brands.find(b => b.id === baseInfo.brandId)?.name : null}
-                    </SelectValue>
+                    <SelectValue placeholder="Select Brand..." />
                   </SelectTrigger>
                   <SelectContent>
                     {brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
@@ -386,11 +421,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
               </div>
               <div>
                 <label className="text-sm font-semibold mb-1 block">Category</label>
-                <Select value={baseInfo.categoryId} onValueChange={val => setBaseInfo({...baseInfo, categoryId: val})}>
+                <Select value={baseInfo.categoryId || undefined} onValueChange={val => setBaseInfo({...baseInfo, categoryId: val || ''})}>
                   <SelectTrigger className="w-full h-10 rounded-xl border bg-background px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary">
-                    <SelectValue placeholder="Select Category...">
-                      {baseInfo.categoryId ? categories.find(c => c.id === baseInfo.categoryId)?.name : null}
-                    </SelectValue>
+                    <SelectValue placeholder="Select Category..." />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -422,11 +455,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
               <form onSubmit={handleAddHighlight} className="bg-muted/50 p-4 rounded-xl border border-border flex gap-4 items-end">
                 <div className="flex-1">
                   <label className="text-xs font-semibold mb-1 block">Icon</label>
-                  <Select value={highlightForm.iconName} onValueChange={val => setHighlightForm({...highlightForm, iconName: val})}>
+                  <Select value={highlightForm.iconName || undefined} onValueChange={val => setHighlightForm({...highlightForm, iconName: val || ''})}>
                     <SelectTrigger className="w-full h-[38px] rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary">
-                      <SelectValue placeholder="Select Icon...">
-                        {highlightForm.iconName ? highlightForm.iconName : null}
-                      </SelectValue>
+                      <SelectValue placeholder="Select Icon..." />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.keys(availableIcons).map(k => (
@@ -476,7 +507,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
           <div className="space-y-6">
             <h3 className="text-lg font-bold border-b border-border pb-2 flex justify-between items-center">
               Product Variants
-              <button onClick={() => setShowVariantForm(true)} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold"><Plus size={16}/> Add Variant</button>
+              <button onClick={handleOpenAddVariant} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold"><Plus size={16}/> Add Variant</button>
             </h3>
 
             {showVariantForm && (
@@ -496,7 +527,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                   </div>
                   <div>
                     <label className="text-xs font-semibold mb-1 block">Stock Quantity</label>
-                    <input required type="number" value={variantForm.stockQty} onChange={e => setVariantForm({...variantForm, stockQty: e.target.value})} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                    <input required type="number" value={variantForm.stockQty} onChange={e => setVariantForm({...variantForm, stockQty: parseInt(e.target.value) || 0})} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
                   </div>
                   <div>
                     <label className="text-xs font-semibold mb-1 block">MRP</label>
@@ -508,7 +539,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={() => { setShowVariantForm(false); setEditingVariantId(null); setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 18, stockQty: 0, codAvailable: true }) }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
+                  <button type="button" onClick={() => { setShowVariantForm(false); setEditingVariantId(null); setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true }) }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
                   <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm">{editingVariantId ? 'Update Variant' : 'Save Variant'}</button>
                 </div>
               </form>
