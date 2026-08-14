@@ -11,30 +11,40 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
   const isWishlisted = wishlist.some(p => p.id === product.id)
 
   return (
-    <article className="group rounded-2xl border border-border bg-card p-3 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-      <Link href={`/product/${product.id}`} className="relative block w-full overflow-hidden rounded-xl bg-muted">
-        <img src={product.primaryImageUrl || '/placeholder.png'} alt={product.name} className="aspect-square h-full w-full object-contain p-5 transition duration-500 group-hover:scale-105" />
-      </Link>
-      {!hideHeart && (
-        <button 
-          onClick={(e) => { e.preventDefault(); toggleWishlist(product); }}
-          className={`absolute right-6 top-6 z-10 rounded-full bg-background/90 p-2 transition-colors ${isWishlisted ? 'text-rose-500 hover:text-rose-600' : 'text-muted-foreground hover:text-rose-500'}`}
-          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-        >
-          <Heart size={16} fill={isWishlisted ? "currentColor" : "none"} />
-        </button>
-      )}
-      <div className="flex flex-col gap-2 p-2 pt-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{product.brandName}</p>
-        <Link href={`/product/${product.id}`} className="text-left font-semibold hover:text-primary">{product.name}</Link>
-        <div className="flex items-center gap-1 text-xs">
-          <Star size={13} fill="currentColor" className="text-accent" />
-          <span className="font-semibold">{product.avgRating || 0}</span>
-          <span className="text-muted-foreground">({product.totalReviews || 0})</span>
+    <article className="group flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md dark:border-zinc-800">
+      <div className="relative w-full overflow-hidden rounded-xl bg-[#F4F4F5] dark:bg-white">
+        <Link href={`/product/${product.id}`} className="block">
+          <img 
+            src={product.primaryImageUrl || '/placeholder.png'} 
+            alt={product.name} 
+            className="aspect-square h-full w-full object-contain p-6 transition duration-500 group-hover:scale-105 mix-blend-multiply dark:mix-blend-normal" 
+          />
+        </Link>
+        {!hideHeart && (
+          <button 
+            onClick={(e) => { e.preventDefault(); toggleWishlist(product); }}
+            className={`absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-white/70 backdrop-blur-md transition-all hover:bg-white dark:bg-black/10 dark:hover:bg-black/20 ${isWishlisted ? 'text-rose-500 hover:text-rose-600' : 'text-slate-500 hover:text-rose-500'}`}
+            aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          >
+            <Heart size={15} fill={isWishlisted ? "currentColor" : "none"} strokeWidth={2} />
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col gap-1.5 p-1 pt-4">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-zinc-400">{product.brandName}</p>
+        <Link href={`/product/${product.id}`} className="line-clamp-2 min-h-[40px] text-sm font-bold leading-tight text-slate-900 transition-colors hover:text-[#0042a3] dark:text-zinc-100 dark:hover:text-blue-400">
+          {product.name}
+        </Link>
+        <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-zinc-400">
+          <Star size={12} fill="currentColor" className="text-[#F97316]" />
+          <span>{product.avgRating || '0.0'}</span>
+          <span className="font-normal text-slate-400">({product.totalReviews || 0})</span>
         </div>
-        <div className="flex items-end justify-between gap-2 pt-1">
-          <p className="text-lg font-bold">{formatINR(product.startingPrice)}</p>
-          <Link href={`/product/${product.id}`} className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">
+        
+        <div className="mt-auto pt-4 flex items-center justify-between">
+          <p className="text-lg font-black tracking-tight text-slate-900 dark:text-white">{formatINR(product.startingPrice)}</p>
+          <Link href={`/product/${product.id}`} className="grid h-8 place-items-center rounded-full bg-[#EFEFEF] px-4 text-xs font-bold text-slate-900 transition-colors hover:bg-[#0042a3] hover:text-white dark:bg-zinc-800 dark:text-white dark:hover:bg-blue-600">
             View
           </Link>
         </div>

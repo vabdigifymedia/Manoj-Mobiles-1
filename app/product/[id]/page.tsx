@@ -95,8 +95,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="flex flex-col gap-4 self-start sticky top-24">
-          <div className="rounded-3xl bg-muted p-6">
-            <img src={selectedImage || primaryImage} alt={product.name} className="aspect-square w-full object-contain transition-all duration-300" />
+          <div className="rounded-3xl bg-[#F4F4F5] p-6 dark:bg-white">
+            <img src={selectedImage || primaryImage} alt={product.name} className="aspect-square w-full object-contain transition-all duration-300 mix-blend-multiply dark:mix-blend-normal" />
           </div>
           {allImages.length > 1 && (
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -104,9 +104,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(url)}
-                  className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 bg-muted p-2 transition-all ${selectedImage === url ? 'border-primary shadow-sm' : 'border-transparent hover:border-primary/40'}`}
+                  className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 bg-[#F4F4F5] p-2 transition-all dark:bg-white ${selectedImage === url ? 'border-primary shadow-sm dark:border-primary' : 'border-transparent hover:border-primary/40 dark:border-zinc-200 dark:hover:border-primary/40'}`}
                 >
-                  <img src={url} alt={`${product.name} thumbnail ${idx + 1}`} className="h-full w-full object-contain" />
+                  <img src={url} alt={`${product.name} thumbnail ${idx + 1}`} className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
                 </button>
               ))}
             </div>

@@ -41,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased flex min-h-screen flex-col bg-background">
+      <body className="antialiased flex min-h-screen flex-col bg-background" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <StoreProvider>
             <Header />
