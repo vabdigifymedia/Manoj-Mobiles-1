@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Star, MapPin, CheckCircle2, MessageSquare, ShoppingCart, Zap } from 'lucide-react'
+import { ArrowLeft, Star, MapPin, CheckCircle2, MessageSquare, ShoppingCart, Zap, MemoryStick, HardDrive, Microchip, ShieldCheck, Truck, Cpu, Battery, Settings, Smartphone, Camera, Wifi, Bluetooth } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { formatINR } from '@/lib/apiClient'
 import { useStore } from '@/components/store-provider'
@@ -191,6 +191,58 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <p className="mt-3 text-sm font-semibold text-destructive">Please enter a valid 6-digit pincode.</p>
             )}
           </form>
+
+          {product.highlights && product.highlights.length > 0 && (
+            <div className="rounded-2xl border border-border bg-card p-5 mt-4">
+              <h2 className="font-bold text-lg mb-4">Highlights</h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {product.highlights.map(h => {
+                  const Icon = h.iconName === 'MemoryStick' ? MemoryStick :
+                               h.iconName === 'HardDrive' ? HardDrive :
+                               h.iconName === 'Microchip' ? Microchip :
+                               h.iconName === 'ShieldCheck' ? ShieldCheck :
+                               h.iconName === 'Truck' ? Truck :
+                               h.iconName === 'Cpu' ? Cpu :
+                               h.iconName === 'Battery' ? Battery :
+                               h.iconName === 'Star' ? Star :
+                               h.iconName === 'Settings' ? Settings :
+                               h.iconName === 'Smartphone' ? Smartphone :
+                               h.iconName === 'Camera' ? Camera :
+                               h.iconName === 'Wifi' ? Wifi :
+                               h.iconName === 'Bluetooth' ? Bluetooth :
+                               h.iconName === 'Zap' ? Zap : CheckCircle2;
+                  
+                  const cleanName = selectedVariant.variantName.replace(`(${selectedVariant.color})`, '').trim();
+                  let text = h.text.replace('{variant}', cleanName);
+                  
+                  // Auto-detect RAM and ROM from variant name (e.g. "512 GB + 12 GB")
+                  const sizes = [...cleanName.matchAll(/(\d+)\s*(GB|TB|MB)/gi)].map(m => ({
+                    value: parseInt(m[1]),
+                    unit: m[2].toUpperCase(),
+                    original: m[0]
+                  }));
+                  
+                  if (sizes.length === 2 && (text.includes('{ram}') || text.includes('{rom}'))) {
+                    sizes.sort((a, b) => {
+                      const aVal = a.unit === 'TB' ? a.value * 1024 : a.unit === 'MB' ? a.value / 1024 : a.value;
+                      const bVal = b.unit === 'TB' ? b.value * 1024 : b.unit === 'MB' ? b.value / 1024 : b.value;
+                      return aVal - bVal;
+                    });
+                    text = text.replace(/{ram}/gi, sizes[0].original).replace(/{rom}/gi, sizes[1].original);
+                  }
+                  
+                  return (
+                    <div key={h.id} className="flex items-center gap-3">
+                      <div className="rounded-full bg-primary/10 p-2 text-primary">
+                        <Icon size={18} />
+                      </div>
+                      <span className="text-sm font-medium">{text}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="rounded-2xl border border-border bg-card p-5 mt-4">
             <h2 className="font-bold text-lg">Description</h2>
