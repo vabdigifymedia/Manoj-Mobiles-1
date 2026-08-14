@@ -252,12 +252,26 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-5 mt-4">
-            <h2 className="font-bold text-lg">Specifications</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {selectedVariant.specifications?.map(spec => (
-                <div key={spec.specKey} className="border-b border-border pb-3 sm:border-b-0 sm:pb-0">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">{spec.specKey}</p>
-                  <p className="mt-1 text-sm font-medium">{spec.specValue}</p>
+            <h2 className="font-bold text-lg mb-4">Specifications</h2>
+            <div className="flex flex-col gap-6">
+              {Object.entries(
+                selectedVariant.specifications?.reduce((acc, spec) => {
+                  const group = spec.specGroup || 'General';
+                  if (!acc[group]) acc[group] = [];
+                  acc[group].push(spec);
+                  return acc;
+                }, {} as Record<string, typeof selectedVariant.specifications>) || {}
+              ).map(([group, specs]) => (
+                <div key={group}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-primary mb-3 bg-primary/5 p-2 rounded-lg">{group}</h3>
+                  <div className="grid gap-4 sm:grid-cols-2 px-2">
+                    {specs!.map(spec => (
+                      <div key={spec.specKey} className="border-b border-border pb-3 sm:border-b-0 sm:pb-0">
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">{spec.specKey}</p>
+                        <p className="mt-1 text-sm font-medium">{spec.specValue}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

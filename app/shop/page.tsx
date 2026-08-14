@@ -2,25 +2,39 @@
 
 import { ChevronDown } from 'lucide-react'
 import { ProductCard } from '@/components/product-card'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { apiClient } from '@/lib/apiClient'
 import type { ProductListResponseDTO } from '@/lib/types'
+import { useSearchParams } from 'next/navigation'
 
-export default function ShopPage() {
+function ShopContent() {
   const [products, setProducts] = useState<ProductListResponseDTO[]>([])
+  const searchParams = useSearchParams()
+  const q = searchParams.get('q')
 
   useEffect(() => {
-    apiClient.getProducts(0, 50).then(res => {
-      setProducts(res.data.data.content)
-    }).catch(console.error)
-  }, [])
+    if (q) {
+      apiClient.searchProducts(q, 0, 50).then(res => {
+        setProducts(res.data.data.content)
+      }).catch(console.error)
+    } else {
+      apiClient.getProducts(0, 50).then(res => {
+        setProducts(res.data.data.content)
+      }).catch(console.error)
+    }
+  }, [q])
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-accent">The collection</p>
-          <h1 className="mt-1 text-3xl font-black">Find your next phone</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{products.length} phones · curated by our team</p>
+          <p className="text-xs font-bold uppercase tracking-[.18em] text-accent">
+            {q ? 'Search Results' : 'The collection'}
+          </p>
+          <h1 className="mt-1 text-3xl font-black">
+            {q ? `Showing results for "${q}"` : 'Find your next phone'}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">{products.length} phones found</p>
         </div>
         <button className="flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold">
           Sort by: Featured <ChevronDown size={15} />
@@ -42,5 +56,13 @@ export default function ShopPage() {
         ))}
       </div>
     </main>
+  )
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading shop...</div>}>
+      <ShopContent />
+    </Suspense>
   )
 }

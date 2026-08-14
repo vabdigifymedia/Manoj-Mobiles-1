@@ -50,6 +50,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const [highestStepReached, setHighestStepReached] = useState(1)
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
+  const [draftAvailable, setDraftAvailable] = useState(false)
 
   // Step 1: Base Info
   const [baseInfo, setBaseInfo] = useState({
@@ -136,11 +137,39 @@ export function ProductWizard({ productId }: { productId?: string }) {
       } catch (err) {
         console.error('Failed to load initial data', err)
       } finally {
+        const draftStr = localStorage.getItem(`product-draft-${productId || 'new'}`)
+        if (draftStr) setDraftAvailable(true)
         setInitialLoading(false)
       }
     }
     fetchData()
   }, [productId])
+
+  useEffect(() => {
+    if (!initialLoading) {
+      const draftKey = `product-draft-${productId || 'new'}`
+      localStorage.setItem(draftKey, JSON.stringify({ baseInfo, highlights, variants, globalSpecs, currentStep, highestStepReached }))
+    }
+  }, [baseInfo, highlights, variants, globalSpecs, currentStep, highestStepReached, initialLoading, productId])
+
+  const handleRestoreDraft = () => {
+    const draftStr = localStorage.getItem(`product-draft-${productId || 'new'}`)
+    if (draftStr) {
+      try {
+        const draft = JSON.parse(draftStr)
+        if (draft.baseInfo) setBaseInfo(draft.baseInfo)
+        if (draft.highlights) setHighlights(draft.highlights)
+        if (draft.variants) setVariants(draft.variants)
+        if (draft.globalSpecs) setGlobalSpecs(draft.globalSpecs)
+        if (draft.currentStep) setCurrentStep(draft.currentStep)
+        if (draft.highestStepReached) setHighestStepReached(draft.highestStepReached)
+        setDraftAvailable(false)
+        toast.success('Draft restored!')
+      } catch (e) {
+        console.error('Failed to parse draft', e)
+      }
+    }
+  }
 
   const handleStepClick = (step: number) => {
     if (step <= highestStepReached) setCurrentStep(step)
@@ -355,6 +384,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
         }
       }
       setLoading(false)
+      localStorage.removeItem(`product-draft-${productId || 'new'}`)
       toast.success(productId ? 'Product updated successfully!' : 'Product created successfully!')
       router.push('/admin/products')
     } catch (err: unknown) {
@@ -395,6 +425,28 @@ export function ProductWizard({ productId }: { productId?: string }) {
         </Link>
         <PackagePlus className="text-primary" /> {productId ? 'Edit Product' : 'Create New Product'}
       </div>
+
+      {draftAvailable && (
+        <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+            You have an unsaved draft. Would you like to restore your previous progress?
+          </p>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <button 
+              onClick={() => { localStorage.removeItem(`product-draft-${productId || 'new'}`); setDraftAvailable(false); }} 
+              className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-yellow-800 dark:text-yellow-200 border border-yellow-800/30 rounded-xl hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition-colors"
+            >
+              Discard
+            </button>
+            <button 
+              onClick={handleRestoreDraft} 
+              className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl transition-colors shadow-sm"
+            >
+              Restore Draft
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-between border-b border-border mb-8 overflow-x-auto pb-4">
         {[
