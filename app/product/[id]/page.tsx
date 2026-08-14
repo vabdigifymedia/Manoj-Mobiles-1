@@ -25,18 +25,20 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   }, [product])
   
   const availableColors = Array.from(new Set(product?.variants.map(v => v.color).filter(Boolean) || []))
-  const variantsForColor = product?.variants.filter(v => v.color === selectedColor) || []
+  const variantsForColor = product?.variants.filter(v => v.color === selectedColor).sort((a, b) => a.sellingPrice - b.sellingPrice) || []
   
-  useEffect(() => {
-    if (variantsForColor.length > 0 && selectedVariant) {
-      const exists = variantsForColor.find(v => v.id === selectedVariant.id)
-      if (!exists) {
-        setSelectedVariant(variantsForColor[0])
+  const handleColorChange = (color: string) => {
+    setSelectedColor(color)
+    const newVariants = product?.variants.filter(v => v.color === color).sort((a, b) => a.sellingPrice - b.sellingPrice) || []
+    if (newVariants.length > 0) {
+      if (selectedVariant) {
+        const equivalent = newVariants.find(v => v.variantName === selectedVariant.variantName)
+        setSelectedVariant(equivalent || newVariants[0])
+      } else {
+        setSelectedVariant(newVariants[0])
       }
-    } else if (variantsForColor.length > 0 && !selectedVariant) {
-      setSelectedVariant(variantsForColor[0])
     }
-  }, [selectedColor, variantsForColor])
+  }
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   
   useEffect(() => {
@@ -136,7 +138,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 {availableColors.map(color => (
                   <button 
                     key={color} 
-                    onClick={() => setSelectedColor(color as string)} 
+                    onClick={() => handleColorChange(color as string)} 
                     className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors ${selectedColor === color ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
                   >
                     {color as string}
