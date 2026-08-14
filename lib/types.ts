@@ -198,7 +198,7 @@ export interface RatingSummaryDTO {
 }
 
 // --- Highlight ---
-export type IconName = 'ShieldCheck' | 'Truck' | 'Cpu' | 'Battery' | 'Star' | 'Settings' | 'Smartphone' | 'Camera' | 'Wifi' | 'Bluetooth' | 'CheckCircle' | 'Zap'
+export type IconName = 'ShieldCheck' | 'Truck' | 'Cpu' | 'Battery' | 'Star' | 'Settings' | 'Smartphone' | 'Camera' | 'Wifi' | 'Bluetooth' | 'CheckCircle' | 'Zap' | 'MemoryStick' | 'HardDrive' | 'Microchip'
 
 export interface CreateHighlightRequestDTO {
   iconName: IconName

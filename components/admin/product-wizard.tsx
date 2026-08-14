@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { 
   PackagePlus, Info, CheckCircle, Package, Settings, Image as ImageIcon, 
   Trash2, Plus, PenTool, Check, Star, ShieldCheck, Battery, Cpu, 
-  Camera, Smartphone, Wifi, Truck, Zap, Bluetooth, ChevronLeft 
+  Camera, Smartphone, Wifi, Truck, Zap, Bluetooth, ChevronLeft,
+  MemoryStick, HardDrive, Microchip
 } from 'lucide-react'
 import { Highlight, Variant } from '@/lib/api' // Keeping for types if needed, or better use real DTOs
 import { apiClient } from '@/lib/apiClient'
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/select"
 import { ImageUpload } from './image-upload'
 
-const availableIcons = { CheckCircle, Star, ShieldCheck, Battery, Cpu, Camera, Smartphone, Wifi, Truck, Zap, Bluetooth, Settings }
+const availableIcons = { CheckCircle, Star, ShieldCheck, Battery, Cpu, Camera, Smartphone, Wifi, Truck, Zap, Bluetooth, Settings, MemoryStick, HardDrive, Microchip }
 
 export function ProductWizard({ productId }: { productId?: string }) {
   const router = useRouter()
@@ -46,10 +47,14 @@ export function ProductWizard({ productId }: { productId?: string }) {
   // Step 3: Variants
   const [variants, setVariants] = useState<Variant[]>([])
   const [showVariantForm, setShowVariantForm] = useState(false)
+  const [editingVariantId, setEditingVariantId] = useState<string | null>(null)
   const [variantForm, setVariantForm] = useState({
     variantName: '', sku: '', color: '', mrp: '', sellingPrice: '',
     gstPercent: 18, stockQty: 0, codAvailable: true
   })
+
+  // Step 4: Global Specs
+  const [globalSpecs, setGlobalSpecs] = useState<{specGroup: string, specKey: string, specValue: string}[]>([])
 
   // Mock data for dropdowns
   const [categories, setCategories] = useState<CategoryResponseDTO[]>([])
@@ -97,12 +102,15 @@ export function ProductWizard({ productId }: { productId?: string }) {
             gstPercent: v.gstPercent || 18,
             stockQty: v.stockQty,
             codAvailable: v.codAvailable,
-            specifications: v.specifications.map(s => ({
-              specGroup: s.specGroup,
-              specKey: s.specKey,
-              specValue: s.specValue
-            })),
+            specifications: [],
             images: v.imageUrls || []
+          })))
+
+          const firstVariantSpecs = p.variants[0]?.specifications || []
+          setGlobalSpecs(firstVariantSpecs.map(s => ({
+            specGroup: s.specGroup,
+            specKey: s.specKey,
+            specValue: s.specValue
           })))
         }
       } catch (err) {
@@ -136,69 +144,74 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   const handleAddVariant = (e: React.FormEvent) => {
     e.preventDefault()
-    setVariants([...variants, {
-      id: `v${Date.now()}`,
-      variantName: variantForm.variantName,
-      sku: variantForm.sku,
-      color: variantForm.color,
-      mrp: Number(variantForm.mrp),
-      sellingPrice: Number(variantForm.sellingPrice),
-      gstPercent: Number(variantForm.gstPercent),
-      stockQty: Number(variantForm.stockQty),
-      codAvailable: variantForm.codAvailable,
-      specifications: [],
-      images: []
-    }])
+    if (editingVariantId) {
+      setVariants(variants.map(v => v.id === editingVariantId ? {
+        ...v,
+        variantName: variantForm.variantName,
+        sku: variantForm.sku,
+        color: variantForm.color,
+        mrp: Number(variantForm.mrp),
+        sellingPrice: Number(variantForm.sellingPrice),
+        gstPercent: Number(variantForm.gstPercent),
+        stockQty: Number(variantForm.stockQty),
+        codAvailable: variantForm.codAvailable
+      } : v))
+      setEditingVariantId(null)
+    } else {
+      setVariants([...variants, {
+        id: `v${Date.now()}`,
+        variantName: variantForm.variantName,
+        sku: variantForm.sku,
+        color: variantForm.color,
+        mrp: Number(variantForm.mrp),
+        sellingPrice: Number(variantForm.sellingPrice),
+        gstPercent: Number(variantForm.gstPercent),
+        stockQty: Number(variantForm.stockQty),
+        codAvailable: variantForm.codAvailable,
+        specifications: [],
+        images: []
+      }])
+    }
     setShowVariantForm(false)
     setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 18, stockQty: 0, codAvailable: true })
+  }
+
+  const handleEditVariantClick = (v: Variant) => {
+    setVariantForm({
+      variantName: v.variantName,
+      sku: v.sku,
+      color: v.color,
+      mrp: v.mrp.toString(),
+      sellingPrice: v.sellingPrice.toString(),
+      gstPercent: v.gstPercent,
+      stockQty: v.stockQty,
+      codAvailable: v.codAvailable
+    })
+    setEditingVariantId(v.id)
+    setShowVariantForm(true)
   }
 
   const handleDeleteVariant = (id: string) => {
     setVariants(variants.filter(v => v.id !== id))
   }
 
-  // Simplified: Spec updates for variants
-  const handleUpdateSpec = (variantId: string, specIndex: number, field: 'specGroup'|'specKey'|'specValue', value: string) => {
-    setVariants(variants.map(v => {
-      if (v.id === variantId) {
-        const specs = [...v.specifications]
-        specs[specIndex] = { ...specs[specIndex], [field]: value }
-        return { ...v, specifications: specs }
-      }
-      return v
-    }))
+  // Simplified: Global Spec updates
+  const handleUpdateSpec = (specIndex: number, field: 'specGroup'|'specKey'|'specValue', value: string) => {
+    const specs = [...globalSpecs]
+    specs[specIndex] = { ...specs[specIndex], [field]: value }
+    setGlobalSpecs(specs)
   }
 
-  const handleAddSpecToGroup = (variantId: string, groupName: string) => {
-    setVariants(variants.map(v => {
-      if (v.id === variantId) {
-        return { ...v, specifications: [...v.specifications, { specGroup: groupName, specKey: '', specValue: '' }] }
-      }
-      return v
-    }))
+  const handleAddSpecToGroup = (groupName: string) => {
+    setGlobalSpecs([...globalSpecs, { specGroup: groupName, specKey: '', specValue: '' }])
   }
 
-  const handleUpdateGroupName = (variantId: string, oldGroup: string, newGroup: string) => {
-    setVariants(variants.map(v => {
-      if (v.id === variantId) {
-        return {
-          ...v,
-          specifications: v.specifications.map(s => 
-            s.specGroup === oldGroup ? { ...s, specGroup: newGroup } : s
-          )
-        }
-      }
-      return v
-    }))
+  const handleUpdateGroupName = (oldGroup: string, newGroup: string) => {
+    setGlobalSpecs(globalSpecs.map(s => s.specGroup === oldGroup ? { ...s, specGroup: newGroup } : s))
   }
 
-  const handleDeleteSpec = (variantId: string, specIndex: number) => {
-    setVariants(variants.map(v => {
-      if (v.id === variantId) {
-        return { ...v, specifications: v.specifications.filter((_, i) => i !== specIndex) }
-      }
-      return v
-    }))
+  const handleDeleteSpec = (specIndex: number) => {
+    setGlobalSpecs(globalSpecs.filter((_, i) => i !== specIndex))
   }
 
   // Publish Product
@@ -266,9 +279,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
           })
         }
 
-        // 4. Specs
-        if (v.specifications.length > 0) {
-          await apiClient.addVariantSpecifications(finalVariantId, v.specifications.map(s => ({
+        // 4. Specs (Applied globally to all variants)
+        if (globalSpecs.length > 0) {
+          await apiClient.addVariantSpecifications(finalVariantId, globalSpecs.map(s => ({
             specGroup: s.specGroup || 'General',
             specKey: s.specKey,
             specValue: s.specValue
@@ -484,8 +497,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={() => setShowVariantForm(false)} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
-                  <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm">Save Variant</button>
+                  <button type="button" onClick={() => { setShowVariantForm(false); setEditingVariantId(null); setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 18, stockQty: 0, codAvailable: true }) }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
+                  <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm">{editingVariantId ? 'Update Variant' : 'Save Variant'}</button>
                 </div>
               </form>
             )}
@@ -509,6 +522,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                       <td className="py-3 pr-4">₹{v.sellingPrice}</td>
                       <td className="py-3 pr-4">{v.stockQty}</td>
                       <td className="py-3 text-right">
+                        <button onClick={() => handleEditVariantClick(v)} className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg mr-1"><PenTool size={16} /></button>
                         <button onClick={() => handleDeleteVariant(v.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg"><Trash2 size={16} /></button>
                       </td>
                     </tr>
@@ -532,11 +546,11 @@ export function ProductWizard({ productId }: { productId?: string }) {
           <div className="space-y-6">
             <h3 className="text-lg font-bold border-b border-border pb-2">Specifications</h3>
             
-            {variants.map(v => {
-              const groups = Array.from(new Set(v.specifications.map(s => s.specGroup || 'General')))
+            {(() => {
+              const groups = Array.from(new Set(globalSpecs.map(s => s.specGroup || 'General')))
               return (
-                <div key={v.id} className="border border-border rounded-xl p-4 space-y-4">
-                  <h4 className="font-bold border-b border-border pb-2">{v.variantName}</h4>
+                <div className="border border-border rounded-xl p-4 space-y-4">
+                  <h4 className="font-bold border-b border-border pb-2 text-primary">Common Specifications <span className="text-muted-foreground font-normal text-sm ml-2">(Applied to all variants)</span></h4>
                   
                   {groups.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No specs added.</p>
@@ -547,17 +561,17 @@ export function ProductWizard({ productId }: { productId?: string }) {
                           <div className="flex justify-between items-center mb-3">
                             <input 
                               value={group} 
-                              onChange={(e) => handleUpdateGroupName(v.id, group, e.target.value)}
+                              onChange={(e) => handleUpdateGroupName(group, e.target.value)}
                               className="font-bold bg-transparent border-none outline-none focus:ring-1 focus:ring-primary rounded px-1 -ml-1 text-sm"
                             />
-                            <button onClick={() => handleAddSpecToGroup(v.id, group)} className="text-xs text-primary font-bold hover:underline">+ Add Spec</button>
+                            <button onClick={() => handleAddSpecToGroup(group)} className="text-xs text-primary font-bold hover:underline">+ Add Spec</button>
                           </div>
                           <div className="space-y-2">
-                            {v.specifications.map((s, i) => s.specGroup === group && (
+                            {globalSpecs.map((s, i) => s.specGroup === group && (
                               <div key={i} className="flex gap-2 items-center">
-                                <input placeholder="Key (e.g. Processor)" value={s.specKey} onChange={e => handleUpdateSpec(v.id, i, 'specKey', e.target.value)} className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm" />
-                                <input placeholder="Value (e.g. Snapdragon 8 Gen 3)" value={s.specValue} onChange={e => handleUpdateSpec(v.id, i, 'specValue', e.target.value)} className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm" />
-                                <button onClick={() => handleDeleteSpec(v.id, i)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg" title="Delete Spec"><Trash2 size={16} /></button>
+                                <input placeholder="Key (e.g. Processor)" value={s.specKey} onChange={e => handleUpdateSpec(i, 'specKey', e.target.value)} className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm" />
+                                <input placeholder="Value (e.g. Snapdragon 8 Gen 3)" value={s.specValue} onChange={e => handleUpdateSpec(i, 'specValue', e.target.value)} className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm" />
+                                <button onClick={() => handleDeleteSpec(i)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg" title="Delete Spec"><Trash2 size={16} /></button>
                               </div>
                             ))}
                           </div>
@@ -566,12 +580,12 @@ export function ProductWizard({ productId }: { productId?: string }) {
                     </div>
                   )}
                   
-                  <button onClick={() => handleAddSpecToGroup(v.id, 'New Group')} className="text-sm bg-muted text-foreground px-4 py-2 rounded-lg font-bold border border-border">
+                  <button onClick={() => handleAddSpecToGroup('New Group')} className="text-sm bg-muted text-foreground px-4 py-2 rounded-lg font-bold border border-border">
                     + Add New Group
                   </button>
                 </div>
               )
-            })}
+            })()}
 
             <div className="flex justify-between pt-4">
               <button onClick={() => setCurrentStep(3)} className="border border-border font-bold px-6 py-2 rounded-xl">Back</button>
