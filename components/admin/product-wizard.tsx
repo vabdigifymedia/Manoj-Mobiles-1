@@ -359,7 +359,18 @@ export function ProductWizard({ productId }: { productId?: string }) {
       router.push('/admin/products')
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } }
-      toast.error(axiosErr?.response?.data?.message || 'Failed to save product')
+      let errorMessage = axiosErr?.response?.data?.message || 'Failed to save product'
+      
+      // Mask raw database errors
+      if (errorMessage.includes('Unexpected row count') || errorMessage.includes('OptimisticLock') || errorMessage.includes('StaleStateException')) {
+        errorMessage = 'We encountered a sync issue. Your changes were mostly saved, but please refresh to confirm.'
+      } else if (errorMessage.includes('Data truncation') || errorMessage.includes('value too long') || errorMessage.includes('SQL')) {
+        errorMessage = 'One of the fields contains too much text. Please shorten it and try again.'
+      } else if (errorMessage.includes('ConstraintViolation')) {
+        errorMessage = 'There is a validation error. Please check your inputs.'
+      }
+      
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -768,8 +779,12 @@ export function ProductWizard({ productId }: { productId?: string }) {
             
             <div className="mt-8 flex justify-between">
               <button onClick={() => setCurrentStep(4)} className="text-sm font-bold px-4 py-2 border border-border rounded-xl">Back</button>
-              <button onClick={handlePublish} className="bg-primary text-primary-foreground font-bold px-8 py-2 rounded-xl flex items-center gap-2 hover:bg-primary/90 transition-colors">
-                <CheckCircle size={18} /> Publish Product
+              <button 
+                disabled={loading} 
+                onClick={handlePublish} 
+                className="bg-primary text-primary-foreground font-bold px-8 py-2 rounded-xl flex items-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <CheckCircle size={18} /> {loading ? 'Publishing...' : 'Publish Product'}
               </button>
             </div>
           </div>
