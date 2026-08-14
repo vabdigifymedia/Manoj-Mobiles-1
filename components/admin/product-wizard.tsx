@@ -434,9 +434,11 @@ export function ProductWizard({ productId }: { productId?: string }) {
               </div>
               <div>
                 <label className="text-sm font-semibold mb-1 block">Brand</label>
-                <Select value={baseInfo.brandId || undefined} onValueChange={val => setBaseInfo({...baseInfo, brandId: val || ''})}>
+                <Select value={baseInfo.brandId || null} onValueChange={val => setBaseInfo({...baseInfo, brandId: val || ''})}>
                   <SelectTrigger className="w-full h-10 rounded-xl border bg-background px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary">
-                    <SelectValue placeholder="Select Brand..." />
+                    <SelectValue placeholder="Select Brand...">
+                      {brands.find(b => b.id === baseInfo.brandId)?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
@@ -445,9 +447,11 @@ export function ProductWizard({ productId }: { productId?: string }) {
               </div>
               <div>
                 <label className="text-sm font-semibold mb-1 block">Category</label>
-                <Select value={baseInfo.categoryId || undefined} onValueChange={val => setBaseInfo({...baseInfo, categoryId: val || ''})}>
+                <Select value={baseInfo.categoryId || null} onValueChange={val => setBaseInfo({...baseInfo, categoryId: val || ''})}>
                   <SelectTrigger className="w-full h-10 rounded-xl border bg-background px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary">
-                    <SelectValue placeholder="Select Category..." />
+                    <SelectValue placeholder="Select Category...">
+                      {categories.find(c => c.id === baseInfo.categoryId)?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -479,9 +483,11 @@ export function ProductWizard({ productId }: { productId?: string }) {
               <form onSubmit={handleAddHighlight} className="bg-muted/50 p-4 rounded-xl border border-border flex gap-4 items-end">
                 <div className="flex-1">
                   <label className="text-xs font-semibold mb-1 block">Icon</label>
-                  <Select value={highlightForm.iconName || undefined} onValueChange={val => setHighlightForm({...highlightForm, iconName: val || ''})}>
+                  <Select value={highlightForm.iconName || null} onValueChange={val => setHighlightForm({...highlightForm, iconName: val || ''})}>
                     <SelectTrigger className="w-full h-[38px] rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary">
-                      <SelectValue placeholder="Select Icon..." />
+                      <SelectValue placeholder="Select Icon...">
+                        {highlightForm.iconName}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {Object.keys(availableIcons).map(k => (
