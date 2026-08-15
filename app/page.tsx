@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Truck, ShieldCheck, Headset, CreditCard, Star, MapPin, Clock, MessageCircle } from 'lucide-react'
+import { ArrowRight, Truck, ShieldCheck, Headset, CreditCard, Star, MapPin, Clock, MessageCircle, Smartphone, Headphones, Watch, Tablet, Laptop, Cpu, Grid } from 'lucide-react'
 import { serverFetch } from '@/lib/apiClient'
 import type { BannerResponseDTO, StoreSettingResponseDTO, FaqResponseDTO, ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO, PageResponse } from '@/lib/types'
 import { HeroCarousel } from '@/components/home/hero-carousel'
@@ -45,24 +45,61 @@ export default async function HomePage() {
       {/* Categories Grid */}
       {categoryList.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-16 lg:px-8">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <h2 className="text-2xl font-black mb-6">Shop by Category</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {categoryList.slice(0, 6).map((cat, i) => {
-              const colors = [
-                'bg-gradient-to-br from-zinc-900 to-zinc-700',
-                'bg-gradient-to-br from-blue-600 to-blue-800',
-                'bg-gradient-to-br from-emerald-500 to-emerald-700',
-                'bg-gradient-to-br from-purple-600 to-purple-800',
-                'bg-gradient-to-br from-orange-500 to-red-600',
-                'bg-gradient-to-br from-teal-500 to-cyan-600',
+              const glowColors = [
+                'bg-blue-500',
+                'bg-emerald-500',
+                'bg-purple-500',
+                'bg-rose-500',
+                'bg-amber-500',
+                'bg-cyan-500',
               ]
+              
+              const getCategoryIcon = (name: string) => {
+                const n = name.toLowerCase()
+                if (n.includes('mobile') || n.includes('phone') || n.includes('smartphone')) return Smartphone
+                if (n.includes('audio') || n.includes('ear') || n.includes('head') || n.includes('pod')) return Headphones
+                if (n.includes('watch') || n.includes('wear')) return Watch
+                if (n.includes('tablet') || n.includes('pad')) return Tablet
+                if (n.includes('laptop') || n.includes('mac')) return Laptop
+                if (n.includes('access') || n.includes('charger')) return Cpu
+                return Grid
+              }
+              const Icon = getCategoryIcon(cat.name)
+
               return (
                 <Link
                   href={`/shop?category=${cat.slug}`}
                   key={cat.id}
-                  className={`flex items-center justify-between rounded-2xl ${colors[i % colors.length]} p-6 text-white transition-all hover:-translate-y-1 hover:shadow-lg`}
+                  className="group relative overflow-hidden rounded-3xl bg-card border border-border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:border-primary/50"
                 >
-                  <span className="font-bold">{cat.name}</span>
-                  <ArrowRight size={18} />
+                  {/* Subtle Background Glow */}
+                  <div className={`absolute -right-6 -top-6 z-0 h-32 w-32 rounded-full blur-3xl opacity-10 transition-all duration-500 group-hover:scale-150 group-hover:opacity-20 ${glowColors[i % glowColors.length]}`}></div>
+                  
+                  <div className="relative z-10 flex h-full items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-xl font-black text-foreground mb-1.5">{cat.name}</h3>
+                      <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1 group-hover:text-primary transition-colors">
+                        Explore <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                      </p>
+                    </div>
+                    
+                    {cat.imageUrl ? (
+                      <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0">
+                        <img 
+                          src={cat.imageUrl} 
+                          alt={cat.name} 
+                          className="h-full w-full object-contain drop-shadow-md transition-transform duration-500 group-hover:scale-110" 
+                        />
+                      </div>
+                    ) : (
+                      <div className="shrink-0 bg-primary/5 text-primary p-4 rounded-2xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors shadow-inner">
+                        <Icon size={28} />
+                      </div>
+                    )}
+                  </div>
                 </Link>
               )
             })}
