@@ -72,28 +72,11 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
             className="group relative flex aspect-[16/9] w-[170px] sm:w-[200px] md:w-auto shrink-0 md:shrink snap-start items-center justify-center overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:border-primary hover:shadow-xl hover:bg-card"
           >
             {brand.logoUrl ? (
-              <div className="relative h-full w-full p-6 sm:p-8 transition-transform duration-300 group-hover:scale-110">
-                {/* Light mode: Original Logo */}
-                <img
-                  src={brand.logoUrl}
-                  alt={brand.name}
-                  className="h-full w-full object-contain dark:hidden"
-                />
-                {/* Dark mode: Solid White Mask */}
-                <div 
-                  className="hidden dark:block h-full w-full bg-white"
-                  style={{
-                    maskImage: `url(${brand.logoUrl})`,
-                    WebkitMaskImage: `url(${brand.logoUrl})`,
-                    maskSize: 'contain',
-                    WebkitMaskSize: 'contain',
-                    maskRepeat: 'no-repeat',
-                    WebkitMaskRepeat: 'no-repeat',
-                    maskPosition: 'center',
-                    WebkitMaskPosition: 'center'
-                  }}
-                />
-              </div>
+              <img
+                src={brand.logoUrl}
+                alt={brand.name}
+                className="h-full w-full object-contain p-6 sm:p-8 transition-transform duration-300 group-hover:scale-110 dark:invert dark:hue-rotate-180"
+              />
             ) : (
               <div className="flex h-full w-full items-center justify-center p-4">
                 <span className="text-base sm:text-lg font-black tracking-wider text-foreground transition-colors group-hover:text-primary">

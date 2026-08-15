@@ -181,22 +181,7 @@ export default function AdminBrandsPage() {
                 <tr key={brand.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-6 py-4">
                     {brand.logoUrl ? (
-                      <div className="relative h-8 w-16">
-                        <img src={brand.logoUrl} alt={brand.name} className="h-full w-full object-contain dark:hidden" />
-                        <div 
-                          className="hidden dark:block h-full w-full bg-white"
-                          style={{
-                            maskImage: `url(${brand.logoUrl})`,
-                            WebkitMaskImage: `url(${brand.logoUrl})`,
-                            maskSize: 'contain',
-                            WebkitMaskSize: 'contain',
-                            maskRepeat: 'no-repeat',
-                            WebkitMaskRepeat: 'no-repeat',
-                            maskPosition: 'left center',
-                            WebkitMaskPosition: 'left center'
-                          }}
-                        />
-                      </div>
+                      <img src={brand.logoUrl} alt={brand.name} className="h-8 w-auto object-contain dark:invert dark:hue-rotate-180" />
                     ) : (
                       <span className="text-muted-foreground italic text-xs">No logo</span>
                     )}
