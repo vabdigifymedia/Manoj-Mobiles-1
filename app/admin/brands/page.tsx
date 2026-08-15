@@ -132,8 +132,10 @@ export default function AdminBrandsPage() {
             </div>
             <div>
               <ImageUpload 
-                label="Brand Logo"
+                label="Brand Logo / Card Banner"
                 value={form.logoUrl} 
+                aspectRatio={16 / 9}
+                enableCrop={true}
                 onChange={(file, previewUrl) => {
                   setLogoFile(file)
                   setForm({...form, logoUrl: previewUrl || ''})
@@ -179,7 +181,22 @@ export default function AdminBrandsPage() {
                 <tr key={brand.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-6 py-4">
                     {brand.logoUrl ? (
-                      <img src={brand.logoUrl} alt={brand.name} className="h-8 object-contain bg-background p-1 rounded border border-border mix-blend-multiply dark:mix-blend-normal" />
+                      <div className="relative h-8 w-16">
+                        <img src={brand.logoUrl} alt={brand.name} className="h-full w-full object-contain dark:hidden" />
+                        <div 
+                          className="hidden dark:block h-full w-full bg-white"
+                          style={{
+                            maskImage: `url(${brand.logoUrl})`,
+                            WebkitMaskImage: `url(${brand.logoUrl})`,
+                            maskSize: 'contain',
+                            WebkitMaskSize: 'contain',
+                            maskRepeat: 'no-repeat',
+                            WebkitMaskRepeat: 'no-repeat',
+                            maskPosition: 'left center',
+                            WebkitMaskPosition: 'left center'
+                          }}
+                        />
+                      </div>
                     ) : (
                       <span className="text-muted-foreground italic text-xs">No logo</span>
                     )}

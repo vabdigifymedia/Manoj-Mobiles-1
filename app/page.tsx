@@ -3,6 +3,7 @@ import { ArrowRight, Truck, ShieldCheck, Headset, CreditCard, Star, MapPin, Cloc
 import { serverFetch } from '@/lib/apiClient'
 import type { BannerResponseDTO, StoreSettingResponseDTO, FaqResponseDTO, ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO, PageResponse } from '@/lib/types'
 import { HeroCarousel } from '@/components/home/hero-carousel'
+import { BrandShowcase } from '@/components/home/brand-showcase'
 import { DealOfTheDay } from '@/components/home/deal-of-the-day'
 import { ProductTabs } from '@/components/home/product-tabs'
 import { FaqAccordion } from '@/components/home/faq-accordion'
@@ -35,23 +36,8 @@ export default async function HomePage() {
         <HeroCarousel banners={heroBanners || []} />
       </section>
 
-      {/* Brands Bar */}
-      {brandList.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 pb-12 lg:px-8">
-          <div className="flex items-center gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            {brandList.map(brand => (
-              <Link
-                key={brand.id}
-                href={`/shop?brand=${brand.slug}`}
-                className="flex items-center gap-2 shrink-0 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-bold shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30"
-              >
-                {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="size-5 object-contain" />}
-                {brand.name}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Shop by Brand Showcase */}
+      <BrandShowcase brands={brandList} />
 
       {/* Deal of the Day */}
       <DealOfTheDay banner={activeDeal} />
@@ -140,22 +126,36 @@ export default async function HomePage() {
             </div>
 
             {/* WhatsApp CTA */}
-            <div className="rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-8 text-white shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <MessageCircle size={20} />
-                <h3 className="text-lg font-bold">Need Help Choosing?</h3>
+            <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#25D366] via-emerald-600 to-teal-900 p-8 text-white shadow-lg transition-all hover:shadow-xl">
+              {/* Decorative Background Elements */}
+              <div className="pointer-events-none absolute -right-10 -top-10 z-0 opacity-10 transition-transform duration-700 ease-out group-hover:scale-110 group-hover:opacity-20">
+                <MessageCircle size={250} strokeWidth={1} />
               </div>
-              <p className="text-sm text-white/80 leading-relaxed mb-5">
-                Chat with our phone expert on WhatsApp. We&apos;ll help you find the perfect phone for your budget.
-              </p>
-              <a
-                href={`https://wa.me/${(storeSettings.whatsappNumber || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(storeSettings.whatsappDefaultMessage || 'Hi, I need help choosing a phone.')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-emerald-700 hover:bg-white/90 transition-all shadow-lg"
-              >
-                <MessageCircle size={18} /> Chat on WhatsApp
-              </a>
+              <div className="pointer-events-none absolute -bottom-20 -left-10 z-0 opacity-10">
+                <div className="h-40 w-40 rounded-full bg-white blur-3xl"></div>
+              </div>
+              
+              <div className="relative z-10">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                  <MessageCircle size={14} className="animate-pulse" />
+                  Expert Advice
+                </div>
+                <h3 className="mb-3 text-2xl font-black leading-tight sm:text-3xl">
+                  Need Help Choosing?
+                </h3>
+                <p className="mb-8 max-w-sm text-sm font-medium leading-relaxed text-emerald-50">
+                  Chat with our phone expert on WhatsApp. We&apos;ll help you find the perfect phone for your exact needs and budget.
+                </p>
+                <a
+                  href={`https://wa.me/${(storeSettings.whatsappNumber || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(storeSettings.whatsappDefaultMessage || 'Hi, I need help choosing a phone.')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-fit items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-black text-emerald-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 hover:bg-emerald-50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)]"
+                >
+                  <MessageCircle size={18} /> 
+                  Chat on WhatsApp
+                </a>
+              </div>
             </div>
           </div>
         </section>
