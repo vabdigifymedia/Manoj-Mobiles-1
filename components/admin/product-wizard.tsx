@@ -74,6 +74,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
     gstPercent: 0, stockQty: 0, codAvailable: true
   })
   const [draggedImage, setDraggedImage] = useState<{color: string, index: number} | null>(null)
+  const [dragActiveColor, setDragActiveColor] = useState<string | null>(null)
 
   // Step 4: Global Specs
   const [globalSpecs, setGlobalSpecs] = useState<{specGroup: string, specKey: string, specValue: string}[]>([])
@@ -802,7 +803,44 @@ export function ProductWizard({ productId }: { productId?: string }) {
                         </div>
                       ))}
                       
-                      <label className="shrink-0 w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                      <label 
+                        className={`shrink-0 w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                          dragActiveColor === color 
+                            ? 'border-primary bg-primary/10' 
+                            : 'border-border hover:bg-muted/50'
+                        }`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (dragActiveColor !== color) setDragActiveColor(color);
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDragActiveColor(null);
+                        }}
+                        onDrop={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDragActiveColor(null);
+                          const file = e.dataTransfer.files?.[0];
+                          if (!file) return;
+                          try {
+                            setLoading(true);
+                            const res = await apiClient.uploadImage(file, 'products');
+                            const url = res.data.data;
+                            setVariants(variants.map(varItem => 
+                              (varItem.color || 'Default Color') === color 
+                                ? { ...varItem, images: [...(varItem.images || []), url] } 
+                                : varItem
+                            ));
+                          } catch (err) {
+                            toast.error('Failed to upload image');
+                          } finally {
+                            setLoading(false);
+                          }
+                        }}
+                      >
                         <Plus size={24} className="text-muted-foreground" />
                         <span className="text-[10px] font-semibold text-muted-foreground mt-1 text-center leading-tight">Add<br/>Image</span>
                         <input 
@@ -825,6 +863,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                               toast.error('Failed to upload image');
                             } finally {
                               setLoading(false);
+                              e.target.value = '';
                             }
                           }}
                         />
