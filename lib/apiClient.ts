@@ -263,6 +263,60 @@ export const apiClient = {
 
   createReview: (dto: import('./types').CreateReviewRequestDTO) =>
     axiosInstance.post<ApiResponse<import('./types').ReviewResponseDTO>>('/api/user/reviews', dto),
+
+  // --- Banners ---
+  getPublicBanners: (type?: import('./types').BannerType) =>
+    axiosInstance.get<ApiResponse<import('./types').BannerResponseDTO[]>>(`/api/public/banners${type ? `?type=${type}` : ''}`),
+
+  getAdminBanners: () =>
+    axiosInstance.get<ApiResponse<import('./types').BannerResponseDTO[]>>('/api/admin/banners'),
+
+  createBanner: (dto: import('./types').BannerRequestDTO) =>
+    axiosInstance.post<ApiResponse<import('./types').BannerResponseDTO>>('/api/admin/banners', dto),
+
+  updateBanner: (id: string, dto: import('./types').BannerRequestDTO) =>
+    axiosInstance.put<ApiResponse<import('./types').BannerResponseDTO>>(`/api/admin/banners/${id}`, dto),
+
+  deleteBanner: (id: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/admin/banners/${id}`),
+
+  updateBannerStatus: (id: string, active: boolean) =>
+    axiosInstance.put<ApiResponse<void>>(`/api/admin/banners/${id}/status?active=${active}`),
+
+  reorderBanners: (dto: import('./types').ReorderRequestDTO) =>
+    axiosInstance.put<ApiResponse<void>>('/api/admin/banners/reorder', dto),
+
+  // --- Store Settings ---
+  getPublicStoreSettings: () =>
+    axiosInstance.get<ApiResponse<import('./types').StoreSettingResponseDTO>>('/api/public/settings'),
+
+  getAdminStoreSettings: () =>
+    axiosInstance.get<ApiResponse<import('./types').StoreSettingResponseDTO>>('/api/admin/settings'),
+
+  updateAdminStoreSettings: (dto: import('./types').StoreSettingRequestDTO) =>
+    axiosInstance.put<ApiResponse<import('./types').StoreSettingResponseDTO>>('/api/admin/settings', dto),
+
+  // --- FAQs ---
+  getPublicFaqs: () =>
+    axiosInstance.get<ApiResponse<import('./types').FaqResponseDTO[]>>('/api/public/faqs'),
+
+  getAdminFaqs: () =>
+    axiosInstance.get<ApiResponse<import('./types').FaqResponseDTO[]>>('/api/admin/faqs'),
+
+  createFaq: (dto: import('./types').FaqRequestDTO) =>
+    axiosInstance.post<ApiResponse<import('./types').FaqResponseDTO>>('/api/admin/faqs', dto),
+
+  updateFaq: (id: string, dto: import('./types').FaqRequestDTO) =>
+    axiosInstance.put<ApiResponse<import('./types').FaqResponseDTO>>(`/api/admin/faqs/${id}`, dto),
+
+  deleteFaq: (id: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/admin/faqs/${id}`),
+
+  updateFaqStatus: (id: string, active: boolean) =>
+    axiosInstance.put<ApiResponse<void>>(`/api/admin/faqs/${id}/status?active=${active}`),
+
+  reorderFaqs: (dto: import('./types').ReorderRequestDTO) =>
+    axiosInstance.put<ApiResponse<void>>('/api/admin/faqs/reorder', dto),
 }
 
 // ===========================
@@ -271,4 +325,19 @@ export const apiClient = {
 export const formatINR = (value: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)
 
+// ===========================
+// Server-side fetch helper for SSR pages (no auth needed, public endpoints only)
+// ===========================
+export async function serverFetch<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, { next: { revalidate: 60 } })
+    if (!res.ok) return null
+    const json = await res.json()
+    return json.data as T
+  } catch {
+    return null
+  }
+}
+
 export { axiosInstance }
+

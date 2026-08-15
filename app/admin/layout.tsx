@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { BarChart3, Package, ShoppingBag, Users, LayoutDashboard, Menu, X, Tag, Award, UserPlus, LogOut } from 'lucide-react'
+import { BarChart3, Package, ShoppingBag, Users, LayoutDashboard, Menu, X, Tag, Award, UserPlus, LogOut, Image, Settings, HelpCircle } from 'lucide-react'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
 
 function AdminSidebar({ children }: { children: React.ReactNode }) {
@@ -81,6 +81,9 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
               { label: 'Categories', icon: Tag, href: '/admin/categories', exact: false },
               { label: 'Brands', icon: Award, href: '/admin/brands', exact: false },
               { label: 'Orders', icon: ShoppingBag, href: '/admin/orders', exact: false }, 
+              { label: 'Banners', icon: Image, href: '/admin/banners', exact: false },
+              { label: 'Store Settings', icon: Settings, href: '/admin/settings', exact: false },
+              { label: 'FAQs', icon: HelpCircle, href: '/admin/faqs', exact: false },
               { label: 'Staff', icon: UserPlus, href: '/admin/staff', exact: false },
               { label: 'Customers', icon: Users, href: '/admin/customers', exact: false },
             ].map(item => {

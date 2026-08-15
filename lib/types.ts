@@ -339,3 +339,103 @@ export interface CartResponseDTO {
   items: CartItemResponseDTO[]
   cartTotal: number
 }
+
+// --- Banner ---
+export type BannerType = 'HERO_SLIDER' | 'DEAL_OF_THE_DAY' | 'PROMO_STRIP' | 'CATEGORY_FEATURE'
+
+export interface BannerRequestDTO {
+  title: string
+  subtitle?: string
+  badgeText?: string
+  imageUrl: string
+  mobileImageUrl?: string
+  linkUrl: string
+  ctaText?: string
+  bannerType: BannerType
+  bgGradient?: string
+  displayOrder?: number
+  isActive?: boolean
+  startTime?: string
+  endTime?: string
+}
+
+export interface BannerResponseDTO {
+  id: string
+  title: string
+  subtitle?: string
+  badgeText?: string
+  imageUrl: string
+  mobileImageUrl?: string
+  linkUrl: string
+  ctaText?: string
+  bannerType: BannerType
+  bgGradient?: string
+  displayOrder: number
+  isActive: boolean
+  startTime?: string
+  endTime?: string
+  createdAt: string
+  updatedAt: string
+}
+
+// --- Store Settings ---
+export interface StoreSettingRequestDTO {
+  storeName: string
+  announcementText?: string
+  announcementLink?: string
+  announcementActive?: boolean
+  whatsappNumber?: string
+  whatsappDefaultMessage?: string
+  supportPhone?: string
+  supportEmail?: string
+  storeAddress?: string
+  storeTimings?: string
+  googleMapsUrl?: string
+  freeDeliveryThreshold?: number
+  expressDeliveryText?: string
+}
+
+export interface StoreSettingResponseDTO {
+  id: string
+  storeName: string
+  announcementText?: string
+  announcementLink?: string
+  announcementActive: boolean
+  whatsappNumber?: string
+  whatsappDefaultMessage?: string
+  supportPhone?: string
+  supportEmail?: string
+  storeAddress?: string
+  storeTimings?: string
+  googleMapsUrl?: string
+  freeDeliveryThreshold?: number
+  expressDeliveryText?: string
+  updatedAt: string
+}
+
+// --- FAQ ---
+export type FaqCategory = 'GENERAL' | 'ORDERS_DELIVERY' | 'WARRANTY' | 'PAYMENT_EMI'
+
+export interface FaqRequestDTO {
+  question: string
+  answer: string
+  category?: FaqCategory
+  displayOrder?: number
+  isActive?: boolean
+}
+
+export interface FaqResponseDTO {
+  id: string
+  question: string
+  answer: string
+  category: FaqCategory
+  displayOrder: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+// --- Reorder ---
+export interface ReorderRequestDTO {
+  orderedIds: string[]
+}
