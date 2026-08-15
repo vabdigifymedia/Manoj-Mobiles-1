@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import Cookies from 'js-cookie'
+import imageCompression from 'browser-image-compression'
 import {
   ApiResponse, PageResponse,
   StaffLoginRequestDTO, AuthResponseDTO, RefreshTokenRequestDTO,
@@ -205,9 +206,25 @@ export const apiClient = {
     axiosInstance.delete<ApiResponse<void>>(`/api/products/highlights/${highlightId}`),
 
   // --- Image Upload (Cloudinary) ---
-  uploadImage: (file: File, folder?: string) => {
+  uploadImage: async (file: File, folder?: string) => {
+    let fileToUpload = file;
+    // Compress images larger than 800KB
+    if (file.type.startsWith('image/') && file.size > 800 * 1024) {
+      try {
+        fileToUpload = await imageCompression(file, {
+          maxSizeMB: 0.8,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+          // Convert huge pngs to jpeg to save space (preserves transparency if possible but limits size)
+          fileType: file.type === 'image/png' && file.size > 2 * 1024 * 1024 ? 'image/jpeg' : undefined
+        });
+      } catch (err) {
+        console.error('Image compression failed', err);
+      }
+    }
+
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', fileToUpload)
     const params = folder ? `?folder=${encodeURIComponent(folder)}` : ''
     return axiosInstance.post<ApiResponse<string>>(`/api/admin/upload${params}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

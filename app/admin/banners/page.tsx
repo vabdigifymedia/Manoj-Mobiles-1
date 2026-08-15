@@ -28,6 +28,26 @@ export default function AdminBannersPage() {
   const [error, setError] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [mobileImageFile, setMobileImageFile] = useState<File | null>(null)
+  const [draftAvailable, setDraftAvailable] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
+
+  const checkDraft = (id: string | null) => {
+    const draftStr = localStorage.getItem(`banner-draft-${id || 'new'}`)
+    setDraftAvailable(!!draftStr)
+  }
+
+  useEffect(() => {
+    checkDraft(editId)
+    setInitialLoading(false)
+  }, [editId])
+
+  useEffect(() => {
+    if (!initialLoading && showForm) {
+      if (form.title || form.linkUrl || form.imageUrl) {
+        localStorage.setItem(`banner-draft-${editId || 'new'}`, JSON.stringify(form))
+      }
+    }
+  }, [form, editId, initialLoading, showForm])
 
   const loadBanners = async () => {
     try {
@@ -46,6 +66,7 @@ export default function AdminBannersPage() {
     setMobileImageFile(null)
     setShowForm(true)
     setError('')
+    checkDraft(null)
   }
 
   const openEdit = (b: BannerResponseDTO) => {
@@ -63,6 +84,7 @@ export default function AdminBannersPage() {
     setMobileImageFile(null)
     setShowForm(true)
     setError('')
+    checkDraft(b.id)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,11 +95,11 @@ export default function AdminBannersPage() {
       let imageUrl = form.imageUrl
       let mobileImageUrl = form.mobileImageUrl
       if (imageFile) {
-        const uploadRes = await apiClient.uploadImage(imageFile, 'banners')
+        const uploadRes = await apiClient.uploadImage(imageFile, 'products')
         imageUrl = uploadRes.data.data
       }
       if (mobileImageFile) {
-        const uploadRes = await apiClient.uploadImage(mobileImageFile, 'banners')
+        const uploadRes = await apiClient.uploadImage(mobileImageFile, 'products')
         mobileImageUrl = uploadRes.data.data
       }
       const dto: BannerRequestDTO = {
@@ -89,6 +111,7 @@ export default function AdminBannersPage() {
       }
       if (editId) await apiClient.updateBanner(editId, dto)
       else await apiClient.createBanner(dto)
+      localStorage.removeItem(`banner-draft-${editId || 'new'}`)
       setShowForm(false)
       loadBanners()
     } catch (err: unknown) {
@@ -138,6 +161,37 @@ export default function AdminBannersPage() {
       {showForm && (
         <div className="mb-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-bold mb-4">{editId ? 'Edit Banner' : 'Create New Banner'}</h2>
+          
+          {draftAvailable && (
+            <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                You have an unsaved draft. Would you like to restore it?
+              </p>
+              <div className="flex gap-3 w-full sm:w-auto">
+                <button 
+                  onClick={() => { localStorage.removeItem(`banner-draft-${editId || 'new'}`); setDraftAvailable(false); }} 
+                  className="px-4 py-2 text-xs font-bold text-yellow-800 dark:text-yellow-200 border border-yellow-800/30 rounded-xl hover:bg-yellow-100 dark:hover:bg-yellow-900/40"
+                  type="button"
+                >
+                  Discard
+                </button>
+                <button 
+                  onClick={() => {
+                    const draft = localStorage.getItem(`banner-draft-${editId || 'new'}`)
+                    if (draft) {
+                      setForm(JSON.parse(draft))
+                      setDraftAvailable(false)
+                    }
+                  }} 
+                  className="px-4 py-2 text-xs font-bold bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl"
+                  type="button"
+                >
+                  Restore Draft
+                </button>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="block text-sm font-semibold mb-1">Title *</label>
