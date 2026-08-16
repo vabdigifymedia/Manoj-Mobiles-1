@@ -347,7 +347,7 @@ export const formatINR = (value: number) =>
 // ===========================
 export async function serverFetch<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${BASE_URL}${path}`, { next: { revalidate: 60 } })
+    const res = await fetch(`${BASE_URL}${path}`, { cache: 'no-store' })
     if (!res.ok) return null
     const json = await res.json()
     return json.data as T
