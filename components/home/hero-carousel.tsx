@@ -92,43 +92,50 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
         <div className={`absolute inset-0 ${banner.bgGradient || 'bg-gradient-to-br from-[#0042a3] to-[#001d4a]'} transition-all duration-700`} />
       )}
       
-      {/* Image Layer (Restricted width on desktop to prevent zoom) */}
+      {/* Image Layer */}
       {banner.imageUrl && (
-        <div className="absolute inset-0 lg:left-auto lg:right-0 lg:w-[55%] pointer-events-none">
-          <div 
-            className="absolute inset-0 transition-transform duration-700 group-hover:scale-105"
-            style={{ maskImage: 'linear-gradient(to right, transparent, black 15%)', WebkitMaskImage: 'linear-gradient(to right, transparent, black 15%)' }}
-          >
+        <div className="absolute inset-x-0 bottom-0 h-[60%] lg:h-full lg:top-0 lg:bottom-auto lg:left-auto lg:right-0 lg:w-[60%] pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105">
             <img
               ref={imgRef}
               crossOrigin="anonymous"
               src={banner.imageUrl}
               alt={banner.title}
-              className="h-full w-full object-cover object-[80%_center] lg:object-center opacity-40 lg:opacity-100"
+              className="h-full w-full object-cover object-top lg:object-center opacity-90 lg:opacity-100"
+            />
+            {/* Blend Overlay for Mobile (Top-to-bottom) */}
+            <div 
+              className="absolute inset-0 lg:hidden"
+              style={{ background: adaptiveColor ? `linear-gradient(to bottom, ${adaptiveColor} 0%, transparent 40%)` : 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 40%)' }}
+            />
+            {/* Blend Overlay for Desktop (Left-to-right) */}
+            <div 
+              className="absolute inset-0 hidden lg:block"
+              style={{ background: adaptiveColor ? `linear-gradient(to right, ${adaptiveColor} 0%, transparent 30%)` : 'linear-gradient(to right, rgba(0,0,0,0.8) 0%, transparent 30%)' }}
             />
           </div>
         </div>
       )}
 
       {/* Content */}
-      <div className="relative z-10 flex min-h-[420px] items-center px-8 py-14 lg:px-14">
-        <div className={`max-w-lg ${textClass}`}>
+      <div className="relative z-10 flex min-h-[480px] lg:min-h-[420px] flex-col justify-start lg:justify-center px-6 py-10 lg:px-14">
+        <div className={`max-w-lg ${textClass} lg:w-1/2`}>
           {banner.badgeText && (
-            <span className={`mb-5 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold tracking-wide backdrop-blur-sm animate-in fade-in duration-500 ${badgeClass}`}>
+            <span className={`mb-4 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold tracking-wide backdrop-blur-sm animate-in fade-in duration-500 ${badgeClass}`}>
               <Flame size={14} className="text-orange-500" /> {banner.badgeText}
             </span>
           )}
-          <h2 className="text-balance text-4xl font-black leading-[1.02] sm:text-5xl lg:text-6xl animate-in slide-in-from-bottom-4 duration-500">
+          <h2 className="text-balance text-4xl font-black leading-[1.05] sm:text-5xl lg:text-6xl animate-in slide-in-from-bottom-4 duration-500">
             {banner.title}
           </h2>
           {banner.subtitle && (
-            <p className={`mt-5 max-w-md text-sm leading-6 sm:text-base animate-in slide-in-from-bottom-4 duration-700 ${subTextClass}`}>
+            <p className={`mt-4 max-w-md text-sm leading-relaxed sm:text-base animate-in slide-in-from-bottom-4 duration-700 ${subTextClass}`}>
               {banner.subtitle}
             </p>
           )}
           <Link
             href={banner.linkUrl}
-            className={`mt-7 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all shadow-lg animate-in slide-in-from-bottom-4 duration-1000 ${btnClass}`}
+            className={`mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all shadow-lg animate-in slide-in-from-bottom-4 duration-1000 ${btnClass}`}
           >
             {banner.ctaText || 'Shop Now'} →
           </Link>
