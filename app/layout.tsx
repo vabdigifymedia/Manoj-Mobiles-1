@@ -5,11 +5,18 @@ import { StoreProvider } from '@/components/store-provider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
+import { MobileNav } from '@/components/mobile-nav'
 import { Toaster } from 'sonner'
 export const metadata: Metadata = {
   title: 'Manoj Mobiles | Smarter choices, better service',
   description: 'Shop genuine smartphones, accessories, and local mobile service from Manoj Mobiles.',
   generator: 'v0.app',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Manoj Mobiles',
+  },
   icons: {
     icon: [
       {
@@ -31,7 +38,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   colorScheme: 'light',
-  themeColor: '#2454d6',
+  themeColor: '#0042a3',
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
@@ -41,18 +49,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased flex min-h-screen flex-col bg-background" suppressHydrationWarning>
+      <body className="antialiased flex min-h-screen flex-col bg-background pb-[env(safe-area-inset-bottom)]" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <StoreProvider>
             <Header />
-            <main className="flex-1">
+            <main className="flex-1 pb-16 md:pb-0">
               {children}
             </main>
             <Footer />
+            <MobileNav />
           </StoreProvider>
           {process.env.NODE_ENV === 'production' && <Analytics />}
           <Toaster position="top-right" richColors />
         </ThemeProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js')})}`
+          }}
+        />
       </body>
     </html>
   )

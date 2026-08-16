@@ -46,7 +46,7 @@ export default async function HomePage() {
       {categoryList.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-16 lg:px-8">
           <h2 className="text-2xl font-black mb-6">Shop by Category</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3">
             {categoryList.slice(0, 6).map((cat, i) => {
               const glowColors = [
                 'bg-blue-500',
@@ -73,7 +73,7 @@ export default async function HomePage() {
                 <Link
                   href={`/shop?category=${cat.slug}`}
                   key={cat.id}
-                  className="group relative overflow-hidden rounded-3xl bg-card border border-border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:border-primary/50"
+                  className="group relative overflow-hidden rounded-3xl bg-card border border-border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 min-w-[260px] shrink-0 snap-start sm:min-w-0 sm:shrink"
                 >
                   {/* Subtle Background Glow */}
                   <div className={`absolute -right-6 -top-6 z-0 h-32 w-32 rounded-full blur-3xl opacity-10 transition-all duration-500 group-hover:scale-150 group-hover:opacity-20 ${glowColors[i % glowColors.length]}`}></div>

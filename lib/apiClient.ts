@@ -155,14 +155,14 @@ export const apiClient = {
     axiosInstance.delete<ApiResponse<void>>(`/api/brands/${id}`),
 
   // --- Products ---
-  getProducts: (page = 0, size = 20) =>
-    axiosInstance.get<ApiResponse<PageResponse<ProductListResponseDTO>>>(`/api/public/products?page=${page}&size=${size}`),
+  getProducts: (page = 0, size = 20, includeInactive = false) =>
+    axiosInstance.get<ApiResponse<PageResponse<ProductListResponseDTO>>>(`/api/public/products?page=${page}&size=${size}&includeInactive=${includeInactive}`),
 
   getProductById: (id: string) =>
     axiosInstance.get<ApiResponse<ProductResponseDTO>>(`/api/public/products/${id}`),
 
-  searchProducts: (q: string, page = 0, size = 20) =>
-    axiosInstance.get<ApiResponse<PageResponse<ProductListResponseDTO>>>(`/api/public/products/search?q=${encodeURIComponent(q)}&page=${page}&size=${size}`),
+  searchProducts: (q: string, page = 0, size = 20, includeInactive = false) =>
+    axiosInstance.get<ApiResponse<PageResponse<ProductListResponseDTO>>>(`/api/public/products/search?q=${encodeURIComponent(q)}&page=${page}&size=${size}&includeInactive=${includeInactive}`),
 
   filterProducts: (dto: ProductFilterRequestDTO, page = 0, size = 20) =>
     axiosInstance.post<ApiResponse<PageResponse<ProductVariantResponseDTO>>>(`/api/public/products/filter?page=${page}&size=${size}`, dto),

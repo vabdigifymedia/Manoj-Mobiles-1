@@ -1,0 +1,24 @@
+{
+  "name": "Manoj Mobiles — Smarter Choices",
+  "short_name": "Manoj Mobiles",
+  "description": "Shop genuine smartphones, accessories, and local mobile service.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0042a3",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

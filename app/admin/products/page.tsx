@@ -16,7 +16,7 @@ export default function AdminProductsPage() {
   const loadProducts = async (p: number) => {
     try {
       setLoading(true)
-      const res = await apiClient.getProducts(p, 20)
+      const res = await apiClient.getProducts(p, 20, true)
       setProducts(res.data.data.content)
       setTotalPages(res.data.data.totalPages)
       setTotalElements(res.data.data.totalElements)
@@ -36,6 +36,16 @@ export default function AdminProductsPage() {
       loadProducts(page)
     } catch {
       alert('Failed to delete product')
+    }
+  }
+
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+      await apiClient.updateProductStatus(id, newStatus as 'ACTIVE' | 'INACTIVE')
+      loadProducts(page)
+    } catch {
+      alert('Failed to update status')
     }
   }
 
@@ -113,11 +123,16 @@ export default function AdminProductsPage() {
                     ) : <span className="text-xs text-muted-foreground">No reviews</span>}
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ${
-                      product.status === 'ACTIVE' ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-400'
+                    <button 
+                      onClick={() => toggleStatus(product.id, product.status)}
+                      title="Click to toggle status"
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+                      product.status === 'ACTIVE' 
+                        ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-500/25' 
+                        : 'bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-500/25'
                     }`}>
                       {product.status}
-                    </span>
+                    </button>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
