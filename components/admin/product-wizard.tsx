@@ -287,6 +287,10 @@ export function ProductWizard({ productId }: { productId?: string }) {
     setGlobalSpecs(globalSpecs.filter((_, i) => i !== specIndex))
   }
 
+  const handleDeleteSpecGroup = (group: string) => {
+    setGlobalSpecs(globalSpecs.filter(s => s.specGroup !== group))
+  }
+
   const handleMoveImage = (color: string, fromIndex: number, toIndex: number) => {
     setVariants(variants.map(varItem => {
       if ((varItem.color || 'Default Color') === color) {
@@ -372,13 +376,13 @@ export function ProductWizard({ productId }: { productId?: string }) {
         }
 
         // 4. Specs (Applied globally to all variants)
-        if (globalSpecs.length > 0) {
-          await apiClient.addVariantSpecifications(finalVariantId, globalSpecs.map(s => ({
-            specGroup: s.specGroup || 'General',
-            specKey: s.specKey,
-            specValue: s.specValue
-          })))
-        }
+        const validSpecs = globalSpecs.filter(s => s.specKey?.trim() && s.specValue?.trim());
+        // Always send specs if there were some originally or currently to sync DB state
+        await apiClient.addVariantSpecifications(finalVariantId, validSpecs.map(s => ({
+          specGroup: s.specGroup || 'General',
+          specKey: s.specKey.trim(),
+          specValue: s.specValue.trim()
+        })));
 
         // 5. Images
         if (v.images && v.images.length > 0) {
@@ -688,9 +692,12 @@ export function ProductWizard({ productId }: { productId?: string }) {
                             <input 
                               value={group} 
                               onChange={(e) => handleUpdateGroupName(group, e.target.value)}
-                              className="font-bold bg-transparent border-none outline-none focus:ring-1 focus:ring-primary rounded px-1 -ml-1 text-sm"
+                              className="font-bold bg-transparent border-none outline-none focus:ring-1 focus:ring-primary rounded px-1 -ml-1 text-sm flex-1"
                             />
-                            <button onClick={() => handleAddSpecToGroup(group)} className="text-xs text-primary font-bold hover:underline">+ Add Spec</button>
+                            <div className="flex items-center gap-3">
+                              <button onClick={() => handleAddSpecToGroup(group)} className="text-xs text-primary font-bold hover:underline whitespace-nowrap">+ Add Spec</button>
+                              <button onClick={() => handleDeleteSpecGroup(group)} className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors" title="Delete Entire Group"><Trash2 size={16} /></button>
+                            </div>
                           </div>
                           <div className="space-y-2">
                             {globalSpecs.map((s, i) => s.specGroup === group && (
