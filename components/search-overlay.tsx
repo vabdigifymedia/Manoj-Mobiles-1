@@ -81,27 +81,30 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         <button onClick={onClose} className="shrink-0 p-1 text-muted-foreground active:scale-90 transition-transform">
           <ArrowLeft size={22} />
         </button>
-        <div className="flex flex-1 items-center gap-2.5 rounded-xl bg-muted px-3.5 py-2.5">
+        <form 
+          className="flex flex-1 items-center gap-2.5 rounded-xl bg-muted px-3.5 py-2.5"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (query.trim()) {
+              handleNavigate(`/shop?q=${encodeURIComponent(query.trim())}`)
+            }
+          }}
+        >
           <Search size={18} className="text-muted-foreground shrink-0" />
           <input
             ref={inputRef}
-            type="text"
+            type="search"
             placeholder="Search phones, brands & more"
-            className="flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground"
+            className="flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && query.trim()) {
-                handleNavigate(`/shop?q=${encodeURIComponent(query.trim())}`)
-              }
-            }}
           />
           {query && (
-            <button onClick={() => setQuery('')} className="text-muted-foreground">
+            <button type="button" onClick={() => setQuery('')} className="text-muted-foreground">
               <X size={16} />
             </button>
           )}
-        </div>
+        </form>
       </div>
 
       {/* Results */}

@@ -10,6 +10,7 @@ import { useStore } from './store-provider'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/apiClient'
 import type { ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO, StoreSettingResponseDTO } from '@/lib/types'
+import { SearchOverlay } from './search-overlay'
 
 const nav = [
   { key: '/', label: 'Home' },
@@ -31,6 +32,7 @@ export function Header() {
   const [searchResults, setSearchResults] = useState<ProductListResponseDTO[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
   
   const [brands, setBrands] = useState<BrandResponseDTO[]>([])
@@ -94,6 +96,8 @@ export function Header() {
 
   return (
     <>
+      <SearchOverlay open={showMobileSearch} onClose={() => setShowMobileSearch(false)} />
+      
       {announcementActive && (
         <div className="bg-[#0042a3] px-4 py-2 text-center text-xs font-bold text-white tracking-wide">
           {announcementLink ? (
@@ -229,6 +233,15 @@ export function Header() {
           </div>
           
           <div className="ml-auto flex items-center gap-2">
+            {/* Mobile Search Button */}
+            <button 
+              className="md:hidden relative flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors"
+              onClick={() => setShowMobileSearch(true)}
+              aria-label="Search"
+            >
+              <Search size={22} strokeWidth={1.5} />
+            </button>
+
             {mounted && (
               <button 
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
