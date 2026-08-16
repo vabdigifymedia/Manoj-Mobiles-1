@@ -732,9 +732,53 @@ export function ProductWizard({ productId }: { productId?: string }) {
                 <p className="text-xs text-muted-foreground mt-1">Upload common images (like charger, box) here to automatically add them to ALL colors.</p>
               </div>
               
-              <label className={`shrink-0 h-10 px-4 flex items-center justify-center gap-2 border-2 border-dashed border-primary/40 rounded-lg cursor-pointer hover:bg-primary/10 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <label 
+                className={`shrink-0 h-10 px-4 flex items-center justify-center gap-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                  loading ? 'opacity-50 cursor-not-allowed' : ''
+                } ${
+                  dragActiveColor === 'global' 
+                    ? 'border-primary bg-primary/20' 
+                    : 'border-primary/40 hover:bg-primary/10'
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (dragActiveColor !== 'global') setDragActiveColor('global');
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (dragActiveColor === 'global') setDragActiveColor(null);
+                }}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDragActiveColor(null);
+                  const files = Array.from(e.dataTransfer.files || []);
+                  if (files.length === 0) return;
+                  try {
+                    setLoading(true);
+                    const urls: string[] = [];
+                    for (const file of files) {
+                      const res = await apiClient.uploadImage(file, 'products');
+                      urls.push(res.data.data);
+                    }
+                    if (urls.length > 0) {
+                      setVariants(prev => prev.map(varItem => ({
+                        ...varItem,
+                        images: [...(varItem.images || []), ...urls]
+                      })));
+                      toast.success(`Added ${urls.length} image(s) to all colors!`);
+                    }
+                  } catch (err) {
+                    toast.error('Failed to upload some images');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
                 <Plus size={16} className="text-primary" />
-                <span className="text-xs font-bold text-primary">Upload to All Colors</span>
+                <span className="text-xs font-bold text-primary">{dragActiveColor === 'global' ? 'Drop Images Here' : 'Upload to All Colors'}</span>
                 <input 
                   type="file" 
                   accept="image/*"
