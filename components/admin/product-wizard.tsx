@@ -725,6 +725,50 @@ export function ProductWizard({ productId }: { productId?: string }) {
             <h3 className="text-lg font-bold border-b border-border pb-2">Images & Publish</h3>
             <p className="text-sm text-muted-foreground">Upload images for each variant. The first image will be used as the primary image.</p>
             
+            {/* Global/Common Images Upload */}
+            <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl shadow-sm mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-sm font-bold text-primary flex items-center gap-2"><ImageIcon size={16} /> Global Images</h4>
+                <p className="text-xs text-muted-foreground mt-1">Upload common images (like charger, box) here to automatically add them to ALL colors.</p>
+              </div>
+              
+              <label className={`shrink-0 h-10 px-4 flex items-center justify-center gap-2 border-2 border-dashed border-primary/40 rounded-lg cursor-pointer hover:bg-primary/10 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <Plus size={16} className="text-primary" />
+                <span className="text-xs font-bold text-primary">Upload to All Colors</span>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  disabled={loading}
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length === 0) return;
+                    try {
+                      setLoading(true);
+                      const urls: string[] = [];
+                      for (const file of files) {
+                        const res = await apiClient.uploadImage(file, 'products');
+                        urls.push(res.data.data);
+                      }
+                      if (urls.length > 0) {
+                        setVariants(prev => prev.map(varItem => ({
+                          ...varItem,
+                          images: [...(varItem.images || []), ...urls]
+                        })));
+                        toast.success(`Added ${urls.length} image(s) to all colors!`);
+                      }
+                    } catch (err) {
+                      toast.error('Failed to upload some images');
+                    } finally {
+                      setLoading(false);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              </label>
+            </div>
+
             <div className="space-y-6 mt-4">
               {Array.from(new Set(variants.map(v => v.color || 'Default Color'))).map(color => {
                 // Find the first variant with this color to get the images array
@@ -760,14 +804,22 @@ export function ProductWizard({ productId }: { productId?: string }) {
                         >
                           <img src={img} alt="Variant" className="w-24 h-24 object-cover rounded-lg border border-border" />
                           <button 
-                            onClick={() => {
-                              const newImages = [...currentImages];
-                              newImages.splice(imgIdx, 1);
-                              setVariants(variants.map(varItem => 
-                                (varItem.color || 'Default Color') === color 
-                                  ? { ...varItem, images: newImages } 
-                                  : varItem
-                              ));
+                            onClick={async () => {
+                              try {
+                                setLoading(true);
+                                await apiClient.deleteImage(img);
+                                const newImages = [...currentImages];
+                                newImages.splice(imgIdx, 1);
+                                setVariants(variants.map(varItem => 
+                                  (varItem.color || 'Default Color') === color 
+                                    ? { ...varItem, images: newImages } 
+                                    : varItem
+                                ));
+                              } catch (err) {
+                                toast.error('Failed to delete image');
+                              } finally {
+                                setLoading(false);
+                              }
                             }}
                             className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                           >
@@ -846,21 +898,27 @@ export function ProductWizard({ productId }: { productId?: string }) {
                         <input 
                           type="file" 
                           accept="image/*" 
+                          multiple
                           className="hidden" 
                           onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
+                            const files = Array.from(e.target.files || []);
+                            if (files.length === 0) return;
                             try {
                               setLoading(true);
-                              const res = await apiClient.uploadImage(file, 'products');
-                              const url = res.data.data;
-                              setVariants(variants.map(varItem => 
-                                (varItem.color || 'Default Color') === color 
-                                  ? { ...varItem, images: [...(varItem.images || []), url] } 
-                                  : varItem
-                              ));
+                              const urls: string[] = [];
+                              for (const file of files) {
+                                const res = await apiClient.uploadImage(file, 'products');
+                                urls.push(res.data.data);
+                              }
+                              if (urls.length > 0) {
+                                setVariants(prev => prev.map(varItem => 
+                                  (varItem.color || 'Default Color') === color 
+                                    ? { ...varItem, images: [...(varItem.images || []), ...urls] } 
+                                    : varItem
+                                ));
+                              }
                             } catch (err) {
-                              toast.error('Failed to upload image');
+                              toast.error('Failed to upload image(s)');
                             } finally {
                               setLoading(false);
                               e.target.value = '';

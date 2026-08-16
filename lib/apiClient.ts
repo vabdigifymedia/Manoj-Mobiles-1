@@ -231,6 +231,9 @@ export const apiClient = {
     })
   },
 
+  deleteImage: (url: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/admin/upload?url=${encodeURIComponent(url)}`),
+
   // --- Users / Staff ---
   getUsers: (page = 0, size = 20) =>
     axiosInstance.get<ApiResponse<PageResponse<UserResponseDTO>>>(`/api/admin/users?page=${page}&size=${size}`),

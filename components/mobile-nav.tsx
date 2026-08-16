@@ -22,8 +22,8 @@ export function MobileNav() {
   const { isAuthenticated } = useAuth()
   const [searchOpen, setSearchOpen] = useState(false)
 
-  // Hide on admin pages
-  if (pathname?.startsWith('/admin')) return null
+  // Hide on admin pages and product pages (which have their own fixed bar)
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/product/')) return null
 
   const accountHref = isAuthenticated ? '/account' : '/auth'
 

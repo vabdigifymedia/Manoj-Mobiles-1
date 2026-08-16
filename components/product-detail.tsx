@@ -37,11 +37,13 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
     }
   }
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  
+  const [mobileImageIndex, setMobileImageIndex] = useState(0)
+
   useEffect(() => {
     if (selectedVariant) {
       const primary = selectedVariant.images?.find(img => img.isPrimary)?.url || selectedVariant.imageUrls?.[0]
       setSelectedImage(primary || '/placeholder.png')
+      setMobileImageIndex(0) // Reset mobile index when variant changes
     }
   }, [selectedVariant])
   
@@ -79,29 +81,66 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
   const allImages = selectedVariant.images?.map(img => img.url) || selectedVariant.imageUrls || []
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+    <main className="mx-auto max-w-7xl px-4 py-8 pb-28 lg:pb-8 lg:px-8">
       <Link href="/shop" className="mb-6 flex w-fit items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
         <ArrowLeft size={16} /> Back to shop
       </Link>
       
       <div className="grid gap-8 lg:grid-cols-2">
-        <div className="flex flex-col gap-4 self-start sticky top-24 min-w-0">
-          <div className="rounded-3xl bg-[#F4F4F5] p-6 dark:bg-white">
-            <img src={selectedImage || primaryImage} alt={product.name} className="aspect-square w-full object-contain transition-all duration-300 mix-blend-multiply dark:mix-blend-normal" />
-          </div>
-          {allImages.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {allImages.map((url, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImage(url)}
-                  className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 bg-[#F4F4F5] p-2 transition-all dark:bg-white ${selectedImage === url ? 'border-primary shadow-sm dark:border-primary' : 'border-transparent hover:border-primary/40 dark:border-zinc-200 dark:hover:border-primary/40'}`}
-                >
-                  <img src={url} alt={`${product.name} thumbnail ${idx + 1}`} className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
-                </button>
-              ))}
+        <div className="flex flex-col gap-4 self-start lg:sticky lg:top-24 min-w-0">
+          
+          {/* Desktop View */}
+          <div className="hidden lg:flex flex-col gap-4">
+            <div className="rounded-3xl bg-[#F4F4F5] p-6 dark:bg-white">
+              <img src={selectedImage || primaryImage} alt={product.name} className="aspect-square w-full object-contain transition-all duration-300 mix-blend-multiply dark:mix-blend-normal" />
             </div>
-          )}
+            {allImages.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {allImages.map((url, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(url)}
+                    className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 bg-[#F4F4F5] p-2 transition-all dark:bg-white ${selectedImage === url ? 'border-primary shadow-sm dark:border-primary' : 'border-transparent hover:border-primary/40 dark:border-zinc-200 dark:hover:border-primary/40'}`}
+                  >
+                    <img src={url} alt={`${product.name} thumbnail ${idx + 1}`} className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile View */}
+          <div className="lg:hidden flex flex-col gap-3">
+            <div 
+              className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide rounded-3xl bg-[#F4F4F5] dark:bg-white"
+              onScroll={(e) => {
+                const scrollLeft = e.currentTarget.scrollLeft
+                const width = e.currentTarget.clientWidth
+                setMobileImageIndex(Math.round(scrollLeft / width))
+              }}
+            >
+              {allImages.length > 0 ? allImages.map((url, idx) => (
+                <div key={idx} className="w-full shrink-0 snap-center p-6">
+                  <img src={url} alt={`${product.name} ${idx + 1}`} className="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                </div>
+              )) : (
+                <div className="w-full shrink-0 snap-center p-6">
+                  <img src={primaryImage} alt={product.name} className="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                </div>
+              )}
+            </div>
+            {allImages.length > 1 && (
+              <div className="flex justify-center gap-1.5 mt-1">
+                {allImages.map((_, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`h-1.5 rounded-full transition-all duration-300 ${idx === mobileImageIndex ? 'w-4 bg-primary' : 'w-1.5 bg-border'}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
         
         <div className="flex flex-col gap-6 min-w-0">
@@ -153,7 +192,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
             </div>
           </div>
           
-          <div className="mt-2 flex gap-3">
+          <div className="mt-2 hidden lg:flex gap-3">
             <button onClick={() => addToCart(selectedVariant.id, 1)} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary px-5 py-4 font-bold text-primary hover:bg-primary/5 transition-colors">
               <ShoppingCart size={20} /> Add to cart
             </button>
@@ -271,6 +310,16 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
       <hr className="my-12 border-border" />
       
       <ProductReviews productId={product.id} />
+      
+      {/* Mobile Fixed Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-3 border-t border-border bg-background p-4 lg:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
+        <button onClick={() => addToCart(selectedVariant.id, 1)} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary py-3.5 font-bold text-primary hover:bg-primary/5 transition-colors">
+          <ShoppingCart size={18} /> Add to cart
+        </button>
+        <button onClick={handleBuyNow} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
+          <Zap size={18} /> Buy now
+        </button>
+      </div>
     </main>
   )
 }
