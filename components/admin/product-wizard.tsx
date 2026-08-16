@@ -6,7 +6,7 @@ import {
   PackagePlus, Info, CheckCircle, Package, Settings, Image as ImageIcon, 
   Trash2, Plus, PenTool, Check, Star, ShieldCheck, Battery, Cpu, 
   Camera, Smartphone, Wifi, Truck, Zap, Bluetooth, ChevronLeft, ChevronRight,
-  MemoryStick, HardDrive, Microchip
+  MemoryStick, HardDrive, Microchip, GripVertical
 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 
@@ -75,6 +75,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
   })
   const [draggedImage, setDraggedImage] = useState<{color: string, index: number} | null>(null)
   const [dragActiveColor, setDragActiveColor] = useState<string | null>(null)
+  const [dragEnabledImage, setDragEnabledImage] = useState<{color: string, index: number} | null>(null)
 
   // Step 4: Global Specs
   const [globalSpecs, setGlobalSpecs] = useState<{specGroup: string, specKey: string, specValue: string}[]>([])
@@ -829,7 +830,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                       {currentImages.map((img, imgIdx) => (
                         <div 
                           key={imgIdx} 
-                          draggable
+                          draggable={dragEnabledImage?.color === color && dragEnabledImage?.index === imgIdx}
                           onDragStart={(e) => {
                             setDraggedImage({ color, index: imgIdx })
                           }}
@@ -841,12 +842,28 @@ export function ProductWizard({ productId }: { productId?: string }) {
                             if (draggedImage && draggedImage.color === color && draggedImage.index !== imgIdx) {
                               handleMoveImage(color, draggedImage.index, imgIdx)
                               setDraggedImage(null)
+                              setDragEnabledImage(null)
                             }
                           }}
-                          onDragEnd={() => setDraggedImage(null)}
-                          className={`relative shrink-0 group cursor-move transition-all ${draggedImage?.color === color && draggedImage?.index === imgIdx ? 'opacity-50 scale-95' : ''}`}
+                          onDragEnd={() => {
+                            setDraggedImage(null)
+                            setDragEnabledImage(null)
+                          }}
+                          className={`relative shrink-0 group transition-all ${draggedImage?.color === color && draggedImage?.index === imgIdx ? 'opacity-50 scale-95' : ''}`}
                         >
                           <img src={img} alt="Variant" className="w-24 h-24 object-cover rounded-lg border border-border" />
+                          
+                          {/* Drag Handle */}
+                          <div 
+                            className="absolute top-1 right-1/2 translate-x-1/2 bg-black/40 text-white rounded cursor-grab active:cursor-grabbing p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onMouseDown={() => setDragEnabledImage({ color, index: imgIdx })}
+                            onMouseUp={() => setDragEnabledImage(null)}
+                            onMouseLeave={() => setDragEnabledImage(null)}
+                            title="Drag to reorder"
+                          >
+                            <GripVertical size={14} />
+                          </div>
+
                           <button 
                             onClick={async () => {
                               try {
@@ -870,7 +887,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                             <Trash2 size={12} />
                           </button>
                           {imgIdx === 0 && (
-                            <span className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">Primary</span>
+                            <span className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm pointer-events-none">Primary</span>
                           )}
                           {imgIdx > 0 && (
                             <button 
