@@ -85,7 +85,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
       </Link>
       
       <div className="grid gap-8 lg:grid-cols-2">
-        <div className="flex flex-col gap-4 self-start sticky top-24">
+        <div className="flex flex-col gap-4 self-start sticky top-24 min-w-0">
           <div className="rounded-3xl bg-[#F4F4F5] p-6 dark:bg-white">
             <img src={selectedImage || primaryImage} alt={product.name} className="aspect-square w-full object-contain transition-all duration-300 mix-blend-multiply dark:mix-blend-normal" />
           </div>
@@ -104,7 +104,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
           )}
         </div>
         
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 min-w-0">
           <div>
             <p className="text-xs font-bold uppercase tracking-[.18em] text-primary dark:text-zinc-400">{product.brandName}</p>
             <h1 className="mt-1 text-4xl font-black">{product.name}</h1>
