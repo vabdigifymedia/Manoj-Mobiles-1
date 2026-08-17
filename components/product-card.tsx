@@ -14,59 +14,66 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
   const showEMI = product.startingPrice > 3000
 
   return (
-    <article className="group flex h-full flex-col rounded-2xl border border-border bg-white p-3 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950 relative">
+    <article className="group flex h-full flex-col rounded-2xl border border-border bg-white p-2 transition-all duration-300 hover:shadow-lg hover:border-slate-300 dark:border-zinc-800 dark:hover:border-zinc-700 dark:bg-zinc-950 relative">
       {/* Top badges & Image */}
-      <div className="relative w-full overflow-hidden rounded-xl bg-white dark:bg-zinc-950 pt-2 pb-4">
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-white dark:bg-zinc-950 p-2">
         {showEMI && (
-          <span className="absolute left-2 top-2 z-10 rounded-full bg-black px-2 py-0.5 text-[10px] font-bold text-white dark:bg-white dark:text-black">
+          <span className="absolute left-3 top-3 z-10 rounded-full bg-black px-2 py-0.5 text-[10px] font-bold text-white dark:bg-white dark:text-black">
             No Cost EMI
           </span>
         )}
-        <Link href={`/product/${product.id}`} className="block">
+        {!hideHeart && (
+          <button 
+            onClick={(e) => { e.preventDefault(); toggleWishlist(product); }}
+            className={`absolute right-3 top-3 z-10 grid size-8 place-items-center rounded-full border shadow-sm transition-all ${isWishlisted ? 'border-rose-200 bg-rose-50 text-rose-500 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-400' : 'border-slate-200 bg-white/80 backdrop-blur-sm text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-400'}`}
+            aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          >
+            {isWishlisted ? <FaHeart size={14} /> : <FaRegHeart size={14} />}
+          </button>
+        )}
+        <Link href={`/product/${product.id}`} className="block h-full w-full">
           <img 
             src={product.primaryImageUrl || '/placeholder.png'} 
             alt={product.name} 
-            className="aspect-square h-full w-full object-contain p-2 transition duration-500 group-hover:scale-105" 
+            className="h-full w-full object-contain transition duration-500 group-hover:scale-105" 
           />
         </Link>
       </div>
 
       {/* Details */}
-      <div className="flex flex-1 flex-col gap-1.5 pt-2">
-        <Link href={`/product/${product.id}`} className="line-clamp-2 min-h-[40px] text-xs sm:text-sm font-bold leading-tight text-slate-900 transition-colors hover:text-primary dark:text-zinc-100">
+      <div className="flex flex-1 flex-col gap-2 pt-2">
+        <Link href={`/product/${product.id}`} className="line-clamp-2 text-xs sm:text-sm font-medium leading-tight text-slate-700 transition-colors hover:text-primary dark:text-zinc-300">
           {product.name}
         </Link>
         
         {/* Price Row */}
         <div className="mt-1">
-          <p className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
+          <p className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
             {formatINR(product.startingPrice)}
           </p>
           
-          <div className="flex items-center gap-2 mt-0.5 min-h-[20px]">
-            {product.mrp && product.mrp > product.startingPrice ? (
-              <>
-                <p className="text-xs font-medium text-slate-400 line-through">
+          {product.mrp && product.mrp > product.startingPrice && (
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-xs font-medium text-slate-400 line-through">
                   MRP {formatINR(product.mrp)}
                 </p>
-                {product.discountPercent && product.discountPercent > 0 ? (
-                  <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                    {product.discountPercent}% Off
-                  </span>
-                ) : null}
-              </>
-            ) : null}
-          </div>
+              {product.discountPercent && product.discountPercent > 0 && (
+                <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  {product.discountPercent}% Off
+                </span>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Delivery Info */}
-        <div className="mt-2 flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-slate-600 dark:text-zinc-400">
+        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-slate-600 dark:text-zinc-400">
           <FaTruck size={12} />
           <span>Free Delivery</span>
         </div>
         
         {/* Footer Actions */}
-        <div className="mt-auto pt-4 flex items-center justify-between">
+        <div className="mt-auto pt-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-1 cursor-pointer group/cb">
               <div className="relative flex items-center justify-center">
@@ -80,15 +87,6 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
           </div>
           
           <div className="flex items-center gap-1.5">
-            {!hideHeart && (
-              <button 
-                onClick={(e) => { e.preventDefault(); toggleWishlist(product); }}
-                className={`grid size-8 place-items-center rounded-full border transition-all ${isWishlisted ? 'border-rose-200 bg-rose-50 text-rose-500 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-400' : 'border-slate-200 bg-white text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'}`}
-                aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-              >
-                {isWishlisted ? <FaHeart size={14} /> : <FaRegHeart size={14} />}
-              </button>
-            )}
             <button 
               onClick={(e) => {
                 e.preventDefault();
@@ -98,8 +96,7 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
               className="flex h-8 items-center gap-1.5 rounded-full bg-black px-3 text-[10px] sm:text-xs font-bold text-white transition-colors hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
             >
               <FaCartShopping size={12} />
-              <span className="hidden sm:inline">Add to Cart</span>
-              <span className="sm:hidden">Add</span>
+              <span>Add to Cart</span>
             </button>
           </div>
         </div>
