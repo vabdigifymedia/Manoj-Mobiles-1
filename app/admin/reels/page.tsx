@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { FaTrashCan, FaPlus, FaCheck, FaXmark } from 'react-icons/fa6'
-import { apiClient } from '@/lib/apiClient'
+import { axiosInstance } from '@/lib/apiClient'
 import type { InstagramReelResponseDTO, InstagramReelRequestDTO } from '@/lib/types'
 
 const emptyForm: InstagramReelRequestDTO = {
@@ -21,7 +21,7 @@ export default function AdminReelsPage() {
 
   const loadReels = async () => {
     try {
-      const res = await apiClient.apiClient.get('/api/reels', {
+      const res = await axiosInstance.get('/api/reels', {
         headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
       })
       setReels(res.data.data)
@@ -45,7 +45,7 @@ export default function AdminReelsPage() {
     setSaving(true)
     setError('')
     try {
-      await apiClient.apiClient.post('/api/reels', form, {
+      await axiosInstance.post('/api/reels', form, {
         headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
       })
       setShowForm(false)
@@ -61,7 +61,7 @@ export default function AdminReelsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this reel?')) return
     try {
-      await apiClient.apiClient.delete(`/api/reels/${id}`, {
+      await axiosInstance.delete(`/api/reels/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
       })
       loadReels()
@@ -72,7 +72,7 @@ export default function AdminReelsPage() {
 
   const toggleStatus = async (reel: InstagramReelResponseDTO) => {
     try {
-      await apiClient.apiClient.put(`/api/reels/${reel.id}`, 
+      await axiosInstance.put(`/api/reels/${reel.id}`, 
         { ...reel, isActive: !reel.isActive }, 
         { headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` } }
       )

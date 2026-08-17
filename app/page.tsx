@@ -127,6 +127,9 @@ export default async function HomePage() {
       {/* Tabbed Product Showcase */}
       <ProductTabs newArrivals={newProducts} bestSellers={bestProducts} budgetPicks={budgetProducts} />
 
+      {/* Instagram Reels */}
+      <InstagramReels reels={reelsData || []} />
+
       {/* Why Shop With Us */}
       <section className="bg-muted py-20 border-y border-border">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -199,9 +202,6 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-
-      {/* Instagram Reels */}
-      <InstagramReels reels={reelsData || []} />
 
       {/* FAQ Accordion */}
       <FaqAccordion faqs={faqs || []} />
