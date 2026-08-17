@@ -7,6 +7,7 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { MobileNav } from '@/components/mobile-nav'
 import { Toaster } from 'sonner'
+import { ScrollbarManager } from '@/components/scrollbar-manager'
 export const metadata: Metadata = {
   title: 'Manoj Mobiles | Smarter choices, better service',
   description: 'Shop genuine smartphones, accessories, and local mobile service from Manoj Mobiles.',
@@ -50,6 +51,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased flex min-h-screen flex-col bg-background pb-[env(safe-area-inset-bottom)]" suppressHydrationWarning>
+        <ScrollbarManager />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <StoreProvider>
             <Header />

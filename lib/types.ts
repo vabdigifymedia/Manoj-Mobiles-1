@@ -98,6 +98,8 @@ export interface ProductListResponseDTO {
   slug: string
   status: string
   startingPrice: number
+  mrp?: number
+  discountPercent?: number
   primaryImageUrl?: string
   avgRating?: number
   totalReviews?: number
