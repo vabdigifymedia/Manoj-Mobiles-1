@@ -129,7 +129,7 @@ export default function AccountPage() {
             <div className="rounded-2xl border border-border p-5 bg-muted/20">
               <h3 className="font-bold mb-4 flex items-center gap-2"><FaLocationDot size={18} /> Delivery Address</h3>
               <p className="text-sm font-semibold mb-1">Manoj Customer</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">123 Tech Park, Sector 4<br/>Bangalore, Karnataka - 560001<br/>FaPhone: +91 9876543210</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">123 Tech Park, Sector 4<br/>Bangalore, Karnataka - 560001<br/>Phone: +91 9876543210</p>
             </div>
             <div className="rounded-2xl border border-border p-5 bg-muted/20">
               <h3 className="font-bold mb-4 flex items-center gap-2"><FaBagShopping size={18} /> Payment Summary</h3>
@@ -272,7 +272,7 @@ export default function AccountPage() {
 
             <div className="grid sm:grid-cols-2 gap-6 mb-8">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">FaPhone Number</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Phone Number</label>
                 <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
                   <FaPhone size={16} className="text-muted-foreground" />
                   <span className="font-semibold">{MOCK_PROFILE.phone}</span>

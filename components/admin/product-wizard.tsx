@@ -565,7 +565,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                 </div>
                 <div className="flex-[2]">
                   <label className="text-xs font-semibold mb-1 block">Text</label>
-                  <input required value={highlightForm.text} onChange={e => setHighlightForm({...highlightForm, text: e.target.value})} placeholder="e.g. 50MP FaCamera" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                  <input required value={highlightForm.text} onChange={e => setHighlightForm({...highlightForm, text: e.target.value})} placeholder="e.g. 50MP Camera" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
                 </div>
                 <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm">{editingHighlightId ? 'Update' : 'Save'}</button>
                 <button type="button" onClick={() => { setShowHighlightForm(false); setEditingHighlightId(null); setHighlightForm({ iconName: 'Star', text: '' }); }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>

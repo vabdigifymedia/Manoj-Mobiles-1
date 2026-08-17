@@ -57,7 +57,7 @@ export default function AdminOrdersPage() {
             <input type="text" placeholder="Search orders..." className="w-full sm:w-64 rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary" />
           </div>
           <button className="flex shrink-0 whitespace-nowrap items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold">
-            <FaFilter size={16} /> FaFilter
+            <FaFilter size={16} /> Filter
           </button>
         </div>
       </div>

@@ -64,7 +64,7 @@ export default function AdminSettingsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black">FaStore Settings</h1>
+          <h1 className="text-2xl font-black">Store Settings</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage announcements, contact info, and store configuration</p>
         </div>
       </div>
@@ -81,7 +81,7 @@ export default function AdminSettingsPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-semibold mb-1">FaStore Name</label>
+              <label className="block text-sm font-semibold mb-1">Store Name</label>
               <input value={settings.storeName} onChange={e => update('storeName', e.target.value)} className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary" />
             </div>
             <div>
@@ -142,15 +142,15 @@ export default function AdminSettingsPage() {
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <FaLocationDot size={18} className="text-primary" />
-            <h2 className="text-lg font-bold">FaStore Location & Delivery</h2>
+            <h2 className="text-lg font-bold">Store Location & Delivery</h2>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="block text-sm font-semibold mb-1">FaStore Address</label>
+              <label className="block text-sm font-semibold mb-1">Store Address</label>
               <textarea value={settings.storeAddress || ''} onChange={e => update('storeAddress', e.target.value)} rows={2} className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary resize-none" />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1">FaStore Timings</label>
+              <label className="block text-sm font-semibold mb-1">Store Timings</label>
               <input value={settings.storeTimings || ''} onChange={e => update('storeTimings', e.target.value)} className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary" placeholder="10:00 AM - 9:30 PM" />
             </div>
             <div>

@@ -194,7 +194,7 @@ export function ImageUpload({
                   title="Crop / Adjust Image"
                   className="bg-primary text-primary-foreground rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-primary/90 flex items-center gap-1.5 shadow-md"
                 >
-                  <FaCrop size={14} /> FaCrop
+                  <FaCrop size={14} /> Crop
                 </button>
               )}
               <button
@@ -230,7 +230,7 @@ export function ImageUpload({
           aspectRatio={aspectRatio}
           onCrop={handleCropComplete}
           onCancel={() => setRawImageForCrop(null)}
-          title={`FaCrop Image (${aspectRatio.toFixed(2)}:1)`}
+          title={`Crop Image (${aspectRatio.toFixed(2)}:1)`}
         />
       )}
     </div>
