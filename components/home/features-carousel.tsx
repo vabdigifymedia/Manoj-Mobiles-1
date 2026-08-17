@@ -23,7 +23,7 @@ export function FeaturesCarousel() {
   return (
     <>
       {/* Mobile Animated Carousel */}
-      <div className="block lg:hidden relative w-full h-[260px]">
+      <div className="block lg:hidden relative w-full h-[260px] overflow-hidden">
         <AnimatePresence mode="wait">
           {features.map((feature, index) => {
             if (index !== currentIndex) return null;
