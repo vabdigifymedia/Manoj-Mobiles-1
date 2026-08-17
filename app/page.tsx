@@ -25,7 +25,7 @@ export default async function HomePage() {
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=createdAt,desc'),
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=avgRating,desc'),
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=startingPrice,asc'),
-    serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?brandSlug=apple&page=0&size=6'),
+    serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=50'),
     serverFetch<InstagramReelResponseDTO[]>('/api/public/reels'),
   ])
 
@@ -35,7 +35,10 @@ export default async function HomePage() {
   const newProducts = newArrivals?.content || []
   const bestProducts = bestSellers?.content || []
   const budgetProducts = budgetPicks?.content || []
-  const appleProducts = appleProductsData?.content || newArrivals?.content || []
+  
+  // Filter for Samsung products since the backend doesn't support brandSlug in GET /api/public/products
+  const allProductsForBrand = appleProductsData?.content || []
+  const samsungProducts = allProductsForBrand.filter(p => p.brandName.toLowerCase() === 'samsung').slice(0, 6)
 
   return (
     <>
@@ -54,7 +57,7 @@ export default async function HomePage() {
       <BrandShowcase brands={brandList} />
 
       {/* Brand Spotlight */}
-      <BrandSpotlight brandName="Apple" title="Best Of Apple" products={appleProducts} />
+      <BrandSpotlight brandName="Samsung" title="Best Of Samsung" products={samsungProducts} />
 
       {/* Deal of the Day */}
       <DealOfTheDay banner={activeDeal} />
