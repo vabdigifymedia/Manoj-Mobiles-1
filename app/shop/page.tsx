@@ -25,12 +25,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   let apiUrl = '/api/public/products?page=0&size=50'
   if (searchQuery) {
     apiUrl = `/api/public/products/search?q=${encodeURIComponent(searchQuery)}&page=0&size=50`
-  } else {
-    if (brandQuery) apiUrl += `&brandSlug=${brandQuery}`
-    if (categoryQuery) apiUrl += `&categorySlug=${categoryQuery}`
   }
-  if (minPriceQuery) apiUrl += `&minPrice=${minPriceQuery}`
-  if (maxPriceQuery) apiUrl += `&maxPrice=${maxPriceQuery}`
 
   const [productsRes, brandsRes, categoriesRes] = await Promise.all([
     serverFetch<PageResponse<ProductListResponseDTO>>(apiUrl),
@@ -38,9 +33,41 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     serverFetch<CategoryResponseDTO[]>('/api/public/categories'),
   ])
 
-  const productsResData = productsRes?.content || []
+  const brands = brandsRes?.content || []
+  const categories = categoriesRes || []
+
+  let productsResData = productsRes?.content || []
+
+  // Apply frontend filters for brand, category, and price
+  if (brandQuery) {
+    const brandName = brands.find(b => b.slug === brandQuery)?.name
+    if (brandName) {
+      productsResData = productsResData.filter(p => p.brandName === brandName)
+    }
+  }
+
+  if (categoryQuery) {
+    const categoryName = categories.find(c => c.slug === categoryQuery)?.name
+    if (categoryName) {
+      productsResData = productsResData.filter(p => p.categoryName === categoryName)
+    }
+  }
+
+  if (minPriceQuery) {
+    const min = Number(minPriceQuery)
+    if (!isNaN(min)) {
+      productsResData = productsResData.filter(p => p.startingPrice >= min)
+    }
+  }
   
-  // Fetch full details for all products on this page to extract their variants
+  if (maxPriceQuery) {
+    const max = Number(maxPriceQuery)
+    if (!isNaN(max)) {
+      productsResData = productsResData.filter(p => p.startingPrice <= max)
+    }
+  }
+  
+  // Fetch full details for all filtered products on this page to extract their variants
   const fullProducts = await Promise.all(
     productsResData.map(p => serverFetch<ProductResponseDTO>(`/api/public/products/${p.id}`))
   )
@@ -52,6 +79,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     const variantsByColor = new Map<string, typeof p.variants[0]>();
     
     p.variants.forEach(v => {
+      // Filter variants by price
+      if (minPriceQuery && v.sellingPrice < Number(minPriceQuery)) return;
+      if (maxPriceQuery && v.sellingPrice > Number(maxPriceQuery)) return;
+
       const color = v.color || 'Default';
       if (!variantsByColor.has(color)) {
         variantsByColor.set(color, v);
@@ -65,9 +96,6 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
       totalVariantsInProduct: p.variants.length
     }))
   })
-
-  const brands = brandsRes?.content || []
-  const categories = categoriesRes || []
 
   const hasFilters = brandQuery || categoryQuery || searchQuery || minPriceQuery || maxPriceQuery
 
