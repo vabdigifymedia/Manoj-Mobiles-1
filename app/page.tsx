@@ -198,26 +198,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Testimonials */}
-      <section className="mx-auto max-w-7xl px-4 pb-16 lg:px-8">
-        <h2 className="text-3xl font-black text-center mb-10">What our customers say</h2>
-        <div className="grid gap-6 sm:grid-cols-3">
-          {[
-            { name: 'Arjun M.', text: 'Fastest delivery I have ever experienced. The phone was well packed and 100% genuine.' },
-            { name: 'Priya K.', text: 'Great prices and amazing customer service. Will definitely buy my next phone from Manoj Mobiles.' },
-            { name: 'Rahul V.', text: 'The checkout process was super smooth and the EMI options really helped.' },
-          ].map(review => (
-            <div key={review.name} className="rounded-3xl border border-border bg-card p-6">
-              <div className="flex gap-1 text-accent mb-4">
-                {[...Array(5)].map((_, i) => <FaStar key={i} size={14} fill="currentColor" />)}
-              </div>
-              <p className="text-muted-foreground text-sm leading-relaxed mb-6">&quot;{review.text}&quot;</p>
-              <p className="font-bold text-sm">{review.name}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* FAQ Accordion */}
       <FaqAccordion faqs={faqs || []} />
     </>
