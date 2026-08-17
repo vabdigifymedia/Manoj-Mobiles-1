@@ -10,6 +10,7 @@ import { FaqAccordion } from '@/components/home/faq-accordion'
 import { QuickFeatures } from '@/components/home/quick-features'
 import { BankOffers } from '@/components/home/bank-offers'
 import { BrandSpotlight } from '@/components/home/brand-spotlight'
+import { FeaturesCarousel } from '@/components/home/features-carousel'
 
 export default async function HomePage() {
   // Parallel SSR data fetching for all home page sections
@@ -131,22 +132,7 @@ export default async function HomePage() {
             <h2 className="text-3xl font-black">Why Shop With Us?</h2>
             <p className="mt-3 text-muted-foreground">Experience the best in class service when you buy your next smartphone.</p>
           </div>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { icon: FaTruckFast, title: 'Fast & Free Delivery', desc: 'Get your device delivered within 24-48 hours across major cities.' },
-              { icon: FaShieldHalved, title: '1 Year Warranty', desc: 'All smartphones come with a genuine manufacturer warranty.' },
-              { icon: FaHeadset, title: '24/7 Support', desc: 'Our customer support team is always ready to help you.' },
-              { icon: FaCreditCard, title: 'Secure Payments', desc: '100% secure payment gateways including UPI, Cards, and Wallets.' },
-            ].map(feature => (
-              <div key={feature.title} className="flex flex-col items-center text-center rounded-3xl bg-background p-8 transition hover:bg-muted">
-                <div className="grid size-14 place-items-center rounded-full bg-primary/10 text-primary mb-5">
-                  <feature.icon size={28} />
-                </div>
-                <h3 className="text-lg font-bold">{feature.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
-              </div>
-            ))}
-          </div>
+          <FeaturesCarousel />
         </div>
       </section>
 
