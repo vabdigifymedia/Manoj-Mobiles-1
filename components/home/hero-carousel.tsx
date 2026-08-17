@@ -26,12 +26,12 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
 
   if (banners.length === 0) {
     return (
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0042a3] to-[#001d4a] px-8 py-14 text-white lg:min-h-[420px] lg:px-14 lg:py-16 shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 to-black px-8 py-14 text-white lg:min-h-[420px] lg:px-14 lg:py-16 shadow-xl">
         <div className="relative z-10 max-w-lg">
           <span className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-1.5 text-xs font-bold tracking-wide backdrop-blur-sm"><FaFire size={14} className="text-orange-400" /> Welcome</span>
           <h1 className="text-balance text-4xl font-black leading-[1.02] sm:text-6xl">Upgrade to a phone you&apos;ll love.</h1>
           <p className="mt-5 max-w-md text-sm leading-6 text-white/70 sm:text-base">Genuine smartphones, transparent pricing, and delivery you can count on.</p>
-          <Link href="/shop" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#0042a3] hover:bg-white/90 transition-all">
+          <Link href="/shop" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-black hover:bg-white/90 transition-all">
             Shop latest phones →
           </Link>
         </div>

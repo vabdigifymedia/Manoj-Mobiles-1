@@ -33,7 +33,7 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
 
       <div className="flex flex-1 flex-col gap-1.5 p-1 pt-4">
         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-zinc-400">{product.brandName}</p>
-        <Link href={`/product/${product.id}`} className="line-clamp-2 min-h-[40px] text-sm font-bold leading-tight text-slate-900 transition-colors hover:text-[#0042a3] dark:text-zinc-100 dark:hover:text-blue-400">
+        <Link href={`/product/${product.id}`} className="line-clamp-2 min-h-[40px] text-sm font-bold leading-tight text-slate-900 transition-colors hover:text-primary dark:text-zinc-100">
           {product.name}
         </Link>
         <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-zinc-400">
@@ -44,7 +44,7 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
         
         <div className="mt-auto pt-4 flex items-center justify-between">
           <p className="text-lg font-black tracking-tight text-slate-900 dark:text-white">{formatINR(product.startingPrice)}</p>
-          <Link href={`/product/${product.id}`} className="grid h-8 place-items-center rounded-full bg-[#EFEFEF] px-4 text-xs font-bold text-slate-900 transition-colors hover:bg-[#0042a3] hover:text-white dark:bg-zinc-800 dark:text-white dark:hover:bg-blue-600">
+          <Link href={`/product/${product.id}`} className="grid h-8 place-items-center rounded-full bg-[#EFEFEF] px-4 text-xs font-bold text-slate-900 transition-colors hover:bg-primary hover:text-primary-foreground dark:bg-zinc-800 dark:text-white">
             View
           </Link>
         </div>

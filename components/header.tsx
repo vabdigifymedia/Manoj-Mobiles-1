@@ -106,7 +106,7 @@ export function Header() {
       <SearchOverlay open={showMobileSearch} onClose={() => setShowMobileSearch(false)} />
       
       {announcementActive && (
-        <div className="bg-[#0042a3] px-4 py-2 text-center text-xs font-bold text-white tracking-wide">
+        <div className="bg-primary px-4 py-2 text-center text-xs font-bold text-primary-foreground tracking-wide">
           {announcementLink ? (
             <Link href={announcementLink} className="hover:underline">{announcementText}</Link>
           ) : (
@@ -121,7 +121,7 @@ export function Header() {
               <FaBars size={24} />
             </button>
             <Link href="/" className="flex items-center gap-3 text-left">
-              <span className="grid size-10 place-items-center rounded-xl bg-[#0042a3] text-white">
+              <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground">
                 <FaMobileScreen size={20}  />
               </span>
             <div className="flex flex-col">
@@ -139,7 +139,7 @@ export function Header() {
               <Link 
                 key={item.key} 
                 href={item.key} 
-                className={pathname === item.key ? 'text-[#0042a3] dark:text-blue-400' : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white transition-colors'}
+                className={pathname === item.key ? 'text-primary' : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white transition-colors'}
               >
                 {item.label}
               </Link>

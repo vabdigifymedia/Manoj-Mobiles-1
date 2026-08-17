@@ -34,7 +34,7 @@ export function BrandSpotlight({ brandName, title, products }: BrandSpotlightPro
 
         <Link
           href={`/shop?brand=${brandName.toLowerCase()}`}
-          className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0042a3] dark:text-blue-400 hover:opacity-80 transition-opacity self-start md:self-end"
+          className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:opacity-80 transition-opacity self-start md:self-end"
         >
           View All <FaArrowRight size={16} />
         </Link>
