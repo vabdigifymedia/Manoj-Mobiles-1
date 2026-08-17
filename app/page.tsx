@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { FaMicrochip, FaCreditCard, FaShieldHalved, FaHeadphones, FaStopwatch, FaMobileScreen, FaLaptop, FaLocationDot, FaMessage, FaHeadset, FaClock, FaTabletScreenButton, FaArrowRight, FaTableCellsLarge, FaTruckFast, FaStar } from 'react-icons/fa6'
 import { serverFetch } from '@/lib/apiClient'
-import type { BannerResponseDTO, StoreSettingResponseDTO, FaqResponseDTO, ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO, PageResponse } from '@/lib/types'
+import type { BannerResponseDTO, StoreSettingResponseDTO, FaqResponseDTO, ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO, PageResponse, InstagramReelResponseDTO } from '@/lib/types'
 import { HeroCarousel } from '@/components/home/hero-carousel'
 import { BrandShowcase } from '@/components/home/brand-showcase'
 import { DealOfTheDay } from '@/components/home/deal-of-the-day'
@@ -11,10 +11,11 @@ import { QuickFeatures } from '@/components/home/quick-features'
 import { BankOffers } from '@/components/home/bank-offers'
 import { BrandSpotlight } from '@/components/home/brand-spotlight'
 import { FeaturesCarousel } from '@/components/home/features-carousel'
+import { InstagramReels } from '@/components/home/instagram-reels'
 
 export default async function HomePage() {
   // Parallel SSR data fetching for all home page sections
-  const [heroBanners, dealBanner, storeSettings, faqs, brands, categories, newArrivals, bestSellers, budgetPicks, appleProductsData] = await Promise.all([
+  const [heroBanners, dealBanner, storeSettings, faqs, brands, categories, newArrivals, bestSellers, budgetPicks, appleProductsData, reelsData] = await Promise.all([
     serverFetch<BannerResponseDTO[]>('/api/public/banners?type=HERO_SLIDER'),
     serverFetch<BannerResponseDTO[]>('/api/public/banners?type=DEAL_OF_THE_DAY'),
     serverFetch<StoreSettingResponseDTO>('/api/public/settings'),
@@ -25,6 +26,7 @@ export default async function HomePage() {
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=avgRating,desc'),
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=startingPrice,asc'),
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?brandSlug=apple&page=0&size=6'),
+    serverFetch<InstagramReelResponseDTO[]>('/api/public/reels'),
   ])
 
   const activeDeal = (dealBanner || [])[0] || null
@@ -197,6 +199,9 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Instagram Reels */}
+      <InstagramReels reels={reelsData || []} />
 
       {/* FAQ Accordion */}
       <FaqAccordion faqs={faqs || []} />

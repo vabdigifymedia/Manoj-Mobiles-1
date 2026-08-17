@@ -442,3 +442,19 @@ export interface FaqResponseDTO {
 export interface ReorderRequestDTO {
   orderedIds: string[]
 }
+
+// --- Instagram Reels ---
+export interface InstagramReelRequestDTO {
+  reelId: string
+  isActive?: boolean
+  displayOrder?: number
+}
+
+export interface InstagramReelResponseDTO {
+  id: string
+  reelId: string
+  url?: string
+  isActive: boolean
+  displayOrder: number
+  createdAt: string
+}

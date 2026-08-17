@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { FaAward, FaXmark, FaImage, FaBox, FaUsers, FaUserPlus, FaCircleQuestion, FaGear, FaTableColumns, FaTag, FaBagShopping, FaBars, FaRightFromBracket, FaChartSimple } from 'react-icons/fa6'
+import { FaAward, FaXmark, FaImage, FaBox, FaUsers, FaUserPlus, FaCircleQuestion, FaGear, FaTableColumns, FaTag, FaBagShopping, FaBars, FaRightFromBracket, FaChartSimple, FaInstagram } from 'react-icons/fa6'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
 
 function AdminSidebar({ children }: { children: React.ReactNode }) {
@@ -82,6 +82,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
               { label: 'Brands', icon: FaAward, href: '/admin/brands', exact: false },
               { label: 'Orders', icon: FaBagShopping, href: '/admin/orders', exact: false }, 
               { label: 'Banners', icon: FaImage, href: '/admin/banners', exact: false },
+              { label: 'Instagram Reels', icon: FaInstagram, href: '/admin/reels', exact: false },
               { label: 'Store Settings', icon: FaGear, href: '/admin/settings', exact: false },
               { label: 'FAQs', icon: FaCircleQuestion, href: '/admin/faqs', exact: false },
               { label: 'Staff', icon: FaUserPlus, href: '/admin/staff', exact: false },
