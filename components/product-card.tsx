@@ -14,11 +14,12 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
   const showEMI = product.startingPrice > 3000
 
   return (
-    <article className="group flex h-full flex-col rounded-2xl border border-border bg-white p-2 transition-all duration-300 hover:shadow-lg hover:border-slate-300 dark:border-zinc-800 dark:hover:border-zinc-700 dark:bg-zinc-950 relative">
-      {/* Top badges & Image */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-white dark:bg-zinc-950 p-2">
+    <article className="group flex flex-col h-full rounded-2xl border border-border bg-white dark:bg-zinc-950 dark:border-zinc-800 transition-all duration-300 hover:shadow-xl hover:border-slate-300 dark:hover:border-zinc-700 relative overflow-hidden">
+      
+      {/* Top Image Area */}
+      <div className="relative w-full aspect-square bg-white dark:bg-zinc-950 p-4 sm:p-5 flex items-center justify-center">
         {showEMI && (
-          <span className="absolute left-3 top-3 z-10 rounded-full bg-black px-2 py-0.5 text-[10px] font-bold text-white dark:bg-white dark:text-black">
+          <span className="absolute left-3 top-3 z-10 rounded-full bg-black px-2 py-0.5 text-[10px] font-bold text-white dark:bg-white dark:text-black shadow-sm">
             No Cost EMI
           </span>
         )}
@@ -31,75 +32,62 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
             {isWishlisted ? <FaHeart size={14} /> : <FaRegHeart size={14} />}
           </button>
         )}
-        <Link href={`/product/${product.id}`} className="block h-full w-full">
+        <Link href={`/product/${product.id}`} className="block w-full h-full">
           <img 
             src={product.primaryImageUrl || '/placeholder.png'} 
             alt={product.name} 
-            className="h-full w-full object-contain transition duration-500 group-hover:scale-105" 
+            className="w-full h-full object-contain transition duration-500 group-hover:scale-105" 
           />
         </Link>
       </div>
 
-      {/* Details */}
-      <div className="flex flex-1 flex-col gap-2 pt-2">
-        <Link href={`/product/${product.id}`} className="line-clamp-2 text-xs sm:text-sm font-medium leading-tight text-slate-700 transition-colors hover:text-primary dark:text-zinc-300">
+      {/* Content Body */}
+      <div className="flex flex-col flex-1 px-3 pb-3">
+        
+        {/* Title */}
+        <Link href={`/product/${product.id}`} className="line-clamp-2 text-xs sm:text-sm font-medium leading-tight text-slate-700 dark:text-zinc-300 transition-colors hover:text-primary mt-1">
           {product.name}
         </Link>
-        
-        {/* Price Row */}
-        <div className="mt-1">
-          <p className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-            {formatINR(product.startingPrice)}
-          </p>
-          
-          {product.mrp && product.mrp > product.startingPrice && (
-            <div className="flex items-center gap-2 mt-0.5">
-              <p className="text-xs font-medium text-slate-400 line-through">
+
+        {/* Price & Delivery */}
+        <div className="mt-2 mb-3">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+              {formatINR(product.startingPrice)}
+            </span>
+            {product.mrp && product.mrp > product.startingPrice && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-slate-400 line-through">
                   MRP {formatINR(product.mrp)}
-                </p>
-              {product.discountPercent && product.discountPercent > 0 && (
-                <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  {product.discountPercent}% Off
                 </span>
-              )}
-            </div>
-          )}
-        </div>
-        
-        {/* Delivery Info */}
-        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-slate-600 dark:text-zinc-400">
-          <FaTruck size={12} />
-          <span>Free Delivery</span>
-        </div>
-        
-        {/* Footer Actions */}
-        <div className="mt-auto pt-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-1 cursor-pointer group/cb">
-              <div className="relative flex items-center justify-center">
-                <input type="checkbox" className="peer appearance-none w-4 h-4 rounded border border-slate-300 checked:bg-black checked:border-black dark:border-zinc-700 dark:checked:bg-white dark:checked:border-white transition-all cursor-pointer" />
-                <svg className="absolute w-2.5 h-2.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-white dark:text-black transition-opacity" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                {product.discountPercent && product.discountPercent > 0 && (
+                  <span className="rounded bg-red-600 px-1 py-0.5 text-[9px] font-bold text-white leading-none">
+                    {product.discountPercent}% Off
+                  </span>
+                )}
               </div>
-              <span className="text-[10px] font-medium text-slate-500 group-hover/cb:text-slate-800 dark:text-zinc-400 dark:group-hover/cb:text-zinc-200">Compare</span>
-            </label>
+            )}
           </div>
-          
-          <div className="flex items-center gap-1.5">
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                // Usually variantId is passed here, assuming primary variant ID logic handles this or product ID works for now
-                addToCart(product.id, 1);
-              }}
-              className="flex h-8 items-center gap-1.5 rounded-full bg-black px-3 text-[10px] sm:text-xs font-bold text-white transition-colors hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
-            >
-              <FaCartShopping size={12} />
-              <span>Add to Cart</span>
-            </button>
+          <div className="mt-1 flex items-center gap-1 text-[9px] sm:text-[10px] font-medium text-slate-500 dark:text-zinc-400">
+            <FaTruck size={10} />
+            <span>Free Delivery</span>
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="mt-auto flex flex-col gap-2.5">
+          {/* Compare */}
+          <label className="flex items-center gap-1.5 cursor-pointer group/cb w-fit">
+            <div className="relative flex items-center justify-center">
+              <input type="checkbox" className="peer appearance-none w-3.5 h-3.5 rounded border border-slate-300 checked:bg-black checked:border-black dark:border-zinc-700 dark:checked:bg-white dark:checked:border-white transition-all cursor-pointer" />
+              <svg className="absolute w-2 h-2 pointer-events-none opacity-0 peer-checked:opacity-100 text-white dark:text-black transition-opacity" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="text-[10px] font-medium text-slate-500 group-hover/cb:text-slate-800 dark:text-zinc-400 dark:group-hover/cb:text-zinc-200">Compare</span>
+          </label>
+        </div>
+
       </div>
     </article>
   )

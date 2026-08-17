@@ -103,6 +103,7 @@ export interface ProductListResponseDTO {
   primaryImageUrl?: string
   avgRating?: number
   totalReviews?: number
+  highlights?: string[]
 }
 
 export interface ProductFilterRequestDTO {

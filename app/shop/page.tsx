@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { Suspense } from 'react'
-import { ProductCard } from '@/components/product-card'
+import { ProductCard as OldProductCard } from '@/components/product-card'
+import { ProductCard as ListProductCard } from '@/components/ui/product-card-1'
 import { FilterSidebar } from '@/components/shop/filter-sidebar'
 import { FilterSheet } from '@/components/shop/filter-sheet'
 import { ProductGridSkeleton } from '@/components/shop/product-grid-skeleton'
@@ -110,9 +111,23 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
               <p className="text-muted-foreground mt-2">Try adjusting your filters or search term.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-5">
+            <div className="flex flex-col gap-4 w-full">
               {products.map(product => (
-                <ProductCard key={product.id} product={product as any} />
+                <ListProductCard 
+                  key={product.id} 
+                  imageUrl={product.primaryImageUrl || '/placeholder.png'}
+                  title={product.name}
+                  rating={product.avgRating || 4.5}
+                  ratingsCount={product.totalReviews || 1200}
+                  reviewsCount={Math.floor((product.totalReviews || 1200) / 10)}
+                  specifications={product.highlights && product.highlights.length > 0 ? product.highlights.slice(0, 5) : [`Brand: ${product.brandName}`, `Category: ${product.categoryName}`, "1 Year Warranty"]}
+                  price={product.startingPrice}
+                  originalPrice={product.mrp || Math.round(product.startingPrice * 1.2)}
+                  isAssured={true}
+                  exchangeOffer="5,000"
+                  bankOffer="10% off on Credit Cards"
+                  href={`/product/${product.id}`}
+                />
               ))}
             </div>
           )}
