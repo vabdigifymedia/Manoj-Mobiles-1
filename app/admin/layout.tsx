@@ -82,7 +82,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
               { label: 'Brands', icon: FaAward, href: '/admin/brands', exact: false },
               { label: 'Orders', icon: FaBagShopping, href: '/admin/orders', exact: false }, 
               { label: 'Banners', icon: FaImage, href: '/admin/banners', exact: false },
-              { label: 'Store FaGear', icon: FaGear, href: '/admin/settings', exact: false },
+              { label: 'Store Settings', icon: FaGear, href: '/admin/settings', exact: false },
               { label: 'FAQs', icon: FaCircleQuestion, href: '/admin/faqs', exact: false },
               { label: 'Staff', icon: FaUserPlus, href: '/admin/staff', exact: false },
               { label: 'Customers', icon: FaUsers, href: '/admin/customers', exact: false },

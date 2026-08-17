@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen } from 'react-icons/fa6'
+import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen, FaCircleCheck } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 
 interface LocalHighlight {
@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select"
 import { ImageUpload } from './image-upload'
 
-const availableIcons = { FaCircleQuestion, FaStar, FaShieldHalved, FaBatteryFull, FaMicrochip, FaCamera, FaMobileScreen, FaWifi, FaTruckFast, FaBolt, FaBluetooth, FaGear, FaMemory, FaHardDrive, FaMicrochip }
+const availableIcons = { Settings: FaGear, Camera: FaCamera, Cpu: FaMicrochip, Zap: FaBolt, Battery: FaBatteryFull, Bluetooth: FaBluetooth, MemoryStick: FaMemory, Microchip: FaMicrochip, Star: FaStar, Wifi: FaWifi, CheckCircle: FaCircleCheck, Truck: FaTruckFast, Smartphone: FaMobileScreen, HardDrive: FaHardDrive, ShieldCheck: FaShieldHalved }
 
 export function ProductWizard({ productId }: { productId?: string }) {
   const router = useRouter()
@@ -58,7 +58,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const [highlights, setHighlights] = useState<LocalHighlight[]>([])
   const [deletedHighlightIds, setDeletedHighlightIds] = useState<string[]>([])
   const [showHighlightForm, setShowHighlightForm] = useState(false)
-  const [highlightForm, setHighlightForm] = useState({ iconName: 'FaCircleQuestion', text: '' })
+  const [highlightForm, setHighlightForm] = useState({ iconName: 'Star', text: '' })
   const [editingHighlightId, setEditingHighlightId] = useState<string | null>(null)
 
   // Step 3: Variants
@@ -186,7 +186,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
         displayOrder: highlights.length + 1
       }])
     }
-    setHighlightForm({ iconName: 'FaCircleQuestion', text: '' })
+    setHighlightForm({ iconName: 'Star', text: '' })
     setShowHighlightForm(false)
   }
 
@@ -535,7 +535,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
           <div className="space-y-6">
             <h3 className="text-lg font-bold border-b border-border pb-2 flex justify-between items-center">
               Product Highlights
-              <button onClick={() => { setEditingHighlightId(null); setHighlightForm({ iconName: 'FaCircleQuestion', text: '' }); setShowHighlightForm(true); }} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold"><FaPlus size={16}/> Add</button>
+              <button onClick={() => { setEditingHighlightId(null); setHighlightForm({ iconName: 'Star', text: '' }); setShowHighlightForm(true); }} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold"><FaPlus size={16}/> Add</button>
             </h3>
 
             {showHighlightForm && (
@@ -568,7 +568,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                   <input required value={highlightForm.text} onChange={e => setHighlightForm({...highlightForm, text: e.target.value})} placeholder="e.g. 50MP FaCamera" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
                 </div>
                 <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm">{editingHighlightId ? 'Update' : 'Save'}</button>
-                <button type="button" onClick={() => { setShowHighlightForm(false); setEditingHighlightId(null); setHighlightForm({ iconName: 'FaCircleQuestion', text: '' }); }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
+                <button type="button" onClick={() => { setShowHighlightForm(false); setEditingHighlightId(null); setHighlightForm({ iconName: 'Star', text: '' }); }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
               </form>
             )}
 

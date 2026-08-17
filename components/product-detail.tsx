@@ -227,20 +227,20 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
               <h2 className="font-bold text-lg mb-4">Highlights</h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {product.highlights.map(h => {
-                  const Icon = h.iconName === 'FaMemory' ? FaMemory :
-                               h.iconName === 'FaHardDrive' ? FaHardDrive :
-                               h.iconName === 'FaMicrochip' ? FaMicrochip :
-                               h.iconName === 'FaShieldHalved' ? FaShieldHalved :
-                               h.iconName === 'FaTruckFast' ? FaTruckFast :
-                               h.iconName === 'FaMicrochip' ? FaMicrochip :
-                               h.iconName === 'FaBatteryFull' ? FaBatteryFull :
-                               h.iconName === 'FaStar' ? FaStar :
-                               h.iconName === 'FaGear' ? FaGear :
+                  const Icon = h.iconName === 'MemoryStick' ? FaMemory :
+                               h.iconName === 'HardDrive' ? FaHardDrive :
+                               h.iconName === 'Microchip' ? FaMicrochip :
+                               h.iconName === 'ShieldCheck' ? FaShieldHalved :
+                               h.iconName === 'Truck' ? FaTruckFast :
+                               h.iconName === 'Cpu' ? FaMicrochip :
+                               h.iconName === 'Battery' ? FaBatteryFull :
+                               h.iconName === 'Star' ? FaStar :
+                               h.iconName === 'Settings' ? FaGear :
                                h.iconName === 'Smartphone' ? FaMobileScreen :
-                               h.iconName === 'FaCamera' ? FaCamera :
-                               h.iconName === 'FaWifi' ? FaWifi :
-                               h.iconName === 'FaBluetooth' ? FaBluetooth :
-                               h.iconName === 'FaBolt' ? FaBolt : FaCircleCheck;
+                               h.iconName === 'Camera' ? FaCamera :
+                               h.iconName === 'Wifi' ? FaWifi :
+                               h.iconName === 'Bluetooth' ? FaBluetooth :
+                               h.iconName === 'Zap' ? FaBolt : FaCircleCheck;
                   
                   const cleanName = selectedVariant.variantName.replace(`(${selectedVariant.color})`, '').trim();
                   let text = h.text.replace('{variant}', cleanName);
