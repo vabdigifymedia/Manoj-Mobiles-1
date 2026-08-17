@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { CheckCircle2, CreditCard, Banknote, Wallet, Smartphone } from 'lucide-react'
+import { FaCircleCheck, FaCreditCard, FaMobileScreen, FaMoneyBill, FaWallet } from 'react-icons/fa6'
 import { useStore } from '@/components/store-provider'
 import { formatINR } from '@/lib/apiClient'
 
@@ -57,10 +57,10 @@ export default function CheckoutPage() {
             <h2 className="text-lg font-bold">Payment Method</h2>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {[
-                { id: 'card', label: 'Credit/Debit Card', icon: CreditCard },
-                { id: 'upi', label: 'UPI / QR Code', icon: Smartphone },
-                { id: 'wallet', label: 'Wallets', icon: Wallet },
-                { id: 'cod', label: 'Cash on Delivery', icon: Banknote },
+                { id: 'card', label: 'Credit/Debit Card', icon: FaCreditCard },
+                { id: 'upi', label: 'UPI / QR Code', icon: FaMobileScreen },
+                { id: 'wallet', label: 'Wallets', icon: FaWallet },
+                { id: 'cod', label: 'Cash on Delivery', icon: FaMoneyBill },
               ].map(method => (
                 <label 
                   key={method.id} 
@@ -124,7 +124,7 @@ export default function CheckoutPage() {
             </div>
             
             <Link href="/orders" className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 font-bold text-primary-foreground">
-              Place order & Pay <CheckCircle2 size={18} />
+              Place order & Pay <FaCircleCheck size={18} />
             </Link>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { BarChart3, Package, ShoppingBag, Users, LayoutDashboard, Menu, X, Tag, Award, UserPlus, LogOut, Image, Settings, HelpCircle } from 'lucide-react'
+import { FaAward, FaXmark, FaImage, FaBox, FaUsers, FaUserPlus, FaCircleQuestion, FaGear, FaTableColumns, FaTag, FaBagShopping, FaBars, FaRightFromBracket, FaChartSimple } from 'react-icons/fa6'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
 
 function AdminSidebar({ children }: { children: React.ReactNode }) {
@@ -45,11 +45,11 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
       {/* Mobile Header */}
       <div className="lg:hidden flex items-center gap-3 p-4 border-b border-border bg-card sticky top-0 z-40 shadow-sm">
         <button onClick={() => setIsMobileOpen(!isMobileOpen)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
-          <Menu />
+          <FaBars />
         </button>
         <div className="flex items-center gap-2 font-bold text-lg">
           <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <LayoutDashboard size={16} />
+            <FaTableColumns size={16} />
           </span> 
           Admin panel
         </div>
@@ -65,27 +65,27 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
           <div className="mb-6 flex items-center justify-between font-bold lg:hidden">
             <div className="flex items-center gap-2">
               <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-                <LayoutDashboard size={16} />
+                <FaTableColumns size={16} />
               </span> 
               Admin panel
             </div>
             <button onClick={() => setIsMobileOpen(false)} className="p-2 -mr-2 text-muted-foreground hover:text-foreground">
-              <X size={20} />
+              <FaXmark size={20} />
             </button>
           </div>
           
           <div className="flex flex-col gap-1 text-sm font-semibold flex-1">
             {[
-              { label: 'Overview', icon: BarChart3, href: '/admin', exact: true }, 
-              { label: 'Products', icon: Package, href: '/admin/products', exact: false }, 
-              { label: 'Categories', icon: Tag, href: '/admin/categories', exact: false },
-              { label: 'Brands', icon: Award, href: '/admin/brands', exact: false },
-              { label: 'Orders', icon: ShoppingBag, href: '/admin/orders', exact: false }, 
-              { label: 'Banners', icon: Image, href: '/admin/banners', exact: false },
-              { label: 'Store Settings', icon: Settings, href: '/admin/settings', exact: false },
-              { label: 'FAQs', icon: HelpCircle, href: '/admin/faqs', exact: false },
-              { label: 'Staff', icon: UserPlus, href: '/admin/staff', exact: false },
-              { label: 'Customers', icon: Users, href: '/admin/customers', exact: false },
+              { label: 'Overview', icon: FaChartSimple, href: '/admin', exact: true }, 
+              { label: 'Products', icon: FaBox, href: '/admin/products', exact: false }, 
+              { label: 'Categories', icon: FaTag, href: '/admin/categories', exact: false },
+              { label: 'Brands', icon: FaAward, href: '/admin/brands', exact: false },
+              { label: 'Orders', icon: FaBagShopping, href: '/admin/orders', exact: false }, 
+              { label: 'Banners', icon: FaImage, href: '/admin/banners', exact: false },
+              { label: 'Store FaGear', icon: FaGear, href: '/admin/settings', exact: false },
+              { label: 'FAQs', icon: FaCircleQuestion, href: '/admin/faqs', exact: false },
+              { label: 'Staff', icon: FaUserPlus, href: '/admin/staff', exact: false },
+              { label: 'Customers', icon: FaUsers, href: '/admin/customers', exact: false },
             ].map(item => {
               const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href)
               const Icon = item.icon
@@ -114,7 +114,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
               onClick={logout}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
             >
-              <LogOut size={16} />
+              <FaRightFromBracket size={16} />
               Sign out
             </button>
           </div>

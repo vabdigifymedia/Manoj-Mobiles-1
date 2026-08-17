@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MapPin } from 'lucide-react'
+import { FaLocationDot } from 'react-icons/fa6'
 import { orders, formatINR } from '@/lib/api'
 
 export default function OrdersPage() {
@@ -27,7 +27,7 @@ export default function OrdersPage() {
               </div>
               {order.status === 'In transit' && (
                 <Link href="/track" className="hidden items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground sm:flex">
-                  <MapPin size={15} /> Track order
+                  <FaLocationDot size={15} /> Track order
                 </Link>
               )}
             </div>

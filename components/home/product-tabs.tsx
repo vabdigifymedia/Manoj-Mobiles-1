@@ -2,13 +2,13 @@
 
 import { useState } from 'react'
 import { ProductCard } from '@/components/product-card'
-import { Sparkles, Flame, IndianRupee } from 'lucide-react'
+import { FaIndianRupeeSign, FaFire, FaWandMagicSparkles } from 'react-icons/fa6'
 import type { ProductListResponseDTO } from '@/lib/types'
 
 const TABS = [
-  { key: 'new', label: 'New Arrivals', icon: Sparkles },
-  { key: 'best', label: 'Best Sellers', icon: Flame },
-  { key: 'budget', label: 'Budget Picks', icon: IndianRupee },
+  { key: 'new', label: 'New Arrivals', icon: FaWandMagicSparkles },
+  { key: 'best', label: 'Best Sellers', icon: FaFire },
+  { key: 'budget', label: 'Budget Picks', icon: FaIndianRupeeSign },
 ] as const
 
 type TabKey = typeof TABS[number]['key']

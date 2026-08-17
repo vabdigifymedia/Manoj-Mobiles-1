@@ -2,7 +2,7 @@
 
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { Bold, Italic, List, ListOrdered, Heading2, Undo, Redo } from 'lucide-react'
+import { FaList, FaHeading, FaArrowRotateLeft, FaListOl, FaItalic, FaBold, FaArrowRotateRight } from 'react-icons/fa6'
 
 export function RichTextEditor({ value, onChange }: { value: string; onChange: (val: string) => void }) {
   const editor = useEditor({
@@ -30,14 +30,14 @@ export function RichTextEditor({ value, onChange }: { value: string; onChange: (
           onClick={() => editor.chain().focus().toggleBold().run()}
           className={`p-2 rounded hover:bg-muted transition-colors ${editor.isActive('bold') ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
         >
-          <Bold size={16} />
+          <FaBold size={16} />
         </button>
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className={`p-2 rounded hover:bg-muted transition-colors ${editor.isActive('italic') ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
         >
-          <Italic size={16} />
+          <FaItalic size={16} />
         </button>
         <div className="w-px h-6 bg-border mx-1 self-center" />
         <button
@@ -45,7 +45,7 @@ export function RichTextEditor({ value, onChange }: { value: string; onChange: (
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           className={`p-2 rounded hover:bg-muted transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
         >
-          <Heading2 size={16} />
+          <FaHeading size={16} />
         </button>
         <div className="w-px h-6 bg-border mx-1 self-center" />
         <button
@@ -53,14 +53,14 @@ export function RichTextEditor({ value, onChange }: { value: string; onChange: (
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={`p-2 rounded hover:bg-muted transition-colors ${editor.isActive('bulletList') ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
         >
-          <List size={16} />
+          <FaList size={16} />
         </button>
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={`p-2 rounded hover:bg-muted transition-colors ${editor.isActive('orderedList') ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
         >
-          <ListOrdered size={16} />
+          <FaListOl size={16} />
         </button>
         <div className="w-px h-6 bg-border mx-1 self-center" />
         <button
@@ -69,7 +69,7 @@ export function RichTextEditor({ value, onChange }: { value: string; onChange: (
           disabled={!editor.can().undo()}
           className="p-2 rounded hover:bg-muted text-muted-foreground disabled:opacity-50 transition-colors"
         >
-          <Undo size={16} />
+          <FaArrowRotateLeft size={16} />
         </button>
         <button
           type="button"
@@ -77,7 +77,7 @@ export function RichTextEditor({ value, onChange }: { value: string; onChange: (
           disabled={!editor.can().redo()}
           className="p-2 rounded hover:bg-muted text-muted-foreground disabled:opacity-50 transition-colors"
         >
-          <Redo size={16} />
+          <FaArrowRotateRight size={16} />
         </button>
       </div>
       <EditorContent editor={editor} />

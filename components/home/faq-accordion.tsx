@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { FaChevronDown } from 'react-icons/fa6'
 import type { FaqResponseDTO } from '@/lib/types'
 
 export function FaqAccordion({ faqs }: { faqs: FaqResponseDTO[] }) {
@@ -25,7 +25,7 @@ export function FaqAccordion({ faqs }: { faqs: FaqResponseDTO[] }) {
                 className="flex w-full items-center justify-between p-5 text-left"
               >
                 <span className="font-bold text-sm pr-4">{faq.question}</span>
-                <ChevronDown
+                <FaChevronDown
                   size={18}
                   className={`shrink-0 text-muted-foreground transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
                 />

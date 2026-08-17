@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Info } from 'lucide-react'
+import { FaArrowRight, FaCircleInfo } from 'react-icons/fa6'
 import type { ProductListResponseDTO } from '@/lib/types'
 import { ProductCard } from '@/components/product-card'
 import { useRef } from 'react'
@@ -36,7 +36,7 @@ export function BrandSpotlight({ brandName, title, products }: BrandSpotlightPro
           href={`/shop?brand=${brandName.toLowerCase()}`}
           className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0042a3] dark:text-blue-400 hover:opacity-80 transition-opacity self-start md:self-end"
         >
-          View All <ArrowRight size={16} />
+          View All <FaArrowRight size={16} />
         </Link>
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, X, ArrowLeft } from 'lucide-react'
+import { FaXmark, FaArrowLeft, FaMagnifyingGlass } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import type { ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO } from '@/lib/types'
 import Link from 'next/link'
@@ -76,10 +76,10 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
 
   return (
     <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-in slide-in-from-bottom-4 duration-300 md:hidden">
-      {/* Search Header */}
+      {/* FaMagnifyingGlass Header */}
       <div className="flex items-center gap-3 border-b border-border px-4 py-3" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)' }}>
         <button onClick={onClose} className="shrink-0 p-1 text-muted-foreground active:scale-90 transition-transform">
-          <ArrowLeft size={22} />
+          <FaArrowLeft size={22} />
         </button>
         <form 
           className="flex flex-1 items-center gap-2.5 rounded-xl bg-muted px-3.5 py-2.5"
@@ -90,7 +90,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             }
           }}
         >
-          <Search size={18} className="text-muted-foreground shrink-0" />
+          <FaMagnifyingGlass size={18} className="text-muted-foreground shrink-0" />
           <input
             ref={inputRef}
             type="search"
@@ -101,7 +101,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           />
           {query && (
             <button type="button" onClick={() => setQuery('')} className="text-muted-foreground">
-              <X size={16} />
+              <FaXmark size={16} />
             </button>
           )}
         </form>
@@ -154,7 +154,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                     className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted transition-colors active:scale-[.98]"
                   >
                     <div className="grid size-9 place-items-center rounded-lg bg-muted text-muted-foreground">
-                      <Search size={14} />
+                      <FaMagnifyingGlass size={14} />
                     </div>
                     <span className="text-sm font-bold">{c.name}</span>
                   </button>
@@ -176,7 +176,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                       <img src={b.logoUrl} alt={b.name} className="size-9 object-contain bg-background rounded-lg p-1 mix-blend-multiply dark:mix-blend-normal" />
                     ) : (
                       <div className="grid size-9 place-items-center rounded-lg bg-muted text-muted-foreground">
-                        <Search size={14} />
+                        <FaMagnifyingGlass size={14} />
                       </div>
                     )}
                     <span className="text-sm font-bold">{b.name}</span>

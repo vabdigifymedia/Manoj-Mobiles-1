@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, HelpCircle } from 'lucide-react'
+import { FaArrowUp, FaArrowDown, FaCircleQuestion, FaEyeSlash, FaTrashCan, FaEye, FaPencil, FaPlus } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import type { FaqResponseDTO, FaqRequestDTO, FaqCategory } from '@/lib/types'
 
@@ -89,7 +89,7 @@ export default function AdminFaqsPage() {
           <p className="text-sm text-muted-foreground mt-1">Manage frequently asked questions shown on the homepage</p>
         </div>
         <button onClick={openNew} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Plus size={16} /> Add FAQ
+          <FaPlus size={16} /> Add FAQ
         </button>
       </div>
 
@@ -131,7 +131,7 @@ export default function AdminFaqsPage() {
 
       {faqs.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-          <HelpCircle className="mx-auto text-muted-foreground mb-3" size={40} />
+          <FaCircleQuestion className="mx-auto text-muted-foreground mb-3" size={40} />
           <p className="font-bold">No FAQs yet</p>
           <p className="text-sm text-muted-foreground mt-1">Add your first FAQ to help customers</p>
         </div>
@@ -151,13 +151,13 @@ export default function AdminFaqsPage() {
                   <p className="text-xs text-muted-foreground line-clamp-2">{f.answer}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => moveOrder(idx, 'up')} disabled={idx === 0} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30"><ArrowUp size={14} /></button>
-                  <button onClick={() => moveOrder(idx, 'down')} disabled={idx === faqs.length - 1} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30"><ArrowDown size={14} /></button>
+                  <button onClick={() => moveOrder(idx, 'up')} disabled={idx === 0} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30"><FaArrowUp size={14} /></button>
+                  <button onClick={() => moveOrder(idx, 'down')} disabled={idx === faqs.length - 1} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30"><FaArrowDown size={14} /></button>
                   <button onClick={() => toggleStatus(f.id, f.isActive)} className="p-1.5 rounded-lg hover:bg-muted">
-                    {f.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
+                    {f.isActive ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                   </button>
-                  <button onClick={() => openEdit(f)} className="p-1.5 rounded-lg hover:bg-muted text-blue-600"><Pencil size={14} /></button>
-                  <button onClick={() => handleDelete(f.id)} className="p-1.5 rounded-lg hover:bg-muted text-destructive"><Trash2 size={14} /></button>
+                  <button onClick={() => openEdit(f)} className="p-1.5 rounded-lg hover:bg-muted text-blue-600"><FaPencil size={14} /></button>
+                  <button onClick={() => handleDelete(f.id)} className="p-1.5 rounded-lg hover:bg-muted text-destructive"><FaTrashCan size={14} /></button>
                 </div>
               </div>
             </div>

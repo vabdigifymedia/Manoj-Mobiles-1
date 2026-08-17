@@ -2,17 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, Heart, ShoppingBag, User } from 'lucide-react'
+import { FaHouse, FaHeart, FaBagShopping, FaUser, FaMagnifyingGlass } from 'react-icons/fa6'
 import { useState } from 'react'
 import { useStore } from './store-provider'
 import { useAuth } from '@/lib/auth-context'
 import { SearchOverlay } from './search-overlay'
 
 const tabs = [
-  { key: '/', label: 'Home', icon: Home },
-  { key: '/wishlist', label: 'Wishlist', icon: Heart },
-  { key: '/cart', label: 'Cart', icon: ShoppingBag },
-  { key: '/account', label: 'Account', icon: User },
+  { key: '/', label: 'Home', icon: FaHouse },
+  { key: '/wishlist', label: 'Wishlist', icon: FaHeart },
+  { key: '/cart', label: 'Cart', icon: FaBagShopping },
+  { key: '/account', label: 'Account', icon: FaUser },
 ] as const
 
 export function MobileNav() {
@@ -47,7 +47,7 @@ export function MobileNav() {
                 }`}
               >
                 <span className="relative">
-                  <Icon size={22} strokeWidth={isActive ? 2.5 : 1.5} />
+                  <Icon size={22}  />
                   {tab.key === '/cart' && cartCount > 0 && (
                     <span className="absolute -right-2.5 -top-1.5 grid size-4 place-items-center rounded-full bg-[#F97316] text-[8px] font-black text-white leading-none">
                       {cartCount > 9 ? '9+' : cartCount}

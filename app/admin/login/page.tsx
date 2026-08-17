@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Smartphone, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { FaCircleExclamation, FaEye, FaMobileScreen, FaEyeSlash } from 'react-icons/fa6'
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-2">
             <div className="size-12 rounded-2xl bg-primary text-primary-foreground grid place-items-center shadow-lg shadow-primary/25">
-              <Smartphone size={24} />
+              <FaMobileScreen size={24} />
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-black tracking-tight text-foreground">Manoj Mobiles</h1>
@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
 
           {error && (
             <div className="mb-4 flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-              <AlertCircle size={16} />
+              <FaCircleExclamation size={16} />
               {error}
             </div>
           )}
@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                 </button>
               </div>
             </div>

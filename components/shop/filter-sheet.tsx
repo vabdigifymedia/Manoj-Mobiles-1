@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { SlidersHorizontal } from 'lucide-react'
+import { FaSliders } from 'react-icons/fa6'
 import {
   Sheet,
   SheetContent,
@@ -23,7 +23,7 @@ export function FilterSheet({ brands, categories }: FilterSheetProps) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold shadow-sm hover:bg-muted transition-colors active:scale-[.98] md:hidden">
-        <SlidersHorizontal size={16} />
+        <FaSliders size={16} />
         Filters
       </SheetTrigger>
       <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-3xl px-5 pt-2 pb-8" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 2rem)' }}>

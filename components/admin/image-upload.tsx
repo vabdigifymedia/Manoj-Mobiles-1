@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useCallback } from 'react'
-import { UploadCloud, X, Crop } from 'lucide-react'
+import { FaXmark, FaCrop, FaCloudArrowUp } from 'react-icons/fa6'
 import { ImageCropperModal } from './image-cropper-modal'
 
 interface ImageUploadProps {
@@ -194,7 +194,7 @@ export function ImageUpload({
                   title="Crop / Adjust Image"
                   className="bg-primary text-primary-foreground rounded-lg px-3 py-1.5 text-xs font-bold hover:bg-primary/90 flex items-center gap-1.5 shadow-md"
                 >
-                  <Crop size={14} /> Crop
+                  <FaCrop size={14} /> FaCrop
                 </button>
               )}
               <button
@@ -203,13 +203,13 @@ export function ImageUpload({
                 title="Remove Image"
                 className="bg-destructive text-destructive-foreground rounded-lg p-1.5 hover:bg-destructive/90 shadow-md"
               >
-                <X size={16} />
+                <FaXmark size={16} />
               </button>
             </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center text-muted-foreground">
-            <UploadCloud size={30} className="mb-1.5 text-primary opacity-80" />
+            <FaCloudArrowUp size={30} className="mb-1.5 text-primary opacity-80" />
             <p className="text-xs font-semibold text-foreground">Click or drag image to upload</p>
             <p className="text-[11px] opacity-70 mt-0.5">PNG, JPG, WEBP • Cropper will open</p>
           </div>
@@ -230,7 +230,7 @@ export function ImageUpload({
           aspectRatio={aspectRatio}
           onCrop={handleCropComplete}
           onCancel={() => setRawImageForCrop(null)}
-          title={`Crop Image (${aspectRatio.toFixed(2)}:1)`}
+          title={`FaCrop Image (${aspectRatio.toFixed(2)}:1)`}
         />
       )}
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Image as ImageIcon, Clock } from 'lucide-react'
+import { FaImage, FaArrowUp, FaArrowDown, FaEyeSlash, FaClock, FaTrashCan, FaEye, FaPencil, FaPlus } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import type { BannerResponseDTO, BannerRequestDTO, BannerType } from '@/lib/types'
 
@@ -152,7 +152,7 @@ export default function AdminBannersPage() {
           <p className="text-sm text-muted-foreground mt-1">Manage hero sliders, deals, and promo banners</p>
         </div>
         <button onClick={openNew} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Plus size={16} /> Add Banner
+          <FaPlus size={16} /> Add Banner
         </button>
       </div>
 
@@ -258,7 +258,7 @@ export default function AdminBannersPage() {
 
       {banners.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-          <ImageIcon className="mx-auto text-muted-foreground mb-3" size={40} />
+          <FaImage className="mx-auto text-muted-foreground mb-3" size={40} />
           <p className="font-bold">No banners yet</p>
           <p className="text-sm text-muted-foreground mt-1">Create your first banner to get started</p>
         </div>
@@ -277,17 +277,17 @@ export default function AdminBannersPage() {
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5 truncate">{b.subtitle || b.linkUrl}</p>
                 {b.endTime && (
-                  <p className="text-xs text-orange-500 font-semibold mt-1 flex items-center gap-1"><Clock size={12} /> Ends: {new Date(b.endTime).toLocaleString()}</p>
+                  <p className="text-xs text-orange-500 font-semibold mt-1 flex items-center gap-1"><FaClock size={12} /> Ends: {new Date(b.endTime).toLocaleString()}</p>
                 )}
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => moveOrder(idx, 'up')} disabled={idx === 0} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30"><ArrowUp size={14} /></button>
-                <button onClick={() => moveOrder(idx, 'down')} disabled={idx === banners.length - 1} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30"><ArrowDown size={14} /></button>
+                <button onClick={() => moveOrder(idx, 'up')} disabled={idx === 0} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30"><FaArrowUp size={14} /></button>
+                <button onClick={() => moveOrder(idx, 'down')} disabled={idx === banners.length - 1} className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30"><FaArrowDown size={14} /></button>
                 <button onClick={() => toggleStatus(b.id, b.isActive)} className="p-1.5 rounded-lg hover:bg-muted" title={b.isActive ? 'Deactivate' : 'Activate'}>
-                  {b.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {b.isActive ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                 </button>
-                <button onClick={() => openEdit(b)} className="p-1.5 rounded-lg hover:bg-muted text-blue-600"><Pencil size={14} /></button>
-                <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg hover:bg-muted text-destructive"><Trash2 size={14} /></button>
+                <button onClick={() => openEdit(b)} className="p-1.5 rounded-lg hover:bg-muted text-blue-600"><FaPencil size={14} /></button>
+                <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg hover:bg-muted text-destructive"><FaTrashCan size={14} /></button>
               </div>
             </div>
           ))}

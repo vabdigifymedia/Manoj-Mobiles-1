@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useStore } from '@/components/store-provider'
-import { User, ShoppingBag, MapPin, LogOut, Package, ChevronRight, LockKeyhole, Mail, Phone, Calendar, ArrowLeft, Heart, Trash2 } from 'lucide-react'
+import { FaArrowLeft, FaTrashCan, FaBox, FaHeart, FaLock, FaPhone, FaCalendar, FaEnvelope, FaRightFromBracket, FaBagShopping, FaUser, FaLocationDot, FaChevronRight } from 'react-icons/fa6'
 import { ProductCard } from '@/components/product-card'
 
 // ─── Mock Data ────────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ export default function AccountPage() {
         <div className="w-full max-w-md rounded-3xl border border-border bg-card p-10 text-center shadow-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
           <div className="mx-auto grid size-20 place-items-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 mb-6">
-            <LockKeyhole size={32} />
+            <FaLock size={32} />
           </div>
           <h1 className="text-3xl font-black mb-2 tracking-tight">Access Restricted</h1>
           <p className="text-muted-foreground mb-8 text-sm font-medium">Please log in to your account to view your dashboard, track orders, and manage your profile.</p>
@@ -93,7 +93,7 @@ export default function AccountPage() {
       return (
         <div className="animate-in fade-in duration-300">
           <button onClick={() => setSelectedOrderId(null)} className="flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground mb-6 transition-colors">
-            <ArrowLeft size={16} /> Back to Orders
+            <FaArrowLeft size={16} /> Back to Orders
           </button>
           
           <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-6 border-b border-border">
@@ -127,12 +127,12 @@ export default function AccountPage() {
           
           <div className="grid md:grid-cols-2 gap-6">
             <div className="rounded-2xl border border-border p-5 bg-muted/20">
-              <h3 className="font-bold mb-4 flex items-center gap-2"><MapPin size={18} /> Delivery Address</h3>
+              <h3 className="font-bold mb-4 flex items-center gap-2"><FaLocationDot size={18} /> Delivery Address</h3>
               <p className="text-sm font-semibold mb-1">Manoj Customer</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">123 Tech Park, Sector 4<br/>Bangalore, Karnataka - 560001<br/>Phone: +91 9876543210</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">123 Tech Park, Sector 4<br/>Bangalore, Karnataka - 560001<br/>FaPhone: +91 9876543210</p>
             </div>
             <div className="rounded-2xl border border-border p-5 bg-muted/20">
-              <h3 className="font-bold mb-4 flex items-center gap-2"><ShoppingBag size={18} /> Payment Summary</h3>
+              <h3 className="font-bold mb-4 flex items-center gap-2"><FaBagShopping size={18} /> Payment Summary</h3>
               <div className="space-y-2 text-sm font-medium">
                 <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>₹{order.total.toLocaleString('en-IN')}</span></div>
                 <div className="flex justify-between text-muted-foreground"><span>Delivery</span><span className="text-emerald-500">Free</span></div>
@@ -152,17 +152,17 @@ export default function AccountPage() {
             
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
               <div className="p-5 rounded-2xl bg-blue-50 border border-blue-100 dark:bg-blue-950 dark:border-blue-900">
-                <div className="size-10 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400 grid place-items-center mb-3"><ShoppingBag size={20} /></div>
+                <div className="size-10 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400 grid place-items-center mb-3"><FaBagShopping size={20} /></div>
                 <p className="text-2xl font-black text-blue-950 dark:text-blue-50">{MOCK_ORDERS.length}</p>
                 <p className="text-sm font-semibold text-blue-700/70 dark:text-blue-300/70">Total Orders</p>
               </div>
               <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 dark:bg-emerald-950 dark:border-emerald-900">
-                <div className="size-10 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400 grid place-items-center mb-3"><Package size={20} /></div>
+                <div className="size-10 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400 grid place-items-center mb-3"><FaBox size={20} /></div>
                 <p className="text-2xl font-black text-emerald-950 dark:text-emerald-50">1</p>
                 <p className="text-sm font-semibold text-emerald-700/70 dark:text-emerald-300/70">Delivered</p>
               </div>
               <div className="p-5 rounded-2xl bg-orange-50 border border-orange-100 dark:bg-orange-950 dark:border-orange-900 col-span-2 md:col-span-1">
-                <div className="size-10 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400 grid place-items-center mb-3"><MapPin size={20} /></div>
+                <div className="size-10 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400 grid place-items-center mb-3"><FaLocationDot size={20} /></div>
                 <p className="text-2xl font-black text-orange-950 dark:text-orange-50">1</p>
                 <p className="text-sm font-semibold text-orange-700/70 dark:text-orange-300/70">Active Tracking</p>
               </div>
@@ -192,7 +192,7 @@ export default function AccountPage() {
                   <p className="font-bold text-sm line-clamp-1">{MOCK_ORDERS[1].items[0].name}</p>
                   <p className="text-xs font-medium text-muted-foreground mt-0.5">Total: ₹{MOCK_ORDERS[1].total.toLocaleString('en-IN')}</p>
                 </div>
-                <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                <FaChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
             </div>
           </div>
@@ -219,7 +219,7 @@ export default function AccountPage() {
                   <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
                     <p className="text-sm font-bold text-muted-foreground">{order.date}</p>
                     <div className="size-8 rounded-full bg-muted grid place-items-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                      <ChevronRight size={16} />
+                      <FaChevronRight size={16} />
                     </div>
                   </div>
                 </div>
@@ -272,23 +272,23 @@ export default function AccountPage() {
 
             <div className="grid sm:grid-cols-2 gap-6 mb-8">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Phone Number</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">FaPhone Number</label>
                 <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
-                  <Phone size={16} className="text-muted-foreground" />
+                  <FaPhone size={16} className="text-muted-foreground" />
                   <span className="font-semibold">{MOCK_PROFILE.phone}</span>
                 </div>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Email Address</label>
                 <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
-                  <Mail size={16} className="text-muted-foreground" />
+                  <FaEnvelope size={16} className="text-muted-foreground" />
                   <span className="font-semibold">{MOCK_PROFILE.email}</span>
                 </div>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Member Since</label>
                 <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
-                  <Calendar size={16} className="text-muted-foreground" />
+                  <FaCalendar size={16} className="text-muted-foreground" />
                   <span className="font-semibold">{MOCK_PROFILE.memberSince}</span>
                 </div>
               </div>
@@ -307,7 +307,7 @@ export default function AccountPage() {
             {wishlist.length === 0 ? (
               <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-sm">
                 <div className="mx-auto grid size-16 place-items-center rounded-full bg-muted text-muted-foreground mb-4">
-                  <Heart size={28} />
+                  <FaHeart size={28} />
                 </div>
                 <h3 className="text-xl font-bold mb-2">It's empty here</h3>
                 <p className="text-muted-foreground mb-6">You haven't saved any products to your wishlist yet.</p>
@@ -325,7 +325,7 @@ export default function AccountPage() {
                       className="absolute right-4 top-4 z-10 grid size-8 place-items-center rounded-full bg-white/90 text-rose-500 shadow-sm opacity-0 group-hover/wishlist:opacity-100 transition-all hover:bg-rose-50 hover:scale-110 dark:bg-zinc-800 dark:text-rose-400"
                       aria-label="Remove from wishlist"
                     >
-                      <Trash2 size={16} />
+                      <FaTrashCan size={16} />
                     </button>
                   </div>
                 ))}
@@ -338,10 +338,10 @@ export default function AccountPage() {
   }
 
   const TABS = [
-    { id: 'overview', label: 'Overview', icon: User },
-    { id: 'orders', label: 'My Orders', icon: ShoppingBag },
-    { id: 'addresses', label: 'Saved Addresses', icon: MapPin },
-    { id: 'profile', label: 'Profile Settings', icon: LockKeyhole },
+    { id: 'overview', label: 'Overview', icon: FaUser },
+    { id: 'orders', label: 'My Orders', icon: FaBagShopping },
+    { id: 'addresses', label: 'Saved Addresses', icon: FaLocationDot },
+    { id: 'profile', label: 'Profile Settings', icon: FaLock },
   ]
 
   return (
@@ -374,7 +374,7 @@ export default function AccountPage() {
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground bg-muted/50 md:bg-transparent'
                     }`}
                   >
-                    <tab.icon size={16} className="md:w-[18px] md:h-[18px]" strokeWidth={isActive ? 2.5 : 2} />
+                    <tab.icon size={16} className="md:w-[18px] md:h-[18px]"  />
                     {tab.label}
                   </button>
                 )
@@ -389,14 +389,14 @@ export default function AccountPage() {
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground bg-muted/50'
                 }`}
               >
-                <Heart size={16} strokeWidth={activeTab === 'wishlist' ? 2.5 : 2} />
+                <FaHeart size={16}  />
                 Wishlist
               </button>
               <button 
                 onClick={handleLogout}
                 className="md:hidden shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold text-rose-500 bg-rose-50 dark:bg-rose-500/10 transition-all"
               >
-                <LogOut size={16} strokeWidth={2} />
+                <FaRightFromBracket size={16}  />
                 Logout
               </button>
             </nav>
@@ -410,14 +410,14 @@ export default function AccountPage() {
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
-                <Heart size={18} strokeWidth={activeTab === 'wishlist' ? 2.5 : 2} />
+                <FaHeart size={18}  />
                 Wishlist
               </button>
               <button 
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all"
               >
-                <LogOut size={18} strokeWidth={2} />
+                <FaRightFromBracket size={18}  />
                 Logout
               </button>
             </div>

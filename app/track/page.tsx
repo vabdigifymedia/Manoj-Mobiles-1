@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Check, Truck } from 'lucide-react'
+import { FaTruckFast, FaCheck } from 'react-icons/fa6'
 
 // LiveTrackingMap uses Leaflet which requires window object, so we disable SSR
 const LiveTrackingMap = dynamic(() => import('@/components/live-tracking-map').then(mod => mod.LiveTrackingMap), { ssr: false })
@@ -23,7 +23,7 @@ export default function TrackPage() {
           <div className="mt-8 flex flex-col gap-7">
             <div className="flex gap-3">
               <span className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground">
-                <Check size={14} />
+                <FaCheck size={14} />
               </span>
               <div>
                 <p className="text-sm font-bold">Order picked up</p>
@@ -32,7 +32,7 @@ export default function TrackPage() {
             </div>
             <div className="flex gap-3">
               <span className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground">
-                <Truck size={13} />
+                <FaTruckFast size={13} />
               </span>
               <div>
                 <p className="text-sm font-bold">Out for delivery</p>

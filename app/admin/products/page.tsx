@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Search, Plus, Trash2, Star, Edit } from 'lucide-react'
+import { FaArrowLeft, FaPen, FaMagnifyingGlass, FaTrashCan, FaStar, FaPlus } from 'react-icons/fa6'
 import { apiClient, formatINR } from '@/lib/apiClient'
 import { ProductListResponseDTO } from '@/lib/types'
 
@@ -52,7 +52,7 @@ export default function AdminProductsPage() {
   return (
     <>
       <Link href="/admin" className="mb-6 flex w-fit items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
-        <ArrowLeft size={16} /> Back to Dashboard
+        <FaArrowLeft size={16} /> Back to Dashboard
       </Link>
       
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -62,11 +62,11 @@ export default function AdminProductsPage() {
         </div>
         <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <FaMagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input type="text" placeholder="Search products..." className="w-full sm:w-64 rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary" />
           </div>
           <Link href="/admin/products/new" className="flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground whitespace-nowrap hover:bg-primary/90 transition-colors">
-            <Plus size={16} /> Add Product
+            <FaPlus size={16} /> Add Product
           </Link>
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function AdminProductsPage() {
                   <td className="px-6 py-4">
                     {product.avgRating ? (
                       <span className="inline-flex items-center gap-1 text-sm font-bold">
-                        <Star size={14} className="text-amber-500 fill-amber-500" />
+                        <FaStar size={14} className="text-amber-500 fill-amber-500" />
                         {product.avgRating?.toFixed(1)} <span className="text-xs text-muted-foreground font-normal">({product.totalReviews})</span>
                       </span>
                     ) : <span className="text-xs text-muted-foreground">No reviews</span>}
@@ -137,10 +137,10 @@ export default function AdminProductsPage() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Link href={`/admin/products/${product.id}/edit`} className="text-blue-500 hover:text-blue-600 p-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors" title="Edit">
-                        <Edit size={16} />
+                        <FaPen size={16} />
                       </Link>
                       <button onClick={() => handleDelete(product.id)} className="text-red-500 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete">
-                        <Trash2 size={16} />
+                        <FaTrashCan size={16} />
                       </button>
                     </div>
                   </td>

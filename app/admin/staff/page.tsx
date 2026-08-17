@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Search, MoreHorizontal, Trash2, UserPlus, Shield, Truck } from 'lucide-react'
+import { FaShield, FaUserPlus, FaEllipsis, FaTrashCan, FaMagnifyingGlass, FaTruckFast, FaPlus } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import { UserResponseDTO, CreateStaffRequestDTO } from '@/lib/types'
 import {
@@ -77,8 +77,8 @@ export default function AdminStaffPage() {
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'ADMIN': return <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400"><Shield size={12} /> Admin</span>
-      case 'DELIVERY_AGENT': return <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400"><Truck size={12} /> Delivery Agent</span>
+      case 'ADMIN': return <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400"><FaShield size={12} /> Admin</span>
+      case 'DELIVERY_AGENT': return <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400"><FaTruckFast size={12} /> Delivery Agent</span>
       default: return <span className="inline-flex px-2 py-1 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-400">{role}</span>
     }
   }
@@ -98,11 +98,11 @@ export default function AdminStaffPage() {
         </div>
         <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <FaMagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input type="text" placeholder="Search users..." className="w-full sm:w-64 rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary" />
           </div>
           <button onClick={() => setShowForm(true)} className="flex shrink-0 whitespace-nowrap items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
-            <Plus size={16} /> Add Staff
+            <FaPlus size={16} /> Add Staff
           </button>
         </div>
       </div>
@@ -118,7 +118,7 @@ export default function AdminStaffPage() {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2"><UserPlus size={20} /> Create New Staff</DialogTitle>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2"><FaUserPlus size={20} /> Create New Staff</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-4">
             <div>
@@ -213,7 +213,7 @@ export default function AdminStaffPage() {
                   <td className="px-6 py-4">{getStatusBadge(u.status)}</td>
                   <td className="px-6 py-4 text-right">
                     <button onClick={() => setDeleteConfirm(u.id)} className="text-red-500 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete User">
-                      <Trash2 size={16} />
+                      <FaTrashCan size={16} />
                     </button>
                   </td>
                 </tr>

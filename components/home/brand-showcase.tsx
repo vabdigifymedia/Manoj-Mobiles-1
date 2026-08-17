@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react'
+import { FaArrowRight, FaChevronLeft, FaChevronRight } from 'react-icons/fa6'
 import type { BrandResponseDTO } from '@/lib/types'
 
 interface BrandShowcaseProps {
@@ -35,7 +35,7 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
             href="/shop"
             className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0042a3] dark:text-blue-400 hover:opacity-80 transition-opacity mr-1"
           >
-            View All <ArrowRight size={16} />
+            View All <FaArrowRight size={16} />
           </Link>
         </div>
       </div>

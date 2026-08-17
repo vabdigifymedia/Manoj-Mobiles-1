@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BarChart3, Bell, Package, ShoppingBag, UserRound } from 'lucide-react'
+import { FaBell, FaBox, FaBagShopping, FaUser, FaChartSimple } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import { formatINR } from '@/lib/apiClient'
 import { DashboardStatsDTO } from '@/lib/types'
@@ -52,10 +52,10 @@ export default function AdminPage() {
       
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          ['Total Orders', String(stats.totalOrders), ShoppingBag],
-          ['Total Products', String(stats.totalProducts), Package],
-          ['Total Customers', String(stats.totalCustomers), UserRound],
-          ['Low Stock Count', String(stats.lowStockCount), Bell]
+          ['Total Orders', String(stats.totalOrders), FaBagShopping],
+          ['Total Products', String(stats.totalProducts), FaBox],
+          ['Total Customers', String(stats.totalCustomers), FaUser],
+          ['Low Stock Count', String(stats.lowStockCount), FaBell]
         ].map(([label, value, Icon]) => {
           const DynamicIcon = Icon as React.ElementType
           return (
@@ -76,7 +76,7 @@ export default function AdminPage() {
             <h2 className="font-bold">Revenue overview</h2>
             <p className="mt-1 text-xs text-muted-foreground">Sales chart</p>
           </div>
-          <BarChart3 className="text-primary" size={20} />
+          <FaChartSimple className="text-primary" size={20} />
         </div>
         {revenue.length > 0 ? (
           <div className="mt-6 flex h-56 items-end gap-3 border-b border-border px-2">

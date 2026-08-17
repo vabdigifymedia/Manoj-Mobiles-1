@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Heart, Star } from 'lucide-react'
+import { FaHeart, FaStar } from 'react-icons/fa6'
 import { formatINR } from '@/lib/apiClient'
 import { useStore } from './store-provider'
 import type { ProductListResponseDTO } from '@/lib/types'
@@ -26,7 +26,7 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
             className={`absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-white/70 backdrop-blur-md transition-all hover:bg-white dark:bg-black/10 dark:hover:bg-black/20 ${isWishlisted ? 'text-rose-500 hover:text-rose-600' : 'text-slate-500 hover:text-rose-500'}`}
             aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
           >
-            <Heart size={15} fill={isWishlisted ? "currentColor" : "none"} strokeWidth={2} />
+            <FaHeart size={15} fill={isWishlisted ? "currentColor" : "none"}  />
           </button>
         )}
       </div>
@@ -37,7 +37,7 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
           {product.name}
         </Link>
         <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-zinc-400">
-          <Star size={12} fill="currentColor" className="text-[#F97316]" />
+          <FaStar size={12} fill="currentColor" className="text-[#F97316]" />
           <span>{product.avgRating || '0.0'}</span>
           <span className="font-normal text-slate-400">({product.totalReviews || 0})</span>
         </div>

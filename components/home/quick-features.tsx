@@ -1,13 +1,13 @@
 'use client'
 
-import { Percent, Landmark, ArrowRightLeft, Truck } from 'lucide-react'
+import { FaRightLeft, FaPercent, FaTruckFast, FaBuildingColumns } from 'react-icons/fa6'
 
 export function QuickFeatures() {
   const features = [
-    { icon: Percent, label: 'Easy EMI' },
-    { icon: Landmark, label: 'Bank Offers' },
-    { icon: ArrowRightLeft, label: 'Exchange Offers' },
-    { icon: Truck, label: 'Express Delivery' },
+    { icon: FaPercent, label: 'Easy EMI' },
+    { icon: FaBuildingColumns, label: 'Bank Offers' },
+    { icon: FaRightLeft, label: 'Exchange Offers' },
+    { icon: FaTruckFast, label: 'Express Delivery' },
   ]
 
   return (

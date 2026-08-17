@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Search, Filter, CheckCircle2, Truck, Package, Clock, XCircle, RotateCcw } from 'lucide-react'
+import { FaFilter, FaCircleCheck, FaArrowLeft, FaArrowRotateLeft, FaBox, FaClock, FaMagnifyingGlass, FaTruckFast, FaCircleXmark } from 'react-icons/fa6'
 import { apiClient, formatINR } from '@/lib/apiClient'
 import { OrderResponseDTO } from '@/lib/types'
 
 const statusConfig: Record<string, { color: string; icon: React.ElementType }> = {
-  PLACED: { color: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400', icon: Clock },
-  CONFIRMED: { color: 'bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400', icon: CheckCircle2 },
-  PACKED: { color: 'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400', icon: Package },
-  SHIPPED: { color: 'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400', icon: Truck },
-  OUT_FOR_DELIVERY: { color: 'bg-cyan-100 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-400', icon: Truck },
-  DELIVERED: { color: 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400', icon: CheckCircle2 },
-  CANCELLED: { color: 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400', icon: XCircle },
-  RETURNED: { color: 'bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-400', icon: RotateCcw },
+  PLACED: { color: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400', icon: FaClock },
+  CONFIRMED: { color: 'bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400', icon: FaCircleCheck },
+  PACKED: { color: 'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400', icon: FaBox },
+  SHIPPED: { color: 'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400', icon: FaTruckFast },
+  OUT_FOR_DELIVERY: { color: 'bg-cyan-100 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-400', icon: FaTruckFast },
+  DELIVERED: { color: 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400', icon: FaCircleCheck },
+  CANCELLED: { color: 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400', icon: FaCircleXmark },
+  RETURNED: { color: 'bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-400', icon: FaArrowRotateLeft },
 }
 
 export default function AdminOrdersPage() {
@@ -43,7 +43,7 @@ export default function AdminOrdersPage() {
   return (
     <>
       <Link href="/admin" className="mb-6 flex w-fit items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
-        <ArrowLeft size={16} /> Back to Dashboard
+        <FaArrowLeft size={16} /> Back to Dashboard
       </Link>
       
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -53,11 +53,11 @@ export default function AdminOrdersPage() {
         </div>
         <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <FaMagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input type="text" placeholder="Search orders..." className="w-full sm:w-64 rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary" />
           </div>
           <button className="flex shrink-0 whitespace-nowrap items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold">
-            <Filter size={16} /> Filter
+            <FaFilter size={16} /> FaFilter
           </button>
         </div>
       </div>

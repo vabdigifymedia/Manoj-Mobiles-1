@@ -2,12 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  PackagePlus, Info, CheckCircle, Package, Settings, Image as ImageIcon, 
-  Trash2, Plus, PenTool, Check, Star, ShieldCheck, Battery, Cpu, 
-  Camera, Smartphone, Wifi, Truck, Zap, Bluetooth, ChevronLeft, ChevronRight,
-  MemoryStick, HardDrive, Microchip, GripVertical
-} from 'lucide-react'
+import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 
 interface LocalHighlight {
@@ -42,7 +37,7 @@ import {
 } from "@/components/ui/select"
 import { ImageUpload } from './image-upload'
 
-const availableIcons = { CheckCircle, Star, ShieldCheck, Battery, Cpu, Camera, Smartphone, Wifi, Truck, Zap, Bluetooth, Settings, MemoryStick, HardDrive, Microchip }
+const availableIcons = { FaCircleQuestion, FaStar, FaShieldHalved, FaBatteryFull, FaMicrochip, FaCamera, FaMobileScreen, FaWifi, FaTruckFast, FaBolt, FaBluetooth, FaGear, FaMemory, FaHardDrive, FaMicrochip }
 
 export function ProductWizard({ productId }: { productId?: string }) {
   const router = useRouter()
@@ -52,7 +47,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const [initialLoading, setInitialLoading] = useState(true)
   const [draftAvailable, setDraftAvailable] = useState(false)
 
-  // Step 1: Base Info
+  // Step 1: Base FaCircleInfo
   const [baseInfo, setBaseInfo] = useState({
     name: '', brandId: '', categoryId: '', description: '',
     warrantyMonths: 12, returnPolicyDays: 7, isReturnable: true,
@@ -63,7 +58,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const [highlights, setHighlights] = useState<LocalHighlight[]>([])
   const [deletedHighlightIds, setDeletedHighlightIds] = useState<string[]>([])
   const [showHighlightForm, setShowHighlightForm] = useState(false)
-  const [highlightForm, setHighlightForm] = useState({ iconName: 'CheckCircle', text: '' })
+  const [highlightForm, setHighlightForm] = useState({ iconName: 'FaCircleQuestion', text: '' })
+  const [editingHighlightId, setEditingHighlightId] = useState<string | null>(null)
 
   // Step 3: Variants
   const [variants, setVariants] = useState<LocalVariant[]>([])
@@ -179,13 +175,18 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   const handleAddHighlight = (e: React.FormEvent) => {
     e.preventDefault()
-    setHighlights([...highlights, { 
-      id: `h${Date.now()}`, 
-      iconName: highlightForm.iconName, 
-      text: highlightForm.text,
-      displayOrder: highlights.length + 1
-    }])
-    setHighlightForm({ iconName: 'CheckCircle', text: '' })
+    if (editingHighlightId) {
+      setHighlights(highlights.map(h => h.id === editingHighlightId ? { ...h, iconName: highlightForm.iconName, text: highlightForm.text } : h))
+      setEditingHighlightId(null)
+    } else {
+      setHighlights([...highlights, { 
+        id: `h${Date.now()}`, 
+        iconName: highlightForm.iconName, 
+        text: highlightForm.text,
+        displayOrder: highlights.length + 1
+      }])
+    }
+    setHighlightForm({ iconName: 'FaCircleQuestion', text: '' })
     setShowHighlightForm(false)
   }
 
@@ -427,9 +428,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
     <div className="mx-auto max-w-4xl pb-16">
       <div className="mb-6 flex items-center gap-2 font-bold text-xl">
         <Link href="/admin/products" className="text-muted-foreground hover:text-foreground">
-          <ChevronLeft />
+          <FaChevronLeft />
         </Link>
-        <PackagePlus className="text-primary" /> {productId ? 'Edit Product' : 'Create New Product'}
+        <FaCircleQuestion className="text-primary" /> {productId ? 'Edit Product' : 'Create New Product'}
       </div>
 
       {draftAvailable && (
@@ -456,11 +457,11 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
       <div className="flex justify-between border-b border-border mb-8 overflow-x-auto pb-4">
         {[
-          { step: 1, label: 'Base Info', icon: Info },
-          { step: 2, label: 'Highlights', icon: Star },
-          { step: 3, label: 'Variants', icon: Package },
-          { step: 4, label: 'Specs', icon: Settings },
-          { step: 5, label: 'Images', icon: ImageIcon }
+          { step: 1, label: 'Base FaCircleInfo', icon: FaCircleInfo },
+          { step: 2, label: 'Highlights', icon: FaStar },
+          { step: 3, label: 'Variants', icon: FaBox },
+          { step: 4, label: 'Specs', icon: FaGear },
+          { step: 5, label: 'Images', icon: FaImage }
         ].map(({ step, label, icon: Icon }) => (
           <button
             key={step}
@@ -473,7 +474,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
             <div className={`grid size-10 place-items-center rounded-full transition-colors ${
               currentStep === step ? 'bg-primary text-primary-foreground' : step < highestStepReached ? 'bg-primary/20 text-primary' : 'bg-muted'
             }`}>
-              {step < highestStepReached && currentStep !== step ? <Check size={18} /> : <Icon size={18} />}
+              {step < highestStepReached && currentStep !== step ? <FaCheck size={18} /> : <Icon size={18} />}
             </div>
             <span className="text-xs font-semibold whitespace-nowrap">{label}</span>
           </button>
@@ -481,7 +482,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
       </div>
 
       <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-        {/* Step 1: Base Info */}
+        {/* Step 1: Base FaCircleInfo */}
         {currentStep === 1 && (
           <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setCurrentStep(2); setHighestStepReached(Math.max(highestStepReached, 2)) }}>
             <h3 className="text-lg font-bold border-b border-border pb-2">Basic Information</h3>
@@ -534,7 +535,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
           <div className="space-y-6">
             <h3 className="text-lg font-bold border-b border-border pb-2 flex justify-between items-center">
               Product Highlights
-              <button onClick={() => setShowHighlightForm(true)} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold"><Plus size={16}/> Add</button>
+              <button onClick={() => { setEditingHighlightId(null); setHighlightForm({ iconName: 'FaCircleQuestion', text: '' }); setShowHighlightForm(true); }} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold"><FaPlus size={16}/> Add</button>
             </h3>
 
             {showHighlightForm && (
@@ -564,20 +565,23 @@ export function ProductWizard({ productId }: { productId?: string }) {
                 </div>
                 <div className="flex-[2]">
                   <label className="text-xs font-semibold mb-1 block">Text</label>
-                  <input required value={highlightForm.text} onChange={e => setHighlightForm({...highlightForm, text: e.target.value})} placeholder="e.g. 50MP Camera" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                  <input required value={highlightForm.text} onChange={e => setHighlightForm({...highlightForm, text: e.target.value})} placeholder="e.g. 50MP FaCamera" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
                 </div>
-                <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm">Save</button>
-                <button type="button" onClick={() => setShowHighlightForm(false)} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
+                <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm">{editingHighlightId ? 'Update' : 'Save'}</button>
+                <button type="button" onClick={() => { setShowHighlightForm(false); setEditingHighlightId(null); setHighlightForm({ iconName: 'FaCircleQuestion', text: '' }); }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
               </form>
             )}
 
             <div className="space-y-2">
               {highlights.map(h => {
-                const Icon = availableIcons[h.iconName as keyof typeof availableIcons] || CheckCircle
+                const Icon = availableIcons[h.iconName as keyof typeof availableIcons] || FaCircleQuestion
                 return (
                   <div key={h.id} className="flex items-center justify-between p-3 border border-border rounded-xl">
                     <div className="flex items-center gap-3 font-semibold"><Icon className="text-primary" size={20} /> {h.text}</div>
-                    <button onClick={() => handleDeleteHighlight(h.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg"><Trash2 size={16} /></button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => { setEditingHighlightId(h.id); setHighlightForm({ iconName: h.iconName, text: h.text }); setShowHighlightForm(true); }} className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg" title="Edit"><FaPen size={16} /></button>
+                      <button onClick={() => handleDeleteHighlight(h.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg" title="Delete"><FaTrashCan size={16} /></button>
+                    </div>
                   </div>
                 )
               })}
@@ -595,7 +599,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
           <div className="space-y-6">
             <h3 className="text-lg font-bold border-b border-border pb-2 flex justify-between items-center">
               Product Variants
-              <button onClick={handleOpenAddVariant} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold"><Plus size={16}/> Add Variant</button>
+              <button onClick={handleOpenAddVariant} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold"><FaPlus size={16}/> Add Variant</button>
             </h3>
 
             {showVariantForm && (
@@ -652,8 +656,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
                       <td className="py-3 pr-4">₹{v.sellingPrice}</td>
                       <td className="py-3 pr-4">{v.stockQty}</td>
                       <td className="py-3 text-right">
-                        <button onClick={() => handleEditVariantClick(v)} className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg mr-1"><PenTool size={16} /></button>
-                        <button onClick={() => handleDeleteVariant(v.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg"><Trash2 size={16} /></button>
+                        <button onClick={() => handleEditVariantClick(v)} className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg mr-1"><FaCircleQuestion size={16} /></button>
+                        <button onClick={() => handleDeleteVariant(v.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg"><FaTrashCan size={16} /></button>
                       </td>
                     </tr>
                   ))}
@@ -696,7 +700,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                             />
                             <div className="flex items-center gap-3">
                               <button onClick={() => handleAddSpecToGroup(group)} className="text-xs text-primary font-bold hover:underline whitespace-nowrap">+ Add Spec</button>
-                              <button onClick={() => handleDeleteSpecGroup(group)} className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors" title="Delete Entire Group"><Trash2 size={16} /></button>
+                              <button onClick={() => handleDeleteSpecGroup(group)} className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors" title="Delete Entire Group"><FaTrashCan size={16} /></button>
                             </div>
                           </div>
                           <div className="space-y-2">
@@ -704,7 +708,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                               <div key={i} className="flex gap-2 items-center">
                                 <input placeholder="Key (e.g. Processor)" value={s.specKey} onChange={e => handleUpdateSpec(i, 'specKey', e.target.value)} className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm" />
                                 <input placeholder="Value (e.g. Snapdragon 8 Gen 3)" value={s.specValue} onChange={e => handleUpdateSpec(i, 'specValue', e.target.value)} className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm" />
-                                <button onClick={() => handleDeleteSpec(i)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg" title="Delete Spec"><Trash2 size={16} /></button>
+                                <button onClick={() => handleDeleteSpec(i)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg" title="Delete Spec"><FaTrashCan size={16} /></button>
                               </div>
                             ))}
                           </div>
@@ -736,7 +740,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
             {/* Global/Common Images Upload */}
             <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl shadow-sm mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h4 className="text-sm font-bold text-primary flex items-center gap-2"><ImageIcon size={16} /> Global Images</h4>
+                <h4 className="text-sm font-bold text-primary flex items-center gap-2"><FaImage size={16} /> Global Images</h4>
                 <p className="text-xs text-muted-foreground mt-1">Upload common images (like charger, box) here to automatically add them to ALL colors.</p>
               </div>
               
@@ -785,7 +789,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                   }
                 }}
               >
-                <Plus size={16} className="text-primary" />
+                <FaPlus size={16} className="text-primary" />
                 <span className="text-xs font-bold text-primary">{dragActiveColor === 'global' ? 'Drop Images Here' : 'Upload to All Colors'}</span>
                 <input 
                   type="file" 
@@ -868,7 +872,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                             onMouseLeave={() => setDragEnabledImage(null)}
                             title="Drag to reorder"
                           >
-                            <GripVertical size={14} />
+                            <FaCircleQuestion size={14} />
                           </div>
 
                           <button 
@@ -891,7 +895,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                             }}
                             className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            <Trash2 size={12} />
+                            <FaTrashCan size={12} />
                           </button>
                           {imgIdx === 0 && (
                             <span className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm pointer-events-none">Primary</span>
@@ -901,7 +905,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                               onClick={(e) => { e.preventDefault(); handleMoveImage(color, imgIdx, imgIdx - 1); }}
                               className="absolute top-1/2 left-1 -translate-y-1/2 bg-black/50 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              <ChevronLeft size={12} />
+                              <FaChevronLeft size={12} />
                             </button>
                           )}
                           {imgIdx < currentImages.length - 1 && (
@@ -909,7 +913,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                               onClick={(e) => { e.preventDefault(); handleMoveImage(color, imgIdx, imgIdx + 1); }}
                               className="absolute top-1/2 right-1 -translate-y-1/2 bg-black/50 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              <ChevronRight size={12} />
+                              <FaChevronRight size={12} />
                             </button>
                           )}
                           {imgIdx > 0 && (
@@ -961,7 +965,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                           }
                         }}
                       >
-                        <Plus size={24} className="text-muted-foreground" />
+                        <FaPlus size={24} className="text-muted-foreground" />
                         <span className="text-[10px] font-semibold text-muted-foreground mt-1 text-center leading-tight">Add<br/>Image</span>
                         <input 
                           type="file" 
@@ -1007,7 +1011,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                 onClick={handlePublish} 
                 className="bg-primary text-primary-foreground font-bold px-8 py-2 rounded-xl flex items-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <CheckCircle size={18} /> {loading ? 'Publishing...' : 'Publish Product'}
+                <FaCircleQuestion size={18} /> {loading ? 'Publishing...' : 'Publish Product'}
               </button>
             </div>
           </div>

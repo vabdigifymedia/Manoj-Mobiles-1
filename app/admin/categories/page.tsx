@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Search, Trash2, Edit } from 'lucide-react'
+import { FaTrashCan, FaPen, FaPlus, FaMagnifyingGlass } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import { CategoryResponseDTO } from '@/lib/types'
 import {
@@ -100,11 +100,11 @@ export default function AdminCategoriesPage() {
         </div>
         <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <FaMagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input type="text" placeholder="Search categories..." className="w-full sm:w-64 rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary" />
           </div>
           <button onClick={openNewForm} className="flex shrink-0 whitespace-nowrap items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
-            <Plus size={16} /> Add Category
+            <FaPlus size={16} /> Add Category
           </button>
         </div>
       </div>
@@ -191,10 +191,10 @@ export default function AdminCategoriesPage() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => openEditForm(category)} className="text-blue-500 hover:text-blue-600 p-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors" title="Edit">
-                        <Edit size={16} />
+                        <FaPen size={16} />
                       </button>
                       <button onClick={() => handleDelete(category.id)} className="text-red-500 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete">
-                        <Trash2 size={16} />
+                        <FaTrashCan size={16} />
                       </button>
                     </div>
                   </td>

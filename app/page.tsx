@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Truck, ShieldCheck, Headset, CreditCard, Star, MapPin, Clock, MessageCircle, Smartphone, Headphones, Watch, Tablet, Laptop, Cpu, Grid } from 'lucide-react'
+import { FaMicrochip, FaCreditCard, FaShieldHalved, FaHeadphones, FaStopwatch, FaMobileScreen, FaLaptop, FaLocationDot, FaMessage, FaHeadset, FaClock, FaTabletScreenButton, FaArrowRight, FaTableCellsLarge, FaTruckFast, FaStar } from 'react-icons/fa6'
 import { serverFetch } from '@/lib/apiClient'
 import type { BannerResponseDTO, StoreSettingResponseDTO, FaqResponseDTO, ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO, PageResponse } from '@/lib/types'
 import { HeroCarousel } from '@/components/home/hero-carousel'
@@ -56,7 +56,7 @@ export default async function HomePage() {
       {/* Deal of the Day */}
       <DealOfTheDay banner={activeDeal} />
 
-      {/* Categories Grid */}
+      {/* Categories FaTableCellsLarge */}
       {categoryList.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-16 lg:px-8">
           <h2 className="text-2xl font-black mb-6">Shop by Category</h2>
@@ -73,13 +73,13 @@ export default async function HomePage() {
               
               const getCategoryIcon = (name: string) => {
                 const n = name.toLowerCase()
-                if (n.includes('mobile') || n.includes('phone') || n.includes('smartphone')) return Smartphone
-                if (n.includes('audio') || n.includes('ear') || n.includes('head') || n.includes('pod')) return Headphones
-                if (n.includes('watch') || n.includes('wear')) return Watch
-                if (n.includes('tablet') || n.includes('pad')) return Tablet
-                if (n.includes('laptop') || n.includes('mac')) return Laptop
-                if (n.includes('access') || n.includes('charger')) return Cpu
-                return Grid
+                if (n.includes('mobile') || n.includes('phone') || n.includes('smartphone')) return FaMobileScreen
+                if (n.includes('audio') || n.includes('ear') || n.includes('head') || n.includes('pod')) return FaHeadphones
+                if (n.includes('watch') || n.includes('wear')) return FaStopwatch
+                if (n.includes('tablet') || n.includes('pad')) return FaTabletScreenButton
+                if (n.includes('laptop') || n.includes('mac')) return FaLaptop
+                if (n.includes('access') || n.includes('charger')) return FaMicrochip
+                return FaTableCellsLarge
               }
               const Icon = getCategoryIcon(cat.name)
 
@@ -96,7 +96,7 @@ export default async function HomePage() {
                     <div>
                       <h3 className="text-xl font-black text-foreground mb-1.5">{cat.name}</h3>
                       <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1 group-hover:text-primary transition-colors">
-                        Explore <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                        Explore <FaArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
                       </p>
                     </div>
                     
@@ -133,10 +133,10 @@ export default async function HomePage() {
           </div>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: Truck, title: 'Fast & Free Delivery', desc: 'Get your device delivered within 24-48 hours across major cities.' },
-              { icon: ShieldCheck, title: '1 Year Warranty', desc: 'All smartphones come with a genuine manufacturer warranty.' },
-              { icon: Headset, title: '24/7 Support', desc: 'Our customer support team is always ready to help you.' },
-              { icon: CreditCard, title: 'Secure Payments', desc: '100% secure payment gateways including UPI, Cards, and Wallets.' },
+              { icon: FaTruckFast, title: 'Fast & Free Delivery', desc: 'Get your device delivered within 24-48 hours across major cities.' },
+              { icon: FaShieldHalved, title: '1 Year Warranty', desc: 'All smartphones come with a genuine manufacturer warranty.' },
+              { icon: FaHeadset, title: '24/7 Support', desc: 'Our customer support team is always ready to help you.' },
+              { icon: FaCreditCard, title: 'Secure Payments', desc: '100% secure payment gateways including UPI, Cards, and Wallets.' },
             ].map(feature => (
               <div key={feature.title} className="flex flex-col items-center text-center rounded-3xl bg-background p-8 transition hover:bg-muted">
                 <div className="grid size-14 place-items-center rounded-full bg-primary/10 text-primary mb-5">
@@ -157,7 +157,7 @@ export default async function HomePage() {
             {/* Store Location */}
             <div className="rounded-3xl border border-border bg-card p-8">
               <div className="flex items-center gap-2 mb-4">
-                <MapPin size={20} className="text-primary" />
+                <FaLocationDot size={20} className="text-primary" />
                 <h3 className="text-lg font-bold">Visit Our Store</h3>
               </div>
               {storeSettings.storeAddress && (
@@ -165,7 +165,7 @@ export default async function HomePage() {
               )}
               {storeSettings.storeTimings && (
                 <div className="flex items-center gap-2 text-sm font-semibold">
-                  <Clock size={14} className="text-primary" />
+                  <FaClock size={14} className="text-primary" />
                   {storeSettings.storeTimings}
                 </div>
               )}
@@ -180,7 +180,7 @@ export default async function HomePage() {
             <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#25D366] via-emerald-600 to-teal-900 p-8 text-white transition-all">
               {/* Decorative Background Elements */}
               <div className="pointer-events-none absolute -right-10 -top-10 z-0 opacity-10 transition-transform duration-700 ease-out group-hover:scale-110 group-hover:opacity-20">
-                <MessageCircle size={250} strokeWidth={1} />
+                <FaMessage size={250}  />
               </div>
               <div className="pointer-events-none absolute -bottom-20 -left-10 z-0 opacity-10">
                 <div className="h-40 w-40 rounded-full bg-white blur-3xl"></div>
@@ -188,7 +188,7 @@ export default async function HomePage() {
               
               <div className="relative z-10">
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-                  <MessageCircle size={14} className="animate-pulse" />
+                  <FaMessage size={14} className="animate-pulse" />
                   Expert Advice
                 </div>
                 <h3 className="mb-3 text-2xl font-black leading-tight sm:text-3xl">
@@ -203,7 +203,7 @@ export default async function HomePage() {
                   rel="noopener noreferrer"
                   className="inline-flex w-fit items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-black text-emerald-700 transition-all duration-300 hover:-translate-y-1 hover:bg-emerald-50"
                 >
-                  <MessageCircle size={18} /> 
+                  <FaMessage size={18} /> 
                   Chat on WhatsApp
                 </a>
               </div>
@@ -223,7 +223,7 @@ export default async function HomePage() {
           ].map(review => (
             <div key={review.name} className="rounded-3xl border border-border bg-card p-6">
               <div className="flex gap-1 text-accent mb-4">
-                {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
+                {[...Array(5)].map((_, i) => <FaStar key={i} size={14} fill="currentColor" />)}
               </div>
               <p className="text-muted-foreground text-sm leading-relaxed mb-6">&quot;{review.text}&quot;</p>
               <p className="font-bold text-sm">{review.name}</p>

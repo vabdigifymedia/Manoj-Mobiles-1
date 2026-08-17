@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Star, MessageSquare, CheckCircle2 } from 'lucide-react'
+import { FaCircleCheck, FaStar, FaComment } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import { useAuth } from '@/lib/auth-context'
 import type { ReviewResponseDTO, RatingSummaryDTO } from '@/lib/types'
@@ -90,7 +90,7 @@ export function ProductReviews({ productId }: { productId: string }) {
           <h2 className="text-2xl font-black">Customer Reviews</h2>
           {summary && summary.totalReviews > 0 && (
             <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-              <Star size={16} fill="currentColor" className="text-accent" />
+              <FaStar size={16} fill="currentColor" className="text-accent" />
               <span className="font-bold text-foreground">{summary.averageRating.toFixed(1)} out of 5</span>
               <span>Based on {summary.totalReviews} reviews</span>
             </div>
@@ -100,7 +100,7 @@ export function ProductReviews({ productId }: { productId: string }) {
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 transition-colors"
         >
-          <MessageSquare size={16} /> Write a Review
+          <FaComment size={16} /> Write a Review
         </button>
       </div>
 
@@ -116,7 +116,7 @@ export function ProductReviews({ productId }: { productId: string }) {
                 <div className="mt-2 flex gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button type="button" key={star} onClick={() => setRating(star)} className={`${rating >= star ? 'text-accent' : 'text-muted-foreground/30'}`}>
-                      <Star size={28} fill="currentColor" />
+                      <FaStar size={28} fill="currentColor" />
                     </button>
                   ))}
                 </div>
@@ -166,7 +166,7 @@ export function ProductReviews({ productId }: { productId: string }) {
           <div key={review.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex gap-1 text-accent mb-3">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} size={14} fill={i < review.rating ? "currentColor" : "none"} stroke={i < review.rating ? "currentColor" : "#ccc"} />
+                <FaStar key={i} size={14} fill={i < review.rating ? "currentColor" : "none"} stroke={i < review.rating ? "currentColor" : "#ccc"} />
               ))}
             </div>
             {review.title && <h4 className="font-bold mb-2">{review.title}</h4>}
@@ -176,7 +176,7 @@ export function ProductReviews({ productId }: { productId: string }) {
               {review.isVerifiedPurchase && (
                 <>
                   <span>·</span>
-                  <span className="text-emerald-600 flex items-center gap-1"><CheckCircle2 size={12} /> Verified Purchase</span>
+                  <span className="text-emerald-600 flex items-center gap-1"><FaCircleCheck size={12} /> Verified Purchase</span>
                 </>
               )}
               <span>·</span>

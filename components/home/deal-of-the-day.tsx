@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Flame, Clock } from 'lucide-react'
+import { FaClock, FaFire } from 'react-icons/fa6'
 import type { BannerResponseDTO } from '@/lib/types'
 
 function useCountdown(endTime: string) {
@@ -60,7 +60,7 @@ export function DealOfTheDay({ banner }: { banner: BannerResponseDTO | null }) {
 
           <div className="flex-1">
             <div className="flex items-center justify-center gap-2 lg:justify-start">
-              <Flame className="text-yellow-300" size={22} />
+              <FaFire className="text-yellow-300" size={22} />
               <span className="text-xs font-bold uppercase tracking-[.2em] text-yellow-300">
                 {banner.badgeText || 'Deal of the Day'}
               </span>
@@ -79,7 +79,7 @@ export function DealOfTheDay({ banner }: { banner: BannerResponseDTO | null }) {
 
           <div className="flex flex-col items-center gap-3">
             <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-yellow-300">
-              <Clock size={14} /> Ends in
+              <FaClock size={14} /> Ends in
             </div>
             <div className="flex gap-3">
               <TimeBox value={hours} label="Hrs" />

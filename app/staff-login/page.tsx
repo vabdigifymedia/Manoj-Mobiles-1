@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, UserCircle } from 'lucide-react'
+import { FaArrowLeft, FaCircleUser } from 'react-icons/fa6'
 
 export default function StaffLoginPage() {
   const [email, setEmail] = useState('')
@@ -19,11 +19,11 @@ export default function StaffLoginPage() {
     <main className="flex min-h-[calc(100vh-100px)] items-center justify-center p-4">
       <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-sm">
         <Link href="/" className="mb-8 flex w-fit items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={16} /> Back to store
+          <FaArrowLeft size={16} /> Back to store
         </Link>
         
         <div className="mb-6 grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-          <UserCircle size={24} />
+          <FaCircleUser size={24} />
         </div>
         <h1 className="text-2xl font-black">Staff Login</h1>
         <p className="mt-2 text-sm text-muted-foreground">Sign in with your organizational email to access the admin panel.</p>

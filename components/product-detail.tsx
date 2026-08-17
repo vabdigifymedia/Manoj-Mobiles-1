@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Star, MapPin, CheckCircle2, MessageSquare, ShoppingCart, Zap, MemoryStick, HardDrive, Microchip, ShieldCheck, Truck, Cpu, Battery, Settings, Smartphone, Camera, Wifi, Bluetooth } from 'lucide-react'
+import { FaMicrochip, FaCircleCheck, FaArrowLeft, FaBolt, FaHardDrive, FaBatteryFull, FaCamera, FaShieldHalved, FaWifi, FaMobileScreen, FaComment, FaLocationDot, FaGear, FaBluetooth, FaMemory, FaTruckFast, FaStar, FaCartShopping } from 'react-icons/fa6'
 import { formatINR } from '@/lib/apiClient'
 import { useStore } from '@/components/store-provider'
 import type { ProductResponseDTO, ProductVariantResponseDTO } from '@/lib/types'
@@ -83,7 +83,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 pb-28 lg:pb-8 lg:px-8">
       <Link href="/shop" className="mb-6 flex w-fit items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
-        <ArrowLeft size={16} /> Back to shop
+        <FaArrowLeft size={16} /> Back to shop
       </Link>
       
       <div className="grid gap-8 lg:grid-cols-2">
@@ -148,7 +148,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
             <p className="text-xs font-bold uppercase tracking-[.18em] text-primary dark:text-zinc-400">{product.brandName}</p>
             <h1 className="mt-1 text-4xl font-black">{product.name}</h1>
             <div className="mt-3 flex items-center gap-2">
-              <Star size={17} fill="currentColor" className="text-accent" />
+              <FaStar size={17} fill="currentColor" className="text-accent" />
               <b>{product.avgRating || 0}</b>
               <a href="#reviews" className="text-sm text-muted-foreground hover:text-primary hover:underline">{product.totalReviews || 0} reviews</a>
             </div>
@@ -194,16 +194,16 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
           
           <div className="mt-2 hidden lg:flex gap-3">
             <button onClick={() => addToCart(selectedVariant.id, 1)} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary px-5 py-4 font-bold text-primary hover:bg-primary/5 transition-colors">
-              <ShoppingCart size={20} /> Add to cart
+              <FaCartShopping size={20} /> Add to cart
             </button>
             <button onClick={handleBuyNow} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
-              <Zap size={20} /> Buy now
+              <FaBolt size={20} /> Buy now
             </button>
           </div>
           
           <form onSubmit={checkPincode} className="rounded-2xl border border-border p-4 bg-muted/30">
             <p className="text-sm font-bold flex items-center gap-2 mb-3">
-              <MapPin size={16} className="text-primary" /> Delivery Options
+              <FaLocationDot size={16} className="text-primary" /> Delivery Options
             </p>
             <div className="flex gap-2">
               <input 
@@ -215,7 +215,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
               <button type="submit" className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">Check</button>
             </div>
             {deliveryStatus === 'success' && (
-              <p className="mt-3 text-sm font-semibold text-emerald-600 flex items-center gap-1.5"><CheckCircle2 size={16} /> Delivery available by tomorrow!</p>
+              <p className="mt-3 text-sm font-semibold text-emerald-600 flex items-center gap-1.5"><FaCircleCheck size={16} /> Delivery available by tomorrow!</p>
             )}
             {deliveryStatus === 'error' && (
               <p className="mt-3 text-sm font-semibold text-destructive">Please enter a valid 6-digit pincode.</p>
@@ -227,20 +227,20 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
               <h2 className="font-bold text-lg mb-4">Highlights</h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {product.highlights.map(h => {
-                  const Icon = h.iconName === 'MemoryStick' ? MemoryStick :
-                               h.iconName === 'HardDrive' ? HardDrive :
-                               h.iconName === 'Microchip' ? Microchip :
-                               h.iconName === 'ShieldCheck' ? ShieldCheck :
-                               h.iconName === 'Truck' ? Truck :
-                               h.iconName === 'Cpu' ? Cpu :
-                               h.iconName === 'Battery' ? Battery :
-                               h.iconName === 'Star' ? Star :
-                               h.iconName === 'Settings' ? Settings :
-                               h.iconName === 'Smartphone' ? Smartphone :
-                               h.iconName === 'Camera' ? Camera :
-                               h.iconName === 'Wifi' ? Wifi :
-                               h.iconName === 'Bluetooth' ? Bluetooth :
-                               h.iconName === 'Zap' ? Zap : CheckCircle2;
+                  const Icon = h.iconName === 'FaMemory' ? FaMemory :
+                               h.iconName === 'FaHardDrive' ? FaHardDrive :
+                               h.iconName === 'FaMicrochip' ? FaMicrochip :
+                               h.iconName === 'FaShieldHalved' ? FaShieldHalved :
+                               h.iconName === 'FaTruckFast' ? FaTruckFast :
+                               h.iconName === 'FaMicrochip' ? FaMicrochip :
+                               h.iconName === 'FaBatteryFull' ? FaBatteryFull :
+                               h.iconName === 'FaStar' ? FaStar :
+                               h.iconName === 'FaGear' ? FaGear :
+                               h.iconName === 'Smartphone' ? FaMobileScreen :
+                               h.iconName === 'FaCamera' ? FaCamera :
+                               h.iconName === 'FaWifi' ? FaWifi :
+                               h.iconName === 'FaBluetooth' ? FaBluetooth :
+                               h.iconName === 'FaBolt' ? FaBolt : FaCircleCheck;
                   
                   const cleanName = selectedVariant.variantName.replace(`(${selectedVariant.color})`, '').trim();
                   let text = h.text.replace('{variant}', cleanName);
@@ -314,10 +314,10 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
       {/* Mobile Fixed Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-3 border-t border-border bg-background p-4 lg:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
         <button onClick={() => addToCart(selectedVariant.id, 1)} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary py-3.5 font-bold text-primary hover:bg-primary/5 transition-colors">
-          <ShoppingCart size={18} /> Add to cart
+          <FaCartShopping size={18} /> Add to cart
         </button>
         <button onClick={handleBuyNow} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
-          <Zap size={18} /> Buy now
+          <FaBolt size={18} /> Buy now
         </button>
       </div>
     </main>

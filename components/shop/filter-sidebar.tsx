@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Slider } from '@/components/ui/slider'
 import { formatINR } from '@/lib/apiClient'
-import { X } from 'lucide-react'
+import { FaXmark } from 'react-icons/fa6'
 import type { BrandResponseDTO, CategoryResponseDTO } from '@/lib/types'
 
 interface FilterSidebarProps {
@@ -59,7 +59,7 @@ export function FilterSidebar({ brands, categories, onApplied }: FilterSidebarPr
         <h3 className="text-lg font-black">Filters</h3>
         {hasFilters && (
           <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-bold text-destructive hover:underline">
-            <X size={12} /> Clear all
+            <FaXmark size={12} /> Clear all
           </button>
         )}
       </div>
@@ -99,7 +99,7 @@ export function FilterSidebar({ brands, categories, onApplied }: FilterSidebarPr
                   selectedCategory === c.slug ? 'border-primary bg-primary' : 'border-border'
                 }`}>
                   {selectedCategory === c.slug && (
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4.2 7.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4.2 7.5L8 3" stroke="white"  strokeLinecap="round" strokeLinejoin="round"/></svg>
                   )}
                 </span>
                 {c.name}
@@ -128,7 +128,7 @@ export function FilterSidebar({ brands, categories, onApplied }: FilterSidebarPr
                   selectedBrand === b.slug ? 'border-primary bg-primary' : 'border-border'
                 }`}>
                   {selectedBrand === b.slug && (
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4.2 7.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4.2 7.5L8 3" stroke="white"  strokeLinecap="round" strokeLinejoin="round"/></svg>
                   )}
                 </span>
                 {b.name}

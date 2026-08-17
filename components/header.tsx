@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Search, ShoppingBag, Smartphone, Sun, Moon, Menu, Mic, MapPin, User, X } from 'lucide-react'
+import { FaXmark, FaMoon, FaMobileScreen, FaUser, FaBagShopping, FaBars, FaMagnifyingGlass, FaMicrophone, FaLocationDot, FaSun } from 'react-icons/fa6'
 import { useTheme } from 'next-themes'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -118,11 +118,11 @@ export function Header() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 lg:px-8">
           <div className="flex items-center gap-3">
             <button className="md:hidden grid size-10 place-items-center rounded-full hover:bg-muted -ml-2" onClick={() => setMobileMenuOpen(true)}>
-              <Menu size={24} />
+              <FaBars size={24} />
             </button>
             <Link href="/" className="flex items-center gap-3 text-left">
               <span className="grid size-10 place-items-center rounded-xl bg-[#0042a3] text-white">
-                <Smartphone size={20} strokeWidth={1.5} />
+                <FaMobileScreen size={20}  />
               </span>
             <div className="flex flex-col">
               <strong className="block text-xl tracking-tight leading-none text-zinc-900 dark:text-white">
@@ -147,7 +147,7 @@ export function Header() {
           </nav>
           <div ref={searchRef} className="ml-auto hidden max-w-md flex-1 relative md:block">
             <div className="flex items-center gap-3 rounded-full bg-[#EFEFEF] dark:bg-zinc-900 px-4 py-2.5">
-              <Search size={18} className="text-slate-500 dark:text-zinc-400" />
+              <FaMagnifyingGlass size={18} className="text-slate-500 dark:text-zinc-400" />
               <input 
                 aria-label="Search products" 
                 placeholder="Search phones, accessories & more" 
@@ -183,7 +183,7 @@ export function Header() {
                               className="w-full text-left flex items-center gap-3 p-2 hover:bg-muted/50 rounded-lg transition-colors"
                             >
                               <div className="grid size-8 place-items-center rounded-md bg-muted text-muted-foreground">
-                                <Search size={14} />
+                                <FaMagnifyingGlass size={14} />
                               </div>
                               <span className="text-sm font-semibold">{c.name}</span>
                             </button>
@@ -251,43 +251,43 @@ export function Header() {
                 className="relative flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" 
                 aria-label="Toggle Theme"
               >
-                {theme === 'dark' ? <Sun size={22} strokeWidth={1.5} /> : <Moon size={22} strokeWidth={1.5} />}
+                {theme === 'dark' ? <FaSun size={22}  /> : <FaMoon size={22}  />}
               </button>
             )}
 
             <Link href="/wishlist" className="relative hidden md:flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Wishlist">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"  strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
             </Link>
 
-            <Link href={isAuthenticated ? "/account" : "/auth"} className="md:hidden relative flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Account">
-              <User size={22} strokeWidth={1.5} />
+            <Link href={isAuthenticated ? "/account" : "/auth"} className="hidden md:flex relative items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Account">
+              <FaUser size={22}  />
             </Link>
 
-            <Link href="/cart" className="relative flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Cart">
-              <ShoppingBag size={22} strokeWidth={1.5} />
+            <Link href="/cart" className="hidden md:flex relative items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Cart">
+              <FaBagShopping size={22}  />
               {cartCount > 0 && <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#F97316] text-[10px] font-black text-white">{cartCount}</span>}
             </Link>
 
           </div>
         </div>
 
-        {/* Mobile Prominent Search Bar & Location Strip */}
+        {/* Mobile Prominent FaMagnifyingGlass Bar & Location Strip */}
         <div className="md:hidden px-4 pb-3">
           <div 
             className="flex items-center gap-3 rounded-full bg-white dark:bg-zinc-900 px-4 py-2.5 shadow-sm border border-border"
             onClick={() => setShowMobileSearch(true)}
           >
-            <Search size={18} className="text-slate-500" />
+            <FaMagnifyingGlass size={18} className="text-slate-500" />
             <input 
               type="text"
-              placeholder="Search for phone, TV, appliances..."
+              placeholder="Search for phones, tablets, smart watches..."
               className="w-full bg-transparent text-sm outline-none placeholder:text-slate-500 font-medium cursor-text pointer-events-none"
               readOnly
             />
-            <Mic size={18} className="text-slate-500" />
+            <FaMicrophone size={18} className="text-slate-500" />
           </div>
           <div className="mt-3 flex items-center gap-2 text-sm px-1">
-            <MapPin size={16} className="text-slate-600 dark:text-slate-400" />
+            <FaLocationDot size={16} className="text-slate-600 dark:text-slate-400" />
             <span className="text-slate-600 dark:text-slate-400">Deliver to</span>
             <button className="font-bold hover:underline" onClick={() => {
               const pin = prompt('Enter your Pincode:', pincode === 'Select your location' ? '' : pincode)
@@ -302,7 +302,7 @@ export function Header() {
         </div>
       </header>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile Drawer FaBars */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
@@ -312,7 +312,7 @@ export function Header() {
                 manoj<span className="text-[#F97316]">mobiles</span>
               </strong>
               <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-full">
-                <X size={20} />
+                <FaXmark size={20} />
               </button>
             </div>
             <div className="p-4 flex flex-col gap-4 font-bold overflow-y-auto">

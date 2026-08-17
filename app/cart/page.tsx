@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Minus, Plus, Trash2 } from 'lucide-react'
+import { FaTrashCan, FaMinus, FaPlus } from 'react-icons/fa6'
 import { useStore } from '@/components/store-provider'
 import { formatINR } from '@/lib/apiClient'
 
@@ -46,14 +46,14 @@ export default function CartPage() {
                         onClick={() => updateQuantity(item.variantId, -1)}
                         className="grid size-8 place-items-center rounded-lg hover:bg-background disabled:opacity-50"
                       >
-                        <Minus size={14} />
+                        <FaMinus size={14} />
                       </button>
                       <span className="w-8 text-center text-sm font-bold">{item.qty}</span>
                       <button 
                         onClick={() => updateQuantity(item.variantId, 1)}
                         className="grid size-8 place-items-center rounded-lg hover:bg-background disabled:opacity-50"
                       >
-                        <Plus size={14} />
+                        <FaPlus size={14} />
                       </button>
                     </div>
                     
@@ -62,7 +62,7 @@ export default function CartPage() {
                       className="p-2 text-muted-foreground hover:text-destructive"
                       aria-label="Remove item"
                     >
-                      <Trash2 size={18} />
+                      <FaTrashCan size={18} />
                     </button>
                   </div>
                 </div>

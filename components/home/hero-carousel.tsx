@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Flame } from 'lucide-react'
+import { FaChevronLeft, FaFire, FaChevronRight } from 'react-icons/fa6'
 import { FastAverageColor } from 'fast-average-color'
 import type { BannerResponseDTO } from '@/lib/types'
 
@@ -28,7 +28,7 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
     return (
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0042a3] to-[#001d4a] px-8 py-14 text-white lg:min-h-[420px] lg:px-14 lg:py-16 shadow-xl">
         <div className="relative z-10 max-w-lg">
-          <span className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-1.5 text-xs font-bold tracking-wide backdrop-blur-sm"><Flame size={14} className="text-orange-400" /> Welcome</span>
+          <span className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-1.5 text-xs font-bold tracking-wide backdrop-blur-sm"><FaFire size={14} className="text-orange-400" /> Welcome</span>
           <h1 className="text-balance text-4xl font-black leading-[1.02] sm:text-6xl">Upgrade to a phone you&apos;ll love.</h1>
           <p className="mt-5 max-w-md text-sm leading-6 text-white/70 sm:text-base">Genuine smartphones, transparent pricing, and delivery you can count on.</p>
           <Link href="/shop" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#0042a3] hover:bg-white/90 transition-all">
@@ -133,7 +133,7 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
         <div className={`max-w-lg ${textClass} lg:w-1/2 w-[75%] sm:w-[70%]`}>
           {banner.badgeText && (
             <span className={`mb-2 sm:mb-3 md:mb-4 inline-flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-3 py-0.5 sm:py-1 md:px-4 md:py-1.5 text-[9px] sm:text-[10px] md:text-xs font-bold tracking-wide backdrop-blur-sm animate-in fade-in duration-500 ${badgeClass}`}>
-              <Flame size={12} className="text-orange-500" /> {banner.badgeText}
+              <FaFire size={12} className="text-orange-500" /> {banner.badgeText}
             </span>
           )}
           <h2 className="text-balance text-lg sm:text-2xl font-black leading-[1.05] md:text-4xl lg:text-5xl xl:text-6xl animate-in slide-in-from-bottom-4 duration-500">
@@ -157,10 +157,10 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
       {banners.length > 1 && (
         <>
           <button onClick={prev} className={`absolute left-4 top-1/2 -translate-y-1/2 z-20 grid size-10 place-items-center rounded-full backdrop-blur-sm transition-all ${navBtnClass}`}>
-            <ChevronLeft size={20} />
+            <FaChevronLeft size={20} />
           </button>
           <button onClick={next} className={`absolute right-4 top-1/2 -translate-y-1/2 z-20 grid size-10 place-items-center rounded-full backdrop-blur-sm transition-all ${navBtnClass}`}>
-            <ChevronRight size={20} />
+            <FaChevronRight size={20} />
           </button>
         </>
       )}

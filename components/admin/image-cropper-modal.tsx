@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { ZoomIn, ZoomOut, RotateCcw, Check, X, Move } from 'lucide-react'
+import { FaArrowsUpDownLeftRight, FaArrowRotateLeft, FaXmark, FaMagnifyingGlassPlus, FaMagnifyingGlassMinus, FaCheck } from 'react-icons/fa6'
 
 interface ImageCropperModalProps {
   imageSrc: string
@@ -175,7 +175,7 @@ export function ImageCropperModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2">
-            <Move size={18} className="text-primary" />
+            <FaArrowsUpDownLeftRight size={18} className="text-primary" />
             <h3 className="font-bold text-base text-foreground">{title}</h3>
           </div>
           <button
@@ -183,7 +183,7 @@ export function ImageCropperModal({
             onClick={onCancel}
             className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
-            <X size={18} />
+            <FaXmark size={18} />
           </button>
         </div>
 
@@ -238,7 +238,7 @@ export function ImageCropperModal({
 
           {/* Controls: Zoom Slider */}
           <div className="mt-4 flex w-full items-center gap-3 px-2">
-            <ZoomOut size={16} className="text-muted-foreground shrink-0" />
+            <FaMagnifyingGlassMinus size={16} className="text-muted-foreground shrink-0" />
             <input
               type="range"
               min={minZoom}
@@ -248,7 +248,7 @@ export function ImageCropperModal({
               onChange={(e) => setZoom(parseFloat(e.target.value))}
               className="w-full accent-primary cursor-pointer"
             />
-            <ZoomIn size={16} className="text-muted-foreground shrink-0" />
+            <FaMagnifyingGlassPlus size={16} className="text-muted-foreground shrink-0" />
 
             <button
               type="button"
@@ -256,7 +256,7 @@ export function ImageCropperModal({
               title="Reset Position & Zoom"
               className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground shrink-0 transition-colors"
             >
-              <RotateCcw size={14} />
+              <FaArrowRotateLeft size={14} />
             </button>
           </div>
         </div>
@@ -276,7 +276,7 @@ export function ImageCropperModal({
             disabled={!imageLoaded}
             className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow-md hover:bg-primary/90 transition-all disabled:opacity-50"
           >
-            <Check size={14} /> Apply Crop
+            <FaCheck size={14} /> Apply Crop
           </button>
         </div>
       </div>

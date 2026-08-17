@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Search, Filter, UserRound } from 'lucide-react'
+import { FaFilter, FaUser, FaArrowLeft, FaMagnifyingGlass } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import { UserResponseDTO } from '@/lib/types'
 
@@ -14,7 +14,7 @@ export default function AdminCustomersPage() {
     const fetchCustomers = async () => {
       try {
         const res = await apiClient.getUsers(0, 100)
-        // Filter only customers
+        // FaFilter only customers
         setCustomers(res.data.data.content.filter(u => u.role === 'CUSTOMER'))
       } catch (err) {
         // Handle error gracefully
@@ -28,7 +28,7 @@ export default function AdminCustomersPage() {
   return (
     <>
       <Link href="/admin" className="mb-6 flex w-fit items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
-        <ArrowLeft size={16} /> Back to Dashboard
+        <FaArrowLeft size={16} /> Back to Dashboard
       </Link>
       
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -38,11 +38,11 @@ export default function AdminCustomersPage() {
         </div>
         <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <FaMagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input type="text" placeholder="Search customers..." className="w-full sm:w-64 rounded-xl border border-border bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-primary" />
           </div>
           <button className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold">
-            <Filter size={16} /> Filter
+            <FaFilter size={16} /> FaFilter
           </button>
         </div>
       </div>
@@ -77,7 +77,7 @@ export default function AdminCustomersPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="grid size-10 place-items-center rounded-full bg-primary/10 font-bold text-primary">
-                        {customer.name ? customer.name.charAt(0).toUpperCase() : <UserRound size={16} />}
+                        {customer.name ? customer.name.charAt(0).toUpperCase() : <FaUser size={16} />}
                       </div>
                       <div>
                         <p className="font-bold">{customer.name || 'Unknown'}</p>
