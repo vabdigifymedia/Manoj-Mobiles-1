@@ -40,10 +40,10 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
         </div>
       </div>
 
-      {/* Responsive layout: Horizontal Scroll on Mobile (< md), Clean 16:9 Grid on Desktop (>= md) */}
+      {/* Responsive layout: Horizontal Scroll on Mobile (< md), Clean Grid on Desktop (>= md) */}
       <div
         ref={scrollRef}
-        className="flex md:grid md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5 overflow-x-auto md:overflow-visible pb-3 md:pb-0 scroll-smooth scrollbar-hide snap-x"
+        className="flex md:grid md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-5 overflow-x-auto md:overflow-visible pb-3 md:pb-0 scroll-smooth scrollbar-hide snap-x"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {brands.map(brand => (
@@ -53,7 +53,7 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
             title={brand.name}
             className="group flex flex-col items-center gap-2 shrink-0 md:shrink snap-start transition-transform duration-300 hover:-translate-y-1"
           >
-            <div className="flex aspect-square w-[100px] sm:w-[130px] md:w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-card group-hover:border-primary">
+            <div className="flex aspect-square md:aspect-[3/2] w-[100px] sm:w-[130px] md:w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-card group-hover:border-primary">
               {brand.logoUrl ? (
                 <img
                   src={brand.logoUrl}
