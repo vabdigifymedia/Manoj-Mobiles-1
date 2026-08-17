@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FaXmark, FaMoon, FaMobileScreen, FaUser, FaBagShopping, FaBars, FaMagnifyingGlass, FaMicrophone, FaLocationDot, FaSun, FaHeart } from 'react-icons/fa6'
+import { FaXmark, FaMoon, FaMobileScreen, FaUser, FaBagShopping, FaBars, FaMagnifyingGlass, FaMicrophone, FaLocationDot, FaSun, FaHeart, FaArrowLeft } from 'react-icons/fa6'
 import { useTheme } from 'next-themes'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -114,7 +114,7 @@ export function Header() {
           )}
         </div>
       )}
-      <header className="sticky top-0 z-20 border-b border-border bg-[#F9F9F8] dark:bg-zinc-950 dark:border-zinc-800">
+      <header className={`sticky top-0 z-20 border-b border-border bg-[#F9F9F8] dark:bg-zinc-950 dark:border-zinc-800 ${pathname?.startsWith('/product/') ? 'hidden md:block' : ''}`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 lg:px-8">
           <div className="flex items-center gap-3">
             <button className="md:hidden grid size-10 place-items-center rounded-full hover:bg-muted -ml-2" onClick={() => setMobileMenuOpen(true)}>
@@ -302,7 +302,19 @@ export function Header() {
         </div>
       </header>
 
-      {/* Mobile Drawer FaBars */}
+      {/* Minimal Mobile Header for Product Pages */}
+      {pathname?.startsWith('/product/') && (
+        <header className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 py-3 bg-background border-b border-border shadow-sm">
+          <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-muted text-foreground transition-colors">
+            <FaArrowLeft size={20} />
+          </button>
+          <button onClick={() => setShowMobileSearch(true)} className="p-2 -mr-2 rounded-full hover:bg-muted text-foreground transition-colors">
+            <FaMagnifyingGlass size={20} />
+          </button>
+        </header>
+      )}
+
+      {/* Mobile Sidebar Navigation */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />

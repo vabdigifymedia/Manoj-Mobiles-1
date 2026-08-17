@@ -81,10 +81,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
   const allImages = selectedVariant.images?.map(img => img.url) || selectedVariant.imageUrls || []
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 pb-28 lg:pb-8 lg:px-8">
-      <Link href="/shop" className="mb-6 flex w-fit items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
-        <FaArrowLeft size={16} /> Back to shop
-      </Link>
+    <main className="mx-auto max-w-7xl px-4 py-4 md:py-8 pb-28 lg:pb-8 lg:px-8">
       
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="flex flex-col gap-4 self-start lg:sticky lg:top-24 min-w-0">
@@ -143,10 +140,10 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
         </div>
         
-        <div className="flex flex-col gap-6 min-w-0">
+        <div className="flex flex-col gap-4 md:gap-6 min-w-0">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[.18em] text-primary dark:text-zinc-400">{product.brandName}</p>
-            <h1 className="mt-1 text-4xl font-black">{product.name}</h1>
+            <p className="text-[10px] md:text-xs font-bold uppercase tracking-[.18em] text-primary dark:text-zinc-400">{product.brandName}</p>
+            <h1 className="mt-1 text-2xl md:text-3xl lg:text-4xl font-black leading-tight">{product.name}</h1>
             <div className="mt-3 flex items-center gap-2">
               <FaStar size={17} fill="currentColor" className="text-accent" />
               <b>{product.avgRating || 0}</b>
@@ -155,8 +152,8 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
           </div>
           
           <div>
-            <p className="text-3xl font-black">{formatINR(selectedVariant.sellingPrice)}</p>
-            <p className="mt-1 text-sm text-muted-foreground">MRP <span className="line-through">{formatINR(selectedVariant.mrp)}</span></p>
+            <p className="text-2xl md:text-3xl font-black">{formatINR(selectedVariant.sellingPrice)}</p>
+            <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-muted-foreground">MRP <span className="line-through">{formatINR(selectedVariant.mrp)}</span></p>
           </div>
           
           {availableColors.length > 0 && (
@@ -167,7 +164,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
                   <button 
                     key={color} 
                     onClick={() => handleColorChange(color as string)} 
-                    className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors ${selectedColor === color ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
+                    className={`rounded-xl border px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium transition-colors ${selectedColor === color ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
                   >
                     {color as string}
                   </button>
@@ -183,7 +180,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
                 <button 
                   key={v.id} 
                   onClick={() => setSelectedVariant(v)} 
-                  className={`flex justify-between items-center rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${selectedVariant.id === v.id ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
+                  className={`flex justify-between items-center rounded-xl border px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm font-medium transition-colors ${selectedVariant.id === v.id ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
                 >
                   <span>{v.variantName.replace(`(${v.color})`, '').trim()}</span>
                   <span className="font-bold">{formatINR(v.sellingPrice)}</span>
@@ -209,10 +206,10 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
               <input 
                 type="text" placeholder="Enter 6-digit Pincode" value={pincode}
                 onChange={(e) => { setPincode(e.target.value); setDeliveryStatus('idle'); }}
-                className="flex-1 rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
+                className="flex-1 min-w-0 rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
                 maxLength={6}
               />
-              <button type="submit" className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">Check</button>
+              <button type="submit" className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">Check</button>
             </div>
             {deliveryStatus === 'success' && (
               <p className="mt-3 text-sm font-semibold text-emerald-600 flex items-center gap-1.5"><FaCircleCheck size={16} /> Delivery available by tomorrow!</p>
