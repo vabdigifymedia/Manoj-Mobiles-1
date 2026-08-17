@@ -6,7 +6,7 @@ import { FilterSidebar } from '@/components/shop/filter-sidebar'
 import { FilterSheet } from '@/components/shop/filter-sheet'
 import { ProductGridSkeleton } from '@/components/shop/product-grid-skeleton'
 import { serverFetch } from '@/lib/apiClient'
-import type { ProductListResponseDTO, PageResponse, BrandResponseDTO, CategoryResponseDTO } from '@/lib/types'
+import type { ProductListResponseDTO, PageResponse, BrandResponseDTO, CategoryResponseDTO, ProductResponseDTO } from '@/lib/types'
 
 export const metadata: Metadata = {
   title: 'Shop Phones | Manoj Mobiles',
@@ -38,7 +38,34 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     serverFetch<CategoryResponseDTO[]>('/api/public/categories'),
   ])
 
-  const products = productsRes?.content || []
+  const productsResData = productsRes?.content || []
+  
+  // Fetch full details for all products on this page to extract their variants
+  const fullProducts = await Promise.all(
+    productsResData.map(p => serverFetch<ProductResponseDTO>(`/api/public/products/${p.id}`))
+  )
+
+  // Group variants by color to avoid showing every single storage option as a separate card
+  const displayVariants = fullProducts.flatMap(p => {
+    if (!p || !p.variants || p.variants.length === 0) return []
+    
+    const variantsByColor = new Map<string, typeof p.variants[0]>();
+    
+    p.variants.forEach(v => {
+      const color = v.color || 'Default';
+      if (!variantsByColor.has(color)) {
+        variantsByColor.set(color, v);
+      }
+    });
+
+    return Array.from(variantsByColor.values()).map(v => ({
+      ...v,
+      parentProduct: p,
+      parentListInfo: productsResData.find(pl => pl.id === p.id),
+      totalVariantsInProduct: p.variants.length
+    }))
+  })
+
   const brands = brandsRes?.content || []
   const categories = categoriesRes || []
 
@@ -65,7 +92,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
           <h1 className="mt-1 text-2xl sm:text-3xl font-black">
             {pageTitle}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">{products.length} phones found</p>
+          <p className="mt-2 text-sm text-muted-foreground">{displayVariants.length} phones found</p>
         </div>
 
         {/* Mobile Filter Button */}
@@ -105,30 +132,75 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
           </div>
 
           {/* Products */}
-          {products.length === 0 ? (
+          {displayVariants.length === 0 ? (
             <div className="col-span-full py-20 text-center rounded-2xl border border-dashed border-border">
               <h3 className="text-xl font-bold">No phones found</h3>
               <p className="text-muted-foreground mt-2">Try adjusting your filters or search term.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-4 w-full">
-              {products.map(product => (
-                <ListProductCard 
-                  key={product.id} 
-                  imageUrl={product.primaryImageUrl || '/placeholder.png'}
-                  title={product.name}
-                  rating={product.avgRating || 4.5}
-                  ratingsCount={product.totalReviews || 1200}
-                  reviewsCount={Math.floor((product.totalReviews || 1200) / 10)}
-                  specifications={product.highlights && product.highlights.length > 0 ? product.highlights.slice(0, 5) : [`Brand: ${product.brandName}`, `Category: ${product.categoryName}`, "1 Year Warranty"]}
-                  price={product.startingPrice}
-                  originalPrice={product.mrp || Math.round(product.startingPrice * 1.2)}
-                  isAssured={true}
-                  exchangeOffer="5,000"
-                  bankOffer="10% off on Credit Cards"
-                  href={`/product/${product.id}`}
-                />
-              ))}
+              {displayVariants.map(variant => {
+                const parent = variant.parentProduct;
+                const parentListInfo = variant.parentListInfo;
+                
+                // Extract RAM and ROM from variant specifications
+                const ramSpec = variant.specifications?.find(s => s.specKey.toUpperCase() === 'RAM')?.specValue;
+                const romSpec = variant.specifications?.find(s => s.specKey.toUpperCase() === 'ROM' || s.specKey.toUpperCase() === 'STORAGE')?.specValue;
+                
+                const rawHighlights = parentListInfo?.highlights?.length 
+                  ? parentListInfo.highlights 
+                  : parent.highlights?.length 
+                  ? parent.highlights.map(h => h.text) 
+                  : [`Brand: ${parent.brandName}`, `Category: ${parent.categoryName}`, "1 Year Warranty"];
+
+                const hasRamRomTemplate = rawHighlights.some(h => h.toLowerCase().includes('{ram}') || h.toLowerCase().includes('{rom}'));
+                
+                let dynamicSpecs = rawHighlights.map(h => {
+                  let text = h;
+                  if (text.toLowerCase().includes('{ram}') || text.toLowerCase().includes('{rom}')) {
+                     if (!ramSpec && !romSpec) return null;
+                     text = text.replace(/\{ram\}/i, ramSpec || '').replace(/\{rom\}/i, romSpec || '');
+                     
+                     // Cleanup if one is missing (e.g., "8GB RAM |  ROM")
+                     if (!ramSpec) text = text.replace(/RAM\s*\|\s*/i, '').replace(/\|\s*RAM/i, '');
+                     if (!romSpec) text = text.replace(/ROM\s*\|\s*/i, '').replace(/\|\s*ROM/i, '');
+                     
+                     // Final cleanup
+                     text = text.replace(/\|\s*$/, '').replace(/^\s*\|\s*/, '').trim();
+                  }
+                  return text;
+                }).filter(Boolean) as string[];
+
+                // If backend didn't use {ram}/{rom} templates, but we have the specs, prepend them
+                if (!hasRamRomTemplate && (ramSpec || romSpec)) {
+                  if (ramSpec && romSpec) {
+                    dynamicSpecs.unshift(`${ramSpec} RAM | ${romSpec} ROM`);
+                  } else if (ramSpec) {
+                    dynamicSpecs.unshift(`${ramSpec} RAM`);
+                  } else if (romSpec) {
+                    dynamicSpecs.unshift(`${romSpec} ROM`);
+                  }
+                }
+                
+                return (
+                  <ListProductCard 
+                    key={variant.id} 
+                    imageUrl={variant.imageUrls?.[0] || variant.images?.[0]?.url || parentListInfo?.primaryImageUrl || '/placeholder.png'}
+                    title={parent.name}
+                    rating={parent.avgRating || 4.5}
+                    ratingsCount={parent.totalReviews || 1200}
+                    reviewsCount={Math.floor((parent.totalReviews || 1200) / 10)}
+                    specifications={dynamicSpecs.slice(0, 5)}
+                    price={variant.sellingPrice}
+                    originalPrice={variant.mrp || Math.round(variant.sellingPrice * 1.2)}
+                    isAssured={true}
+                    exchangeOffer="5,000"
+                    bankOffer="10% off on Credit Cards"
+                    href={`/product/${parent.id}?variant=${variant.id}`}
+                    variantsCount={variant.totalVariantsInProduct}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

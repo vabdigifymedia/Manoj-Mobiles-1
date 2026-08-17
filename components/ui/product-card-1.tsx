@@ -26,6 +26,7 @@ interface ProductCardProps extends HTMLMotionProps<"div"> {
   exchangeOffer: string;
   bankOffer: string;
   href?: string;
+  variantsCount?: number;
 }
 
 const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
@@ -44,6 +45,7 @@ const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
       exchangeOffer,
       bankOffer,
       href,
+      variantsCount,
       ...props
     },
     ref
@@ -170,6 +172,13 @@ const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
                   <Truck className="h-3 w-3 md:h-4 md:w-4" />
                   <span className="font-bold italic text-black dark:text-white">EXPRESS</span> Delivery tomorrow
                 </p>
+                {variantsCount && variantsCount > 1 && (
+                  <div className="mt-2 md:mt-3">
+                    <span className="inline-block text-[11px] md:text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 transition-colors">
+                      View all {variantsCount} variants &rarr;
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
