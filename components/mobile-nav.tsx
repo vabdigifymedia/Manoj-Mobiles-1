@@ -10,7 +10,6 @@ import { SearchOverlay } from './search-overlay'
 
 const tabs = [
   { key: '/', label: 'Home', icon: Home },
-  { key: 'search', label: 'Search', icon: Search },
   { key: '/wishlist', label: 'Wishlist', icon: Heart },
   { key: '/cart', label: 'Cart', icon: ShoppingBag },
   { key: '/account', label: 'Account', icon: User },
@@ -20,7 +19,6 @@ export function MobileNav() {
   const pathname = usePathname()
   const { cartCount } = useStore()
   const { isAuthenticated } = useAuth()
-  const [searchOpen, setSearchOpen] = useState(false)
 
   // Hide on admin pages and product pages (which have their own fixed bar)
   if (pathname?.startsWith('/admin') || pathname?.startsWith('/product/')) return null
@@ -29,7 +27,6 @@ export function MobileNav() {
 
   return (
     <>
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/80 backdrop-blur-xl md:hidden"
@@ -38,24 +35,8 @@ export function MobileNav() {
         <div className="flex items-center justify-around px-2 py-1.5">
           {tabs.map(tab => {
             const Icon = tab.icon
-            const isSearch = tab.key === 'search'
             const href = tab.key === '/account' ? accountHref : tab.key
-            const isActive = isSearch ? searchOpen : pathname === tab.key
-
-            if (isSearch) {
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setSearchOpen(true)}
-                  className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-150 active:scale-90 active:opacity-70 ${
-                    isActive ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                >
-                  <Icon size={22} strokeWidth={isActive ? 2.5 : 1.5} />
-                  <span className="text-[10px] font-semibold">{tab.label}</span>
-                </button>
-              )
-            }
+            const isActive = pathname === tab.key
 
             return (
               <Link

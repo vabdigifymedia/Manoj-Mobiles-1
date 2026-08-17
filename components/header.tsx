@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Search, ShoppingBag, Smartphone, Sun, Moon } from 'lucide-react'
+import { Search, ShoppingBag, Smartphone, Sun, Moon, Menu, Mic, MapPin, User, X } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -38,6 +38,13 @@ export function Header() {
   const [brands, setBrands] = useState<BrandResponseDTO[]>([])
   const [categories, setCategories] = useState<CategoryResponseDTO[]>([])
   const [storeSettings, setStoreSettings] = useState<StoreSettingResponseDTO | null>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [pincode, setPincode] = useState('Select your location')
+
+  useEffect(() => {
+    const savedPincode = localStorage.getItem('user_pincode')
+    if (savedPincode) setPincode(savedPincode)
+  }, [])
 
   useEffect(() => {
     apiClient.getPublicStoreSettings().then(res => setStoreSettings(res.data.data)).catch(() => {})
@@ -108,20 +115,25 @@ export function Header() {
         </div>
       )}
       <header className="sticky top-0 z-20 border-b border-border bg-[#F9F9F8] dark:bg-zinc-950 dark:border-zinc-800">
-        <div className="mx-auto flex max-w-7xl items-center gap-8 px-4 py-4 lg:px-8">
-          <Link href="/" className="flex items-center gap-3 text-left">
-            <span className="grid size-10 place-items-center rounded-xl bg-[#0042a3] text-white">
-              <Smartphone size={20} strokeWidth={1.5} />
-            </span>
-            <span className="hidden sm:block">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 lg:px-8">
+          <div className="flex items-center gap-3">
+            <button className="md:hidden grid size-10 place-items-center rounded-full hover:bg-muted -ml-2" onClick={() => setMobileMenuOpen(true)}>
+              <Menu size={24} />
+            </button>
+            <Link href="/" className="flex items-center gap-3 text-left">
+              <span className="grid size-10 place-items-center rounded-xl bg-[#0042a3] text-white">
+                <Smartphone size={20} strokeWidth={1.5} />
+              </span>
+            <div className="flex flex-col">
               <strong className="block text-xl tracking-tight leading-none text-zinc-900 dark:text-white">
                 manoj<span className="text-[#F97316]">mobiles</span>
               </strong>
-              <small className="text-[10px] font-semibold tracking-wider text-muted-foreground dark:text-zinc-400 mt-0.5 block">
+              <small className="text-[10px] font-semibold tracking-wider text-muted-foreground dark:text-zinc-400 mt-0.5 hidden sm:block">
                 SMARTER CHOICES
               </small>
-            </span>
-          </Link>
+            </div>
+            </Link>
+          </div>
           <nav className="hidden items-center gap-7 text-sm font-bold lg:flex ml-4">
             {nav.map(item => (
               <Link 
@@ -233,17 +245,6 @@ export function Header() {
           </div>
           
           <div className="ml-auto flex items-center gap-2">
-            {/* Mobile Search Button - Only show when MobileNav is hidden (e.g. Product Page) */}
-            {pathname?.startsWith('/product/') && (
-              <button 
-                className="md:hidden relative flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors"
-                onClick={() => setShowMobileSearch(true)}
-                aria-label="Search"
-              >
-                <Search size={22} strokeWidth={1.5} />
-              </button>
-            )}
-
             {mounted && (
               <button 
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -258,25 +259,75 @@ export function Header() {
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
             </Link>
 
-            <Link href="/cart" className="relative hidden md:flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Cart">
+            <Link href={isAuthenticated ? "/account" : "/auth"} className="md:hidden relative flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Account">
+              <User size={22} strokeWidth={1.5} />
+            </Link>
+
+            <Link href="/cart" className="relative flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Cart">
               <ShoppingBag size={22} strokeWidth={1.5} />
               {cartCount > 0 && <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#F97316] text-[10px] font-black text-white">{cartCount}</span>}
             </Link>
 
-            {isAuthenticated ? (
-              <Link href="/account" className="hidden md:flex items-center gap-1.5 rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Account">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span className="hidden lg:block text-sm font-bold">My Account</span>
-              </Link>
-            ) : (
-              <Link href="/auth" className="hidden md:flex items-center gap-1.5 rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Login">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                <span className="hidden lg:block text-sm font-bold">Login</span>
-              </Link>
-            )}
+          </div>
+        </div>
+
+        {/* Mobile Prominent Search Bar & Location Strip */}
+        <div className="md:hidden px-4 pb-3">
+          <div 
+            className="flex items-center gap-3 rounded-full bg-white dark:bg-zinc-900 px-4 py-2.5 shadow-sm border border-border"
+            onClick={() => setShowMobileSearch(true)}
+          >
+            <Search size={18} className="text-slate-500" />
+            <input 
+              type="text"
+              placeholder="Search for phone, TV, appliances..."
+              className="w-full bg-transparent text-sm outline-none placeholder:text-slate-500 font-medium cursor-text pointer-events-none"
+              readOnly
+            />
+            <Mic size={18} className="text-slate-500" />
+          </div>
+          <div className="mt-3 flex items-center gap-2 text-sm px-1">
+            <MapPin size={16} className="text-slate-600 dark:text-slate-400" />
+            <span className="text-slate-600 dark:text-slate-400">Deliver to</span>
+            <button className="font-bold hover:underline" onClick={() => {
+              const pin = prompt('Enter your Pincode:', pincode === 'Select your location' ? '' : pincode)
+              if (pin) {
+                setPincode(pin)
+                localStorage.setItem('user_pincode', pin)
+              }
+            }}>
+              {pincode}
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+          <div className="relative w-4/5 max-w-sm bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-left">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <strong className="block text-xl tracking-tight leading-none text-zinc-900 dark:text-white">
+                manoj<span className="text-[#F97316]">mobiles</span>
+              </strong>
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-4 font-bold overflow-y-auto">
+              {nav.map(item => (
+                <Link key={item.key} href={item.key} onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-lg">
+                  {item.label}
+                </Link>
+              ))}
+              <hr className="my-2 border-border" />
+              <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-lg">Wishlist</Link>
+              <Link href={isAuthenticated ? "/account" : "/auth"} onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-lg">{isAuthenticated ? "My Account" : "Login"}</Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating WhatsApp Button */}
       {whatsappNumber && (

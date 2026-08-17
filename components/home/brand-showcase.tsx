@@ -33,35 +33,17 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
         <div className="flex items-center gap-2">
           <Link
             href="/shop"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 hover:underline mr-1"
+            className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0042a3] dark:text-blue-400 hover:opacity-80 transition-opacity mr-1"
           >
-            All Brands <ArrowRight size={14} />
+            View All <ArrowRight size={16} />
           </Link>
-
-          {/* Mobile-only Navigation Arrows */}
-          <div className="flex items-center gap-1.5 md:hidden">
-            <button
-              onClick={() => scroll('left')}
-              aria-label="Previous Brands"
-              className="grid size-9 place-items-center rounded-xl border border-border bg-card text-foreground shadow-xs transition-all hover:bg-muted active:scale-95"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              aria-label="Next Brands"
-              className="grid size-9 place-items-center rounded-xl border border-border bg-card text-foreground shadow-xs transition-all hover:bg-muted active:scale-95"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Responsive layout: Horizontal Scroll on Mobile (< md), Clean 16:9 Grid on Desktop (>= md) */}
       <div
         ref={scrollRef}
-        className="flex md:grid md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5 overflow-x-auto md:overflow-visible pb-3 md:pb-0 scroll-smooth scrollbar-hide snap-x"
+        className="flex md:grid md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5 overflow-x-auto md:overflow-visible pb-3 md:pb-0 scroll-smooth scrollbar-hide snap-x"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {brands.map(brand => (
@@ -69,21 +51,26 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
             key={brand.id}
             href={`/shop?brand=${brand.slug}`}
             title={brand.name}
-            className="group relative flex aspect-[16/9] w-[170px] sm:w-[200px] md:w-auto shrink-0 md:shrink snap-start items-center justify-center overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:border-primary hover:shadow-xl hover:bg-card"
+            className="group flex flex-col items-center gap-2 shrink-0 md:shrink snap-start transition-transform duration-300 hover:-translate-y-1"
           >
-            {brand.logoUrl ? (
-              <img
-                src={brand.logoUrl}
-                alt={brand.name}
-                className="h-full w-full object-contain p-6 sm:p-8 transition-transform duration-300 group-hover:scale-110 dark:invert dark:hue-rotate-180"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center p-4">
-                <span className="text-base sm:text-lg font-black tracking-wider text-foreground transition-colors group-hover:text-primary">
-                  {brand.name}
-                </span>
-              </div>
-            )}
+            <div className="flex aspect-square w-[100px] sm:w-[130px] md:w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-card group-hover:border-primary">
+              {brand.logoUrl ? (
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.name}
+                  className="h-full w-full object-contain p-4 sm:p-6 transition-transform duration-300 group-hover:scale-110 dark:invert dark:hue-rotate-180"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center p-4">
+                  <span className="text-xs sm:text-sm font-black tracking-wider text-foreground group-hover:text-primary">
+                    {brand.name}
+                  </span>
+                </div>
+              )}
+            </div>
+            <span className="text-xs sm:text-sm font-semibold text-foreground text-center">
+              {brand.name}
+            </span>
           </Link>
         ))}
       </div>

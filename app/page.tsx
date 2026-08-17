@@ -7,10 +7,13 @@ import { BrandShowcase } from '@/components/home/brand-showcase'
 import { DealOfTheDay } from '@/components/home/deal-of-the-day'
 import { ProductTabs } from '@/components/home/product-tabs'
 import { FaqAccordion } from '@/components/home/faq-accordion'
+import { QuickFeatures } from '@/components/home/quick-features'
+import { BankOffers } from '@/components/home/bank-offers'
+import { BrandSpotlight } from '@/components/home/brand-spotlight'
 
 export default async function HomePage() {
   // Parallel SSR data fetching for all home page sections
-  const [heroBanners, dealBanner, storeSettings, faqs, brands, categories, newArrivals, bestSellers, budgetPicks] = await Promise.all([
+  const [heroBanners, dealBanner, storeSettings, faqs, brands, categories, newArrivals, bestSellers, budgetPicks, appleProductsData] = await Promise.all([
     serverFetch<BannerResponseDTO[]>('/api/public/banners?type=HERO_SLIDER'),
     serverFetch<BannerResponseDTO[]>('/api/public/banners?type=DEAL_OF_THE_DAY'),
     serverFetch<StoreSettingResponseDTO>('/api/public/settings'),
@@ -20,6 +23,7 @@ export default async function HomePage() {
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=createdAt,desc'),
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=avgRating,desc'),
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=startingPrice,asc'),
+    serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?brandSlug=apple&page=0&size=6'),
   ])
 
   const activeDeal = (dealBanner || [])[0] || null
@@ -28,16 +32,26 @@ export default async function HomePage() {
   const newProducts = newArrivals?.content || []
   const bestProducts = bestSellers?.content || []
   const budgetProducts = budgetPicks?.content || []
+  const appleProducts = appleProductsData?.content || newArrivals?.content || []
 
   return (
     <>
       {/* Hero Carousel */}
-      <section className="mx-auto max-w-7xl px-4 pt-8 pb-10 lg:px-8 lg:pt-12">
+      <section className="mx-auto max-w-7xl px-4 pt-4 pb-4 md:pt-8 md:pb-10 lg:px-8 lg:pt-12">
         <HeroCarousel banners={heroBanners || []} />
       </section>
 
+      {/* Quick Features (Easy EMI, Bank Offers, etc) */}
+      <QuickFeatures />
+
+      {/* Bank Offers Slider */}
+      <BankOffers />
+
       {/* Shop by Brand Showcase */}
       <BrandShowcase brands={brandList} />
+
+      {/* Brand Spotlight */}
+      <BrandSpotlight brandName="Apple" title="Best Of Apple" products={appleProducts} />
 
       {/* Deal of the Day */}
       <DealOfTheDay banner={activeDeal} />
@@ -73,7 +87,7 @@ export default async function HomePage() {
                 <Link
                   href={`/shop?category=${cat.slug}`}
                   key={cat.id}
-                  className="group relative overflow-hidden rounded-3xl bg-card border border-border p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 min-w-[260px] shrink-0 snap-start sm:min-w-0 sm:shrink"
+                  className="group relative overflow-hidden rounded-3xl bg-card border border-border p-6 transition-all hover:-translate-y-1 hover:border-primary/50 min-w-[260px] shrink-0 snap-start sm:min-w-0 sm:shrink"
                 >
                   {/* Subtle Background Glow */}
                   <div className={`absolute -right-6 -top-6 z-0 h-32 w-32 rounded-full blur-3xl opacity-10 transition-all duration-500 group-hover:scale-150 group-hover:opacity-20 ${glowColors[i % glowColors.length]}`}></div>
@@ -124,7 +138,7 @@ export default async function HomePage() {
               { icon: Headset, title: '24/7 Support', desc: 'Our customer support team is always ready to help you.' },
               { icon: CreditCard, title: 'Secure Payments', desc: '100% secure payment gateways including UPI, Cards, and Wallets.' },
             ].map(feature => (
-              <div key={feature.title} className="flex flex-col items-center text-center rounded-3xl bg-background p-8 shadow-sm transition hover:shadow-md">
+              <div key={feature.title} className="flex flex-col items-center text-center rounded-3xl bg-background p-8 transition hover:bg-muted">
                 <div className="grid size-14 place-items-center rounded-full bg-primary/10 text-primary mb-5">
                   <feature.icon size={28} />
                 </div>
@@ -141,7 +155,7 @@ export default async function HomePage() {
         <section className="mx-auto max-w-7xl px-4 py-16 lg:px-8">
           <div className="grid gap-6 sm:grid-cols-2">
             {/* Store Location */}
-            <div className="rounded-3xl border border-border bg-card p-8 shadow-sm">
+            <div className="rounded-3xl border border-border bg-card p-8">
               <div className="flex items-center gap-2 mb-4">
                 <MapPin size={20} className="text-primary" />
                 <h3 className="text-lg font-bold">Visit Our Store</h3>
@@ -163,7 +177,7 @@ export default async function HomePage() {
             </div>
 
             {/* WhatsApp CTA */}
-            <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#25D366] via-emerald-600 to-teal-900 p-8 text-white shadow-lg transition-all hover:shadow-xl">
+            <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#25D366] via-emerald-600 to-teal-900 p-8 text-white transition-all">
               {/* Decorative Background Elements */}
               <div className="pointer-events-none absolute -right-10 -top-10 z-0 opacity-10 transition-transform duration-700 ease-out group-hover:scale-110 group-hover:opacity-20">
                 <MessageCircle size={250} strokeWidth={1} />
@@ -187,7 +201,7 @@ export default async function HomePage() {
                   href={`https://wa.me/${(storeSettings.whatsappNumber || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(storeSettings.whatsappDefaultMessage || 'Hi, I need help choosing a phone.')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex w-fit items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-black text-emerald-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 hover:bg-emerald-50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)]"
+                  className="inline-flex w-fit items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-black text-emerald-700 transition-all duration-300 hover:-translate-y-1 hover:bg-emerald-50"
                 >
                   <MessageCircle size={18} /> 
                   Chat on WhatsApp
@@ -207,7 +221,7 @@ export default async function HomePage() {
             { name: 'Priya K.', text: 'Great prices and amazing customer service. Will definitely buy my next phone from Manoj Mobiles.' },
             { name: 'Rahul V.', text: 'The checkout process was super smooth and the EMI options really helped.' },
           ].map(review => (
-            <div key={review.name} className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <div key={review.name} className="rounded-3xl border border-border bg-card p-6">
               <div className="flex gap-1 text-accent mb-4">
                 {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
               </div>

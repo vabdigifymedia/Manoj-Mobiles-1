@@ -31,7 +31,7 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
           <span className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-1.5 text-xs font-bold tracking-wide backdrop-blur-sm"><Flame size={14} className="text-orange-400" /> Welcome</span>
           <h1 className="text-balance text-4xl font-black leading-[1.02] sm:text-6xl">Upgrade to a phone you&apos;ll love.</h1>
           <p className="mt-5 max-w-md text-sm leading-6 text-white/70 sm:text-base">Genuine smartphones, transparent pricing, and delivery you can count on.</p>
-          <Link href="/shop" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#0042a3] hover:bg-white/90 transition-all shadow-lg">
+          <Link href="/shop" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#0042a3] hover:bg-white/90 transition-all">
             Shop latest phones →
           </Link>
         </div>
@@ -82,60 +82,71 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
 
   return (
     <div
-      className="relative overflow-hidden rounded-3xl shadow-xl lg:min-h-[420px] group transition-colors duration-700"
-      style={adaptiveColor ? { backgroundColor: adaptiveColor } : {}}
+      className="relative overflow-hidden rounded-3xl lg:min-h-[420px] group"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Background Fallback (if color extraction fails or no image) */}
-      {!adaptiveColor && (
-        <div className={`absolute inset-0 ${banner.bgGradient || 'bg-gradient-to-br from-[#0042a3] to-[#001d4a]'} transition-all duration-700`} />
-      )}
+      {/* Background Layer (Transitions smoothly from fallback dark to adaptive color) */}
+      <div 
+        className="absolute inset-0 transition-colors duration-1000 ease-in-out" 
+        style={{ backgroundColor: adaptiveColor || '#0a0a0a' }}
+      />
       
       {/* Image Layer */}
       {banner.imageUrl && (
-        <div className="absolute inset-x-0 bottom-0 h-[60%] lg:h-full lg:top-0 lg:bottom-auto lg:left-auto lg:right-0 lg:w-[60%] pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 lg:left-auto lg:w-[60%] pointer-events-none overflow-hidden">
           <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105">
             <img
               ref={imgRef}
               crossOrigin="anonymous"
               src={banner.imageUrl}
               alt={banner.title}
-              className="h-full w-full object-cover object-top lg:object-center opacity-90 lg:opacity-100"
+              className="h-full w-full object-cover object-right md:object-center opacity-90 lg:opacity-100"
             />
-            {/* Blend Overlay for Mobile (Top-to-bottom) */}
+            {/* Fallback Blend Overlay for Mobile */}
             <div 
               className="absolute inset-0 lg:hidden"
-              style={{ background: adaptiveColor ? `linear-gradient(to bottom, ${adaptiveColor} 0%, transparent 40%)` : 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 40%)' }}
+              style={{ background: 'linear-gradient(to right, rgba(10,10,10,0.9) 20%, transparent 80%), linear-gradient(to bottom, rgba(10,10,10,0.9) 0%, transparent 60%)' }}
             />
-            {/* Blend Overlay for Desktop (Left-to-right) */}
+            {/* Adaptive Blend Overlay for Mobile (Fades in) */}
+            <div 
+              className={`absolute inset-0 lg:hidden transition-opacity duration-1000 ease-in-out ${adaptiveColor ? 'opacity-100' : 'opacity-0'}`}
+              style={{ background: adaptiveColor ? `linear-gradient(to right, ${adaptiveColor} 20%, transparent 80%), linear-gradient(to bottom, ${adaptiveColor} 0%, transparent 60%)` : 'none' }}
+            />
+            
+            {/* Fallback Blend Overlay for Desktop */}
             <div 
               className="absolute inset-0 hidden lg:block"
-              style={{ background: adaptiveColor ? `linear-gradient(to right, ${adaptiveColor} 0%, transparent 30%)` : 'linear-gradient(to right, rgba(0,0,0,0.8) 0%, transparent 30%)' }}
+              style={{ background: 'linear-gradient(to right, rgba(10,10,10,0.9) 0%, transparent 40%)' }}
+            />
+            {/* Adaptive Blend Overlay for Desktop (Fades in) */}
+            <div 
+              className={`absolute inset-0 hidden lg:block transition-opacity duration-1000 ease-in-out ${adaptiveColor ? 'opacity-100' : 'opacity-0'}`}
+              style={{ background: adaptiveColor ? `linear-gradient(to right, ${adaptiveColor} 0%, transparent 40%)` : 'none' }}
             />
           </div>
         </div>
       )}
 
       {/* Content */}
-      <div className="relative z-10 flex min-h-[480px] lg:min-h-[420px] flex-col justify-start lg:justify-center px-6 py-10 lg:px-14">
-        <div className={`max-w-lg ${textClass} lg:w-1/2`}>
+      <div className="relative z-10 flex min-h-[180px] sm:min-h-[240px] md:min-h-[380px] lg:min-h-[420px] flex-col justify-center px-4 sm:px-6 py-4 sm:py-8 lg:px-14">
+        <div className={`max-w-lg ${textClass} lg:w-1/2 w-[75%] sm:w-[70%]`}>
           {banner.badgeText && (
-            <span className={`mb-4 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold tracking-wide backdrop-blur-sm animate-in fade-in duration-500 ${badgeClass}`}>
-              <Flame size={14} className="text-orange-500" /> {banner.badgeText}
+            <span className={`mb-2 sm:mb-3 md:mb-4 inline-flex items-center gap-1 sm:gap-1.5 rounded-full px-2 sm:px-3 py-0.5 sm:py-1 md:px-4 md:py-1.5 text-[9px] sm:text-[10px] md:text-xs font-bold tracking-wide backdrop-blur-sm animate-in fade-in duration-500 ${badgeClass}`}>
+              <Flame size={12} className="text-orange-500" /> {banner.badgeText}
             </span>
           )}
-          <h2 className="text-balance text-4xl font-black leading-[1.05] sm:text-5xl lg:text-6xl animate-in slide-in-from-bottom-4 duration-500">
+          <h2 className="text-balance text-lg sm:text-2xl font-black leading-[1.05] md:text-4xl lg:text-5xl xl:text-6xl animate-in slide-in-from-bottom-4 duration-500">
             {banner.title}
           </h2>
           {banner.subtitle && (
-            <p className={`mt-4 max-w-md text-sm leading-relaxed sm:text-base animate-in slide-in-from-bottom-4 duration-700 ${subTextClass}`}>
+            <p className={`mt-1 sm:mt-2 md:mt-4 max-w-[200px] sm:max-w-sm md:max-w-md text-[9px] sm:text-[10px] md:text-sm leading-snug md:leading-relaxed animate-in slide-in-from-bottom-4 duration-700 ${subTextClass}`}>
               {banner.subtitle}
             </p>
           )}
           <Link
             href={banner.linkUrl}
-            className={`mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all shadow-lg animate-in slide-in-from-bottom-4 duration-1000 ${btnClass}`}
+            className={`mt-2.5 sm:mt-4 md:mt-6 inline-flex items-center gap-1 sm:gap-1.5 md:gap-2 rounded-lg sm:rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2 md:px-6 md:py-3 text-[10px] md:text-sm font-bold transition-all animate-in slide-in-from-bottom-4 duration-1000 ${btnClass}`}
           >
             {banner.ctaText || 'Shop Now'} →
           </Link>
