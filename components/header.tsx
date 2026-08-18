@@ -251,7 +251,7 @@ export function Header() {
               className="relative hidden md:flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" 
               aria-label="Toggle Theme"
             >
-              {theme === 'dark' ? <FaSun size={22} /> : <FaMoon size={22} />}
+              {!mounted ? <div className="w-[22px] h-[22px]" /> : theme === 'dark' ? <FaSun size={22} /> : <FaMoon size={22} />}
             </button>
 
             <Link href="/wishlist" className="relative hidden md:flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Wishlist">
@@ -357,15 +357,15 @@ export function Header() {
                 aria-label="Toggle Theme"
               >
                 <span className="flex items-center gap-3">
-                  {theme === 'dark' ? (
+                  {!mounted ? <div className="w-[18px] h-[18px]" /> : theme === 'dark' ? (
                     <FaSun size={18} className="text-amber-500" />
                   ) : (
                     <FaMoon size={18} className="text-slate-700 dark:text-zinc-300" />
                   )}
-                  <span className="text-sm">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                  <span className="text-sm">{!mounted ? 'Theme' : theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
                 </span>
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground bg-background px-2.5 py-1 rounded-md border border-border">
-                  {theme === 'dark' ? 'Dark' : 'Light'}
+                  {!mounted ? '...' : theme === 'dark' ? 'Dark' : 'Light'}
                 </span>
               </button>
             </div>

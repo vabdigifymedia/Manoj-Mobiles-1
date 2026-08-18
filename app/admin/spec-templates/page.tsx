@@ -156,8 +156,10 @@ export default function AdminSpecTemplatesPage() {
         <div className="lg:col-span-1 border border-border rounded-xl bg-card p-4 space-y-4 shadow-sm h-fit">
           <h2 className="font-bold text-lg">Select Category</h2>
           <Select value={selectedCategoryId} onValueChange={(v) => setSelectedCategoryId(v ?? '')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a category..." />
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a category...">
+                {categories.find(c => c.id === selectedCategoryId)?.name}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {categories.map(c => (
