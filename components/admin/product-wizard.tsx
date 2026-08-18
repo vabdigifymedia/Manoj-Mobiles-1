@@ -637,33 +637,67 @@ export function ProductWizard({ productId }: { productId?: string }) {
               </form>
             )}
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="border-b border-border text-muted-foreground font-semibold">
-                  <tr>
-                    <th className="py-2 pr-4">Name</th>
-                    <th className="py-2 pr-4">Color</th>
-                    <th className="py-2 pr-4">Price</th>
-                    <th className="py-2 pr-4">Stock</th>
-                    <th className="py-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {variants.map(v => (
-                    <tr key={v.id}>
-                      <td className="py-3 pr-4 font-bold">{v.variantName}</td>
-                      <td className="py-3 pr-4">{v.color}</td>
-                      <td className="py-3 pr-4">₹{v.sellingPrice}</td>
-                      <td className="py-3 pr-4">{v.stockQty}</td>
-                      <td className="py-3 text-right">
-                        <button onClick={() => handleEditVariantClick(v)} className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg mr-1"><FaCircleQuestion size={16} /></button>
-                        <button onClick={() => handleDeleteVariant(v.id)} className="text-rose-500 hover:bg-rose-50 p-2 rounded-lg"><FaTrashCan size={16} /></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {(() => {
+              const grouped = variants.reduce((acc, v) => {
+                const cleanName = v.variantName.replace(/\s*\([^)]*\)\s*$/, '').trim() || v.variantName.trim()
+                if (!acc[cleanName]) acc[cleanName] = []
+                acc[cleanName].push(v)
+                return acc
+              }, {} as Record<string, typeof variants>)
+
+              const groupKeys = Object.keys(grouped)
+
+              if (groupKeys.length === 0) {
+                return <p className="text-sm text-muted-foreground text-center py-6">No variants added yet. Click "+ Add Variant" above to create one.</p>
+              }
+
+              return (
+                <div className="space-y-6">
+                  {groupKeys.map(vName => {
+                    const colorRows = grouped[vName]
+                    return (
+                      <div key={vName} className="border border-border rounded-xl p-4 bg-card shadow-xs space-y-3">
+                        <div className="flex items-center justify-between border-b border-border pb-2">
+                          <h4 className="font-bold text-base text-foreground flex items-center gap-2">
+                            <span>{vName}</span>
+                            <span className="text-xs font-normal text-muted-foreground">({colorRows.length} colour option{colorRows.length > 1 ? 's' : ''})</span>
+                          </h4>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="border-b border-border text-muted-foreground font-semibold text-xs uppercase tracking-wider">
+                              <tr>
+                                <th className="py-2 pr-4">Colour</th>
+                                <th className="py-2 pr-4">SKU</th>
+                                <th className="py-2 pr-4">Selling Price</th>
+                                <th className="py-2 pr-4">MRP</th>
+                                <th className="py-2 pr-4">Stock</th>
+                                <th className="py-2 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                              {colorRows.map(v => (
+                                <tr key={v.id}>
+                                  <td className="py-2.5 pr-4 font-semibold text-foreground">{v.color || 'Default'}</td>
+                                  <td className="py-2.5 pr-4 text-xs font-mono text-muted-foreground">{v.sku || '-'}</td>
+                                  <td className="py-2.5 pr-4 font-bold text-foreground">₹{v.sellingPrice}</td>
+                                  <td className="py-2.5 pr-4 text-xs text-muted-foreground line-through">₹{v.mrp}</td>
+                                  <td className="py-2.5 pr-4">{v.stockQty}</td>
+                                  <td className="py-2.5 text-right">
+                                    <button onClick={() => handleEditVariantClick(v)} className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 p-2 rounded-lg mr-1" title="Edit Variant"><FaPen size={14} /></button>
+                                    <button onClick={() => handleDeleteVariant(v.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950 p-2 rounded-lg" title="Delete Variant"><FaTrashCan size={14} /></button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
 
             <div className="flex justify-between pt-4">
               <button onClick={() => setCurrentStep(2)} className="border border-border font-bold px-6 py-2 rounded-xl">Back</button>

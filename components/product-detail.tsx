@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FaMicrochip, FaCircleCheck, FaArrowLeft, FaBolt, FaHardDrive, FaBatteryFull, FaCamera, FaShieldHalved, FaWifi, FaMobileScreen, FaComment, FaLocationDot, FaGear, FaBluetooth, FaMemory, FaTruckFast, FaStar, FaCartShopping } from 'react-icons/fa6'
@@ -12,30 +12,73 @@ import { ProductReviews } from '@/components/product-reviews'
 export function ProductDetailClient({ product: initialProduct }: { product: ProductResponseDTO }) {
   const [product] = useState<ProductResponseDTO>(initialProduct)
   
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariantResponseDTO | null>(null)
-  const [selectedColor, setSelectedColor] = useState<string>('')
-  
-  useEffect(() => {
-    if (product && product.variants.length > 0 && !selectedColor) {
-      setSelectedColor(product.variants[0].color || '')
+  // Helper to extract clean Variant Name (stripping color suffix if appended in parenthesis)
+  const getCleanVariantName = (v: ProductVariantResponseDTO) => {
+    if (!v || !v.variantName) return ''
+    if (v.color && v.variantName.toLowerCase().includes(`(${v.color.toLowerCase()})`)) {
+      return v.variantName.replace(new RegExp(`\\s*\\(${v.color}\\)`, 'gi'), '').trim()
     }
+    return v.variantName.replace(/\s*\([^)]*\)\s*$/, '').trim() || v.variantName.trim()
+  }
+
+  // 1. Get all unique clean variant names
+  const uniqueVariantNames = useMemo(() => {
+    return Array.from(
+      new Set(product?.variants?.map(v => getCleanVariantName(v)).filter(Boolean) || [])
+    )
   }, [product])
+
+  // Selected Variant Name state
+  const [selectedVariantName, setSelectedVariantName] = useState<string>('')
   
-  const availableColors = Array.from(new Set(product?.variants.map(v => v.color).filter(Boolean) || []))
-  const variantsForColor = product?.variants.filter(v => v.color === selectedColor).sort((a, b) => a.sellingPrice - b.sellingPrice) || []
-  
-  const handleColorChange = (color: string) => {
-    setSelectedColor(color)
-    const newVariants = product?.variants.filter(v => v.color === color).sort((a, b) => a.sellingPrice - b.sellingPrice) || []
-    if (newVariants.length > 0) {
-      if (selectedVariant) {
-        const equivalent = newVariants.find(v => v.variantName === selectedVariant.variantName)
-        setSelectedVariant(equivalent || newVariants[0])
-      } else {
-        setSelectedVariant(newVariants[0])
+  // Selected Color state
+  const [selectedColor, setSelectedColor] = useState<string>('')
+
+  // Initialize selectedVariantName when product loads
+  useEffect(() => {
+    if (product && product.variants && product.variants.length > 0) {
+      if (!selectedVariantName || !uniqueVariantNames.includes(selectedVariantName)) {
+        const initialName = getCleanVariantName(product.variants[0])
+        setSelectedVariantName(initialName)
       }
     }
-  }
+  }, [product, uniqueVariantNames])
+
+  // Get all variant entries belonging to the currently selected Variant Name
+  const variantsForSelectedName = useMemo(() => {
+    return product?.variants?.filter(
+      v => getCleanVariantName(v) === selectedVariantName
+    ) || []
+  }, [product, selectedVariantName])
+
+  // Available colours specifically for the selected Variant Name
+  const availableColorsForSelectedName = useMemo(() => {
+    return Array.from(
+      new Set(variantsForSelectedName.map(v => v.color).filter((c): c is string => Boolean(c && c.trim())))
+    )
+  }, [variantsForSelectedName])
+
+  // Synchronize selectedColor when selectedVariantName changes
+  useEffect(() => {
+    if (availableColorsForSelectedName.length > 0) {
+      if (!selectedColor || !availableColorsForSelectedName.includes(selectedColor)) {
+        setSelectedColor(availableColorsForSelectedName[0])
+      }
+    } else {
+      setSelectedColor('')
+    }
+  }, [selectedVariantName, availableColorsForSelectedName])
+
+  // Active Variant row corresponding to the selected Variant Name + selected Color
+  const selectedVariant = useMemo(() => {
+    if (variantsForSelectedName.length === 0) return product?.variants?.[0] || null
+    if (selectedColor) {
+      const match = variantsForSelectedName.find(v => (v.color || '').trim() === selectedColor.trim())
+      if (match) return match
+    }
+    return variantsForSelectedName[0]
+  }, [variantsForSelectedName, selectedColor, product])
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [mobileImageIndex, setMobileImageIndex] = useState(0)
 
@@ -43,24 +86,15 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
     if (selectedVariant) {
       const primary = selectedVariant.images?.find(img => img.isPrimary)?.url || selectedVariant.imageUrls?.[0]
       setSelectedImage(primary || '/placeholder.png')
-      setMobileImageIndex(0) // Reset mobile index when variant changes
+      setMobileImageIndex(0)
     }
   }, [selectedVariant])
   
   const [pincode, setPincode] = useState('')
   const [deliveryStatus, setDeliveryStatus] = useState<'idle' | 'success' | 'error'>('idle')
   
-  const [showReviewForm, setShowReviewForm] = useState(false)
-  const [rating, setRating] = useState(5)
-  
   const { addToCart } = useStore()
   const router = useRouter()
-
-  useEffect(() => {
-    if (product && product.variants.length > 0 && !selectedVariant) {
-      setSelectedVariant(product.variants[0])
-    }
-  }, [product])
 
   const handleBuyNow = () => {
     if (selectedVariant) {
@@ -86,7 +120,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="flex flex-col gap-4 self-start lg:sticky lg:top-24 min-w-0">
           
-          {/* Desktop View */}
+          {/* Desktop View Image Gallery */}
           <div className="hidden lg:flex flex-col gap-4">
             <div className="rounded-3xl bg-[#F4F4F5] p-6 dark:bg-white">
               <img src={selectedImage || primaryImage} alt={product.name} className="aspect-square w-full object-contain transition-all duration-300 mix-blend-multiply dark:mix-blend-normal" />
@@ -106,7 +140,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
             )}
           </div>
 
-          {/* Mobile View */}
+          {/* Mobile View Image Slider */}
           <div className="lg:hidden flex flex-col gap-3">
             <div 
               className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide rounded-3xl bg-[#F4F4F5] dark:bg-white"
@@ -153,41 +187,46 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
           
           <div>
             <p className="text-2xl md:text-3xl font-black">{formatINR(selectedVariant.sellingPrice)}</p>
-            <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-muted-foreground">MRP <span className="line-through">{formatINR(selectedVariant.mrp)}</span></p>
+            {selectedVariant.mrp && selectedVariant.mrp > selectedVariant.sellingPrice && (
+              <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-muted-foreground">MRP <span className="line-through">{formatINR(selectedVariant.mrp)}</span></p>
+            )}
           </div>
           
-          {availableColors.length > 0 && (
+          {/* CASE 2: Show Variant Selector ONLY if uniqueVariantNames.length > 1 */}
+          {uniqueVariantNames.length > 1 && (
             <div>
-              <p className="mb-3 text-sm font-bold">Color: {selectedColor}</p>
+              <p className="mb-3 text-sm font-bold">Variant</p>
               <div className="flex flex-wrap gap-2">
-                {availableColors.map(color => (
+                {uniqueVariantNames.map(name => (
                   <button 
-                    key={color} 
-                    onClick={() => handleColorChange(color as string)} 
-                    className={`rounded-xl border px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium transition-colors ${selectedColor === color ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
+                    key={name} 
+                    onClick={() => setSelectedVariantName(name)} 
+                    className={`rounded-xl border px-3.5 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium transition-colors ${selectedVariantName === name ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
                   >
-                    {color as string}
+                    {name}
                   </button>
                 ))}
               </div>
             </div>
           )}
-          
-          <div>
-            <p className="mb-3 text-sm font-bold">Storage / Variant</p>
-            <div className="flex flex-col gap-2">
-              {variantsForColor.map(v => (
-                <button 
-                  key={v.id} 
-                  onClick={() => setSelectedVariant(v)} 
-                  className={`flex justify-between items-center rounded-xl border px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm font-medium transition-colors ${selectedVariant.id === v.id ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
-                >
-                  <span>{v.variantName.replace(`(${v.color})`, '').trim()}</span>
-                  <span className="font-bold">{formatINR(v.sellingPrice)}</span>
-                </button>
-              ))}
+
+          {/* Color Selector: Shown if multiple colors exist or if variant selector is hidden but color exists */}
+          {availableColorsForSelectedName.length > 0 && (availableColorsForSelectedName.length > 1 || uniqueVariantNames.length > 1) && (
+            <div>
+              <p className="mb-3 text-sm font-bold">Color: <span className="font-normal text-muted-foreground">{selectedColor}</span></p>
+              <div className="flex flex-wrap gap-2">
+                {availableColorsForSelectedName.map(color => (
+                  <button 
+                    key={color} 
+                    onClick={() => setSelectedColor(color)} 
+                    className={`rounded-xl border px-3.5 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium transition-colors ${selectedColor === color ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
+                  >
+                    {color}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           
           <div className="mt-2 hidden lg:flex gap-3">
             <button onClick={() => addToCart(selectedVariant.id, 1)} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary px-5 py-4 font-bold text-primary hover:bg-primary/5 transition-colors">
@@ -239,7 +278,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
                                h.iconName === 'Bluetooth' ? FaBluetooth :
                                h.iconName === 'Zap' ? FaBolt : FaCircleCheck;
                   
-                  const cleanName = selectedVariant.variantName.replace(`(${selectedVariant.color})`, '').trim();
+                  const cleanName = getCleanVariantName(selectedVariant);
                   let text = h.text.replace('{variant}', cleanName);
                   
                   // Auto-detect RAM and ROM from variant name (e.g. "512 GB + 12 GB")
