@@ -19,7 +19,9 @@ import {
 // ===========================
 // Axios Instance
 // ===========================
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://200.141.14.212.nip.io'
+// Uses Next.js rewrites proxy to avoid CORS issues in development.
+// All /api/* requests are proxied server-side to the backend.
+const BASE_URL = ''
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -455,8 +457,10 @@ export const formatINR = (value: number) =>
 // Server-side fetch helper for SSR pages (no auth needed, public endpoints only)
 // ===========================
 export async function serverFetch<T>(path: string): Promise<T | null> {
+  // Server-side fetch needs a full URL (no browser origin available)
+  const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'https://200.141.14.212.nip.io'
   try {
-    const res = await fetch(`${BASE_URL}${path}`, { cache: 'no-store' })
+    const res = await fetch(`${serverUrl}${path}`, { cache: 'no-store' })
     if (!res.ok) return null
     const json = await res.json()
     return json.data as T

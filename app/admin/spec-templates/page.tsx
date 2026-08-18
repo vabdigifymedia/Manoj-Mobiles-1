@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/apiClient'
 import { CategoryResponseDTO, SpecTemplateGroup, SpecTemplateResponseDTO } from '@/lib/types'
 import { toast } from 'sonner'
-import { FaTrashCan, FaPlus, FaFloppyDisk } from 'react-icons/fa6'
+import { FaTrashCan, FaPlus, FaFloppyDisk, FaListCheck } from 'react-icons/fa6'
 import {
   Select,
   SelectContent,
@@ -155,7 +155,7 @@ export default function AdminSpecTemplatesPage() {
         {/* Left Col: Category Selector */}
         <div className="lg:col-span-1 border border-border rounded-xl bg-card p-4 space-y-4 shadow-sm h-fit">
           <h2 className="font-bold text-lg">Select Category</h2>
-          <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+          <Select value={selectedCategoryId} onValueChange={(v) => setSelectedCategoryId(v ?? '')}>
             <SelectTrigger>
               <SelectValue placeholder="Select a category..." />
             </SelectTrigger>
