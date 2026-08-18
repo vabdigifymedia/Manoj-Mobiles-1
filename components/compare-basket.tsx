@@ -19,14 +19,14 @@ export function CompareBasket() {
   // Hook must be called unconditionally before any early returns (Rules of Hooks)
   useEffect(() => {
     let isMounted = true
-    if (compareIds.length === 0) {
+    if (compareItems.length === 0) {
       setProducts([])
       return
     }
 
     Promise.all(
-      compareIds.map(id =>
-        apiClient.getProductById(id)
+      compareItems.map(item =>
+        apiClient.getProductById(item.productId)
           .then(res => res.data.data)
           .catch(() => null)
       )
@@ -37,7 +37,7 @@ export function CompareBasket() {
     })
 
     return () => { isMounted = false }
-  }, [compareIds])
+  }, [compareItems])
 
   // Conditional early returns placed AFTER all hooks
   if (pathname?.startsWith('/admin') || pathname === '/compare') {
