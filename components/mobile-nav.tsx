@@ -2,18 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FaHouse, FaHeart, FaBagShopping, FaUser, FaMagnifyingGlass } from 'react-icons/fa6'
-import { useState } from 'react'
+import { FaHouse, FaHeart, FaBagShopping, FaUser, FaReceipt } from 'react-icons/fa6'
 import { useStore } from './store-provider'
 import { useAuth } from '@/lib/auth-context'
-import { SearchOverlay } from './search-overlay'
-
-const tabs = [
-  { key: '/', label: 'Home', icon: FaHouse },
-  { key: '/wishlist', label: 'Wishlist', icon: FaHeart },
-  { key: '/cart', label: 'Cart', icon: FaBagShopping },
-  { key: '/account', label: 'Account', icon: FaUser },
-] as const
 
 export function MobileNav() {
   const pathname = usePathname()
@@ -25,41 +16,84 @@ export function MobileNav() {
 
   const accountHref = isAuthenticated ? '/account' : '/auth'
 
+  const isHomeActive = pathname === '/'
+  const isWishlistActive = pathname === '/wishlist'
+  const isCartActive = pathname === '/cart'
+  const isOrdersActive = pathname === '/orders'
+  const isAccountActive = pathname === '/account' || pathname === '/auth'
+
   return (
-    <>
+    <div 
+      className="fixed bottom-3 left-3 right-3 z-50 md:hidden pointer-events-none"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
+      <nav className="pointer-events-auto relative mx-auto max-w-md rounded-full border border-border/80 bg-background/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-2xl px-3 py-1.5 flex items-center justify-between">
+        
+        {/* 1. Wishlist */}
+        <Link
+          href="/wishlist"
+          className={`flex-1 flex flex-col items-center gap-0.5 py-1 text-center transition-all duration-150 active:scale-95 ${
+            isWishlistActive ? 'text-primary' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <FaHeart size={19} />
+          <span className="text-[10px] font-semibold tracking-tight">Wishlist</span>
+        </Link>
 
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/80 backdrop-blur-xl md:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-      >
-        <div className="flex items-center justify-around px-2 py-1.5">
-          {tabs.map(tab => {
-            const Icon = tab.icon
-            const href = tab.key === '/account' ? accountHref : tab.key
-            const isActive = pathname === tab.key
+        {/* 2. Cart */}
+        <Link
+          href="/cart"
+          className={`flex-1 flex flex-col items-center gap-0.5 py-1 text-center transition-all duration-150 active:scale-95 ${
+            isCartActive ? 'text-primary' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <span className="relative">
+            <FaBagShopping size={19} />
+            {cartCount > 0 && (
+              <span className="absolute -right-2.5 -top-1.5 grid size-4 place-items-center rounded-full bg-[#F97316] text-[8px] font-black text-white leading-none shadow-xs">
+                {cartCount > 9 ? '9+' : cartCount}
+              </span>
+            )}
+          </span>
+          <span className="text-[10px] font-semibold tracking-tight">Cart</span>
+        </Link>
 
-            return (
-              <Link
-                key={tab.key}
-                href={href}
-                className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-150 active:scale-90 active:opacity-70 ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                <span className="relative">
-                  <Icon size={22}  />
-                  {tab.key === '/cart' && cartCount > 0 && (
-                    <span className="absolute -right-2.5 -top-1.5 grid size-4 place-items-center rounded-full bg-[#F97316] text-[8px] font-black text-white leading-none">
-                      {cartCount > 9 ? '9+' : cartCount}
-                    </span>
-                  )}
-                </span>
-                <span className="text-[10px] font-semibold">{tab.label}</span>
-              </Link>
-            )
-          })}
+        {/* 3. Center Raised Home Button */}
+        <div className="flex-1 flex justify-center relative -top-4">
+          <Link
+            href="/"
+            className={`grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background dark:ring-zinc-950 transition-all duration-200 active:scale-90 ${
+              isHomeActive ? 'scale-110 shadow-primary/30 ring-primary/30' : 'hover:scale-105'
+            }`}
+            aria-label="Home"
+          >
+            <FaHouse size={20} />
+          </Link>
         </div>
+
+        {/* 4. My Orders */}
+        <Link
+          href="/orders"
+          className={`flex-1 flex flex-col items-center gap-0.5 py-1 text-center transition-all duration-150 active:scale-95 ${
+            isOrdersActive ? 'text-primary' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <FaReceipt size={19} />
+          <span className="text-[10px] font-semibold tracking-tight whitespace-nowrap">My orders</span>
+        </Link>
+
+        {/* 5. Account */}
+        <Link
+          href={accountHref}
+          className={`flex-1 flex flex-col items-center gap-0.5 py-1 text-center transition-all duration-150 active:scale-95 ${
+            isAccountActive ? 'text-primary' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <FaUser size={19} />
+          <span className="text-[10px] font-semibold tracking-tight">Account</span>
+        </Link>
+
       </nav>
-    </>
+    </div>
   )
 }

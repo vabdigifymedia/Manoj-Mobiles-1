@@ -2,16 +2,30 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { FaArrowLeft, FaCircleUser } from 'react-icons/fa6'
+import { useRouter } from 'next/navigation'
+import { FaArrowLeft, FaCircleUser, FaCircleExclamation } from 'react-icons/fa6'
+import { useAuth } from '@/lib/auth-context'
 
 export default function StaffLoginPage() {
+  const router = useRouter()
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (email && password) {
-      window.location.href = '/admin'
+    if (!email || !password) return
+    setLoading(true)
+    setError('')
+    try {
+      await login(email, password)
+      router.push('/admin')
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid credentials. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -27,8 +41,15 @@ export default function StaffLoginPage() {
         </div>
         <h1 className="text-2xl font-black">Staff Login</h1>
         <p className="mt-2 text-sm text-muted-foreground">Sign in with your organizational email to access the admin panel.</p>
+
+        {error && (
+          <div className="mt-6 flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-xs font-bold text-destructive">
+            <FaCircleExclamation size={16} />
+            {error}
+          </div>
+        )}
         
-        <form onSubmit={handleLogin} className="mt-8 space-y-4">
+        <form onSubmit={handleLogin} className="mt-6 space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-bold">Email Address</label>
             <input 
@@ -53,15 +74,20 @@ export default function StaffLoginPage() {
           </div>
           <button 
             type="submit" 
-            disabled={!email || !password}
-            className="mt-2 w-full rounded-xl bg-primary py-3.5 font-bold text-primary-foreground disabled:opacity-50 transition-opacity"
+            disabled={!email || !password || loading}
+            className="mt-2 w-full rounded-xl bg-primary py-3.5 font-bold text-primary-foreground disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
           >
-            Sign in
+            {loading ? (
+              <>
+                <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                Signing in...
+              </>
+            ) : 'Sign in'}
           </button>
         </form>
         
         <div className="mt-8 text-center text-sm font-semibold text-muted-foreground">
-          <Link href="/auth" className="text-primary hover:underline">I'm a customer, go to regular login</Link>
+          <Link href="/auth" className="text-primary hover:underline">I&apos;m a customer, go to regular login</Link>
         </div>
       </div>
     </main>

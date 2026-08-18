@@ -1,5 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
 import { StoreProvider } from '@/components/store-provider'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -8,6 +9,14 @@ import { Footer } from '@/components/footer'
 import { MobileNav } from '@/components/mobile-nav'
 import { Toaster } from 'sonner'
 import { ScrollbarManager } from '@/components/scrollbar-manager'
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+  fallback: ['Arial', 'sans-serif'],
+})
+
 export const metadata: Metadata = {
   title: 'Manoj Mobiles | Smarter choices, better service',
   description: 'Shop genuine smartphones, accessories, and local mobile service from Manoj Mobiles.',
@@ -49,8 +58,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="antialiased flex min-h-screen flex-col bg-background pb-[env(safe-area-inset-bottom)]" suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className={`${inter.className} font-sans antialiased flex min-h-screen flex-col bg-background pb-[env(safe-area-inset-bottom)]`} suppressHydrationWarning>
         <ScrollbarManager />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <StoreProvider>

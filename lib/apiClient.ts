@@ -263,16 +263,108 @@ export const apiClient = {
     axiosInstance.get<ApiResponse<import('./types').CartResponseDTO>>('/api/user/cart'),
 
   addToCart: (dto: import('./types').AddToCartRequestDTO) =>
-    axiosInstance.post<ApiResponse<import('./types').CartItemResponseDTO>>('/api/user/cart', dto),
+    axiosInstance.post<ApiResponse<import('./types').CartResponseDTO>>('/api/user/cart/items', dto),
 
-  updateCartItem: (variantId: string, qty: number) =>
-    axiosInstance.put<ApiResponse<import('./types').CartItemResponseDTO>>(`/api/user/cart/${variantId}`, { qty }),
+  updateCartItem: (itemId: string, qty: number) =>
+    axiosInstance.put<ApiResponse<import('./types').CartResponseDTO>>(`/api/user/cart/items/${itemId}`, { qty }),
 
-  removeFromCart: (variantId: string) =>
-    axiosInstance.delete<ApiResponse<void>>(`/api/user/cart/${variantId}`),
+  removeFromCart: (itemId: string) =>
+    axiosInstance.delete<ApiResponse<import('./types').CartResponseDTO>>(`/api/user/cart/items/${itemId}`),
 
   clearCart: () =>
-    axiosInstance.delete<ApiResponse<void>>('/api/user/cart'),
+    axiosInstance.delete<ApiResponse<void>>('/api/user/cart/items'),
+
+  // --- Customer Auth ---
+  sendOtp: (phone: string) =>
+    axiosInstance.post<ApiResponse<void>>('/api/auth/send-otp', { phone }),
+
+  loginWithOtp: (phone: string, otp: string) =>
+    axiosInstance.post<ApiResponse<import('./types').AuthResponseDTO>>('/api/auth/login', { phone, otp }),
+
+  customerRegister: (name: string, phone: string) =>
+    axiosInstance.post<ApiResponse<import('./types').AuthResponseDTO>>('/api/auth/register', { name, phone }),
+
+  customerLogout: (userId: string, refreshToken: string) =>
+    axiosInstance.post<ApiResponse<void>>('/api/auth/logout', { userId, refreshToken }),
+
+  // --- Profile ---
+  getUserProfile: () =>
+    axiosInstance.get<ApiResponse<import('./types').UserProfileResponseDTO>>('/api/users/profile'),
+
+  updateUserProfile: (dto: import('./types').UpdateProfileRequestDTO) =>
+    axiosInstance.put<ApiResponse<import('./types').UserProfileResponseDTO>>('/api/users/profile', dto),
+
+  // --- Addresses ---
+  getUserAddresses: (page = 0, size = 10) =>
+    axiosInstance.get<ApiResponse<PageResponse<import('./types').AddressResponseDTO>>>(`/api/user/addresses?page=${page}&size=${size}`),
+
+  createAddress: (dto: import('./types').AddressRequestDTO) =>
+    axiosInstance.post<ApiResponse<import('./types').AddressResponseDTO>>('/api/user/addresses', dto),
+
+  updateAddress: (id: string, dto: import('./types').AddressRequestDTO) =>
+    axiosInstance.put<ApiResponse<import('./types').AddressResponseDTO>>(`/api/user/addresses/${id}`, dto),
+
+  deleteAddress: (id: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/user/addresses/${id}`),
+
+  // --- Orders (Customer) ---
+  getUserOrders: (page = 0, size = 10) =>
+    axiosInstance.get<ApiResponse<PageResponse<import('./types').OrderResponseDTO>>>(`/api/user/orders?page=${page}&size=${size}`),
+
+  getOrderById: (orderId: string) =>
+    axiosInstance.get<ApiResponse<import('./types').OrderResponseDTO>>(`/api/user/orders/${orderId}`),
+
+  placeOrder: (dto: import('./types').PlaceOrderRequestDTO) =>
+    axiosInstance.post<ApiResponse<import('./types').OrderResponseDTO>>('/api/user/orders', dto),
+
+  mockPayment: (orderId: string) =>
+    axiosInstance.post<ApiResponse<import('./types').OrderResponseDTO>>(`/api/user/orders/${orderId}/mock-payment`),
+
+  cancelOrder: (orderId: string, reason: string) =>
+    axiosInstance.post<ApiResponse<import('./types').OrderResponseDTO>>(`/api/user/orders/${orderId}/cancel`, { reason }),
+
+  trackOrder: (orderId: string) =>
+    axiosInstance.get<ApiResponse<import('./types').LocationResponseDTO>>(`/api/user/orders/${orderId}/track`),
+
+  // --- Wishlist ---
+  getWishlist: (page = 0, size = 20) =>
+    axiosInstance.get<ApiResponse<PageResponse<import('./types').WishlistItemDTO>>>(`/api/user/wishlist?page=${page}&size=${size}`),
+
+  addToWishlist: (variantId: string) =>
+    axiosInstance.post<ApiResponse<import('./types').WishlistItemDTO>>(`/api/user/wishlist/${variantId}`),
+
+  removeFromWishlist: (variantId: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/user/wishlist/${variantId}`),
+
+  moveWishlistToCart: (variantId: string) =>
+    axiosInstance.post<ApiResponse<void>>(`/api/user/wishlist/${variantId}/move-to-cart`),
+
+  // --- Coupons ---
+  getActiveCoupons: () =>
+    axiosInstance.get<ApiResponse<import('./types').ActiveCouponResponseDTO[]>>('/api/user/coupons/active'),
+
+  applyCoupon: (code: string, cartTotal: number) =>
+    axiosInstance.post<ApiResponse<import('./types').ApplyCouponResponseDTO>>('/api/user/coupons/apply', { code, cartTotal }),
+
+  // --- Pincode ---
+  checkPincode: (pincode: string) =>
+    axiosInstance.get<ApiResponse<import('./types').PincodeCheckResponseDTO>>(`/api/public/pincode/check/${pincode}`),
+
+  // --- Reels ---
+  getPublicReels: () =>
+    axiosInstance.get<ApiResponse<import('./types').InstagramReelResponseDTO[]>>('/api/public/reels'),
+
+  getAdminReels: () =>
+    axiosInstance.get<ApiResponse<import('./types').InstagramReelResponseDTO[]>>('/api/reels'),
+
+  createReel: (dto: import('./types').InstagramReelRequestDTO) =>
+    axiosInstance.post<ApiResponse<import('./types').InstagramReelResponseDTO>>('/api/reels', dto),
+
+  updateReel: (id: string, dto: import('./types').InstagramReelRequestDTO) =>
+    axiosInstance.put<ApiResponse<import('./types').InstagramReelResponseDTO>>(`/api/reels/${id}`, dto),
+
+  deleteReel: (id: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/reels/${id}`),
 
   // --- Reviews ---
   getProductReviews: (productId: string, page = 0, size = 10) =>

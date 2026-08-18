@@ -245,15 +245,14 @@ export function Header() {
           </div>
           
           <div className="ml-auto flex items-center gap-2">
-            {mounted && (
-              <button 
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="relative flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" 
-                aria-label="Toggle Theme"
-              >
-                {theme === 'dark' ? <FaSun size={22}  /> : <FaMoon size={22}  />}
-              </button>
-            )}
+            {/* Desktop Only Dark Mode / Theme Toggle */}
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="relative hidden md:flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" 
+              aria-label="Toggle Theme"
+            >
+              {theme === 'dark' ? <FaSun size={22} /> : <FaMoon size={22} />}
+            </button>
 
             <Link href="/wishlist" className="relative hidden md:flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EFEFEF] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Wishlist">
               <FaHeart size={22} />
@@ -314,29 +313,63 @@ export function Header() {
         </header>
       )}
 
-      {/* Mobile Sidebar Navigation */}
+      {/* Mobile Sidebar Navigation Drawer (bounded above fixed bottom navigation bar) */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
-          <div className="relative w-4/5 max-w-sm bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-left">
-            <div className="p-4 border-b border-border flex items-center justify-between">
+        <div 
+          className="fixed top-0 left-0 right-0 z-40 flex md:hidden"
+          style={{ bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))' }}
+        >
+          {/* Backdrop (Covers viewport above bottom navbar) */}
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setMobileMenuOpen(false)} />
+
+          {/* Drawer Panel */}
+          <div className="relative w-4/5 max-w-sm bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-left border-r border-border">
+            
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
               <strong className="block text-xl tracking-tight leading-none text-zinc-900 dark:text-white">
                 manoj<span className="text-[#F97316]">mobiles</span>
               </strong>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-full">
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground">
                 <FaXmark size={20} />
               </button>
             </div>
-            <div className="p-4 flex flex-col gap-4 font-bold overflow-y-auto">
+
+            {/* Scrollable Navigation Links */}
+            <div className="p-4 flex-1 flex flex-col gap-3 font-bold overflow-y-auto">
               {nav.map(item => (
-                <Link key={item.key} href={item.key} onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-lg">
+                <Link key={item.key} href={item.key} onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">
                   {item.label}
                 </Link>
               ))}
-              <hr className="my-2 border-border" />
-              <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-lg">Wishlist</Link>
-              <Link href={isAuthenticated ? "/account" : "/auth"} onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-lg">{isAuthenticated ? "My Account" : "Login"}</Link>
+              <hr className="my-1 border-border" />
+              <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">Wishlist</Link>
+              <Link href={isAuthenticated ? "/account" : "/auth"} onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">
+                {isAuthenticated ? "My Account" : "Login"}
+              </Link>
             </div>
+
+            {/* Dark Mode / Light Mode Toggle anchored cleanly above bottom navbar */}
+            <div className="p-4 border-t border-border bg-card/60 shrink-0">
+              <button 
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="flex items-center justify-between w-full p-3 rounded-xl bg-muted/70 hover:bg-muted font-bold transition-all text-foreground border border-border"
+                aria-label="Toggle Theme"
+              >
+                <span className="flex items-center gap-3">
+                  {theme === 'dark' ? (
+                    <FaSun size={18} className="text-amber-500" />
+                  ) : (
+                    <FaMoon size={18} className="text-slate-700 dark:text-zinc-300" />
+                  )}
+                  <span className="text-sm">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                </span>
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground bg-background px-2.5 py-1 rounded-md border border-border">
+                  {theme === 'dark' ? 'Dark' : 'Light'}
+                </span>
+              </button>
+            </div>
+
           </div>
         </div>
       )}

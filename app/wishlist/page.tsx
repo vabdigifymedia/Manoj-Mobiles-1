@@ -2,14 +2,11 @@
 
 import Link from 'next/link'
 import { FaTrashCan, FaHeart, FaArrowLeft } from 'react-icons/fa6'
-import { products } from '@/lib/api'
 import { ProductCard } from '@/components/product-card'
 import { useStore } from '@/components/store-provider'
 
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist } = useStore()
-  // Mock wishlist items (just picking a few products for demo)
-  const wishlistItems = wishlist
 
   const handleRemove = (id: string) => {
     removeFromWishlist(id)
@@ -35,31 +32,35 @@ export default function WishlistPage() {
       </div>
       
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
-        {wishlistItems.length === 0 ? (
+        {wishlist.length === 0 ? (
           <div className="rounded-3xl border border-border bg-card p-12 text-center shadow-sm max-w-2xl mx-auto mt-10">
             <div className="mx-auto grid size-20 place-items-center rounded-full bg-muted text-muted-foreground mb-6">
               <FaHeart size={32} />
             </div>
-            <h2 className="text-2xl font-bold mb-2">It's empty here</h2>
-            <p className="text-muted-foreground mb-8">You haven't saved any products to your wishlist yet.</p>
+            <h2 className="text-2xl font-bold mb-2">It&apos;s empty here</h2>
+            <p className="text-muted-foreground mb-8">You haven&apos;t saved any products to your wishlist yet.</p>
             <Link href="/shop" className="inline-flex items-center justify-center rounded-xl bg-primary px-8 py-4 font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
               Explore our collection
             </Link>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 sm:gap-6">
-            {wishlistItems.map(product => (
-              <div key={product.id} className="relative group/wishlist">
-                <ProductCard product={product} hideHeart={true} />
-                <button 
-                  onClick={() => handleRemove(product.id)}
-                  className="absolute right-[22px] top-[22px] z-10 grid size-8 place-items-center rounded-full bg-white/90 text-rose-500 shadow-sm opacity-0 group-hover/wishlist:opacity-100 transition-all hover:bg-rose-50 hover:scale-110 dark:bg-zinc-800 dark:text-rose-400"
-                  aria-label="Remove from wishlist"
-                >
-                  <FaTrashCan size={16} />
-                </button>
-              </div>
-            ))}
+            {wishlist.map((item: any) => {
+              const product = item.product || item
+              const itemId = item.variantId || item.id
+              return (
+                <div key={itemId} className="relative group/wishlist">
+                  <ProductCard product={product} hideHeart={true} />
+                  <button 
+                    onClick={() => handleRemove(itemId)}
+                    className="absolute right-[22px] top-[22px] z-10 grid size-8 place-items-center rounded-full bg-white/90 text-rose-500 shadow-sm opacity-0 group-hover/wishlist:opacity-100 transition-all hover:bg-rose-50 hover:scale-110 dark:bg-zinc-800 dark:text-rose-400"
+                    aria-label="Remove from wishlist"
+                  >
+                    <FaTrashCan size={16} />
+                  </button>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

@@ -458,3 +458,127 @@ export interface InstagramReelResponseDTO {
   displayOrder: number
   createdAt: string
 }
+
+// --- Customer Auth ---
+export interface SendOtpRequestDTO {
+  phone: string
+}
+
+export interface CustomerLoginRequestDTO {
+  phone: string
+  otp: string
+}
+
+export interface CustomerSignUpDTO {
+  name: string
+  phone: string
+}
+
+// --- User Profile ---
+export interface UserProfileResponseDTO {
+  id: string
+  name: string
+  email?: string
+  phone: string
+  role: 'CUSTOMER' | 'ADMIN' | 'DELIVERY_AGENT'
+  status: 'ACTIVE' | 'BLOCKED'
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface UpdateProfileRequestDTO {
+  name: string
+  phone: string
+}
+
+// --- Address ---
+export interface AddressRequestDTO {
+  label: string
+  addressLine: string
+  city: string
+  state: string
+  pincode: string
+  lat?: number
+  lng?: number
+  isDefault?: boolean
+}
+
+export interface AddressResponseDTO {
+  id: string
+  userId: string
+  label: string
+  addressLine: string
+  city: string
+  state: string
+  pincode: string
+  lat?: number
+  lng?: number
+  isDefault: boolean
+}
+
+// --- Order Placement & Actions ---
+export interface PlaceOrderRequestDTO {
+  addressId: string
+  paymentMethod: 'COD' | 'CARD' | 'UPI' | 'WALLET'
+  couponCode?: string
+}
+
+export interface CancelOrderRequestDTO {
+  reason: string
+}
+
+export interface LocationResponseDTO {
+  latitude: number
+  longitude: number
+  updatedAt: string
+}
+
+// --- Wishlist ---
+export interface WishlistItemDTO {
+  id: string
+  userId: string
+  variantId: string
+  productId: string
+  productName: string
+  variantName: string
+  color?: string
+  price: number
+  mrp?: number
+  primaryImageUrl?: string
+  addedAt: string
+}
+
+// --- Coupons ---
+export interface ActiveCouponResponseDTO {
+  id: string
+  code: string
+  description?: string
+  discountType: 'FLAT' | 'PERCENTAGE'
+  discountValue: number
+  minOrderAmount?: number
+  maxDiscountAmount?: number
+  validUntil?: string
+}
+
+export interface ApplyCouponRequestDTO {
+  code: string
+  cartTotal: number
+}
+
+export interface ApplyCouponResponseDTO {
+  code: string
+  discountAmount: number
+  finalTotal: number
+  message: string
+}
+
+// --- Pincode ---
+export interface PincodeCheckResponseDTO {
+  pincode: string
+  cityName?: string
+  state?: string
+  estimatedDeliveryDays?: number
+  codAvailable: boolean
+  serviceable: boolean
+}
+

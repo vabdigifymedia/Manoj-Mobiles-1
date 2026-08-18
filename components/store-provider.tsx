@@ -41,8 +41,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       apiClient.getCart()
         .then(res => setCart(res.data.data))
         .catch(err => console.error('Failed to fetch cart', err))
+      apiClient.getWishlist()
+        .then(res => setWishlist(res.data.data.content))
+        .catch(err => console.error('Failed to fetch wishlist', err))
     } else {
       setCart(null)
+      const savedWishlist = typeof window !== 'undefined' ? window.localStorage.getItem('manoj-mobiles-wishlist') : null
+      if (savedWishlist) {
+        try { setWishlist(JSON.parse(savedWishlist)) } catch (e) {}
+      }
     }
   }
 
@@ -50,16 +57,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     fetchCart()
   }, [isAuthenticated])
 
-  // Wishlist local storage
   useEffect(() => {
-    const savedWishlist = window.localStorage.getItem('manoj-mobiles-wishlist')
-    if (savedWishlist) {
-      try { setWishlist(JSON.parse(savedWishlist)) } catch (e) {}
+    if (!isAuthenticated && typeof window !== 'undefined') {
+      window.localStorage.setItem('manoj-mobiles-wishlist', JSON.stringify(wishlist))
     }
-  }, [])
-  useEffect(() => {
-    window.localStorage.setItem('manoj-mobiles-wishlist', JSON.stringify(wishlist))
-  }, [wishlist])
+  }, [wishlist, isAuthenticated])
 
   const cartCount = cart?.items?.reduce((acc, item) => acc + item.qty, 0) || 0
   const cartTotal = cart?.cartTotal || 0
@@ -84,14 +86,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const updateQuantity = async (variantId: string, delta: number) => {
+  const updateQuantity = async (itemIdOrVariantId: string, delta: number) => {
     if (!cart) return
-    const item = cart.items.find(i => i.variantId === variantId)
+    const item = cart.items.find(i => i.id === itemIdOrVariantId || i.variantId === itemIdOrVariantId)
     if (!item) return
     
     const newQty = item.qty + delta
     if (newQty < 1) {
-      removeFromCart(variantId)
+      removeFromCart(item.id)
       return
     }
     if (newQty > 5) {
@@ -100,16 +102,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
-      await apiClient.updateCartItem(variantId, newQty)
+      await apiClient.updateCartItem(item.id, newQty)
       fetchCart()
     } catch (err: any) {
       showToast({ message: 'Failed to update quantity', type: 'error' })
     }
   }
 
-  const removeFromCart = async (variantId: string) => {
+  const removeFromCart = async (itemIdOrVariantId: string) => {
+    if (!cart) return
+    const item = cart.items.find(i => i.id === itemIdOrVariantId || i.variantId === itemIdOrVariantId)
+    const idToRemove = item ? item.id : itemIdOrVariantId
+
     try {
-      await apiClient.removeFromCart(variantId)
+      await apiClient.removeFromCart(idToRemove)
       showToast({ message: 'Item removed', type: 'info' })
       fetchCart()
     } catch (err) {
@@ -117,22 +123,49 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const toggleWishlist = (product: any) => {
-    setWishlist(prev => {
-      const exists = prev.find(p => p.id === product.id)
-      if (exists) {
-        showToast({ message: 'Removed from wishlist', type: 'info' })
-        return prev.filter(p => p.id !== product.id)
-      } else {
-        showToast({ message: 'Added to wishlist', type: 'success' })
-        return [...prev, product]
+  const toggleWishlist = async (product: any) => {
+    const variantId = product.variantId || product.variants?.[0]?.id || product.id
+    if (isAuthenticated) {
+      const exists = wishlist.some(item => item.variantId === variantId || item.id === product.id)
+      try {
+        if (exists) {
+          await apiClient.removeFromWishlist(variantId)
+          showToast({ message: 'Removed from wishlist', type: 'info' })
+        } else {
+          await apiClient.addToWishlist(variantId)
+          showToast({ message: 'Added to wishlist', type: 'success' })
+        }
+        apiClient.getWishlist().then(res => setWishlist(res.data.data.content)).catch(() => {})
+      } catch (err) {
+        showToast({ message: 'Failed to update wishlist', type: 'error' })
       }
-    })
+    } else {
+      setWishlist(prev => {
+        const exists = prev.find(p => p.id === product.id || p.variantId === variantId)
+        if (exists) {
+          showToast({ message: 'Removed from wishlist', type: 'info' })
+          return prev.filter(p => p.id !== product.id && p.variantId !== variantId)
+        } else {
+          showToast({ message: 'Added to wishlist', type: 'success' })
+          return [...prev, product]
+        }
+      })
+    }
   }
 
-  const removeFromWishlist = (id: string) => {
-    setWishlist(prev => prev.filter(p => p.id !== id))
-    showToast({ message: 'Removed from wishlist', type: 'info' })
+  const removeFromWishlist = async (idOrVariantId: string) => {
+    if (isAuthenticated) {
+      try {
+        await apiClient.removeFromWishlist(idOrVariantId)
+        showToast({ message: 'Removed from wishlist', type: 'info' })
+        apiClient.getWishlist().then(res => setWishlist(res.data.data.content)).catch(() => {})
+      } catch (err) {
+        showToast({ message: 'Failed to remove item', type: 'error' })
+      }
+    } else {
+      setWishlist(prev => prev.filter(p => p.id !== idOrVariantId && p.variantId !== idOrVariantId))
+      showToast({ message: 'Removed from wishlist', type: 'info' })
+    }
   }
 
   return (
