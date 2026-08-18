@@ -11,7 +11,8 @@ import type { ProductResponseDTO } from '@/lib/types'
 export function CompareBasket() {
   const pathname = usePathname()
   const router = useRouter()
-  const { compareIds, removeFromCompare, clearCompare } = useStore()
+  const { compareItems, removeFromCompare, clearCompare } = useStore()
+  const compareIds = compareItems.map(i => i.variantId)
   const [products, setProducts] = useState<ProductResponseDTO[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -75,14 +76,14 @@ export function CompareBasket() {
               <div className="flex items-center gap-1.5 shrink-0">
                 <span className="font-black text-xs sm:text-sm">Compare</span>
                 <span className="text-[10px] sm:text-xs font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                  {compareIds.length}/5
+                  {compareIds.length}/4
                 </span>
               </div>
 
               {/* Small Product Thumbnails */}
               <div className="hidden xs:flex items-center gap-1.5 overflow-hidden pl-2 border-l border-border/60">
                 {products.map(p => {
-                  const primaryImg = p.variants?.[0]?.images?.find(i => i.isPrimary)?.url || p.variants?.[0]?.imageUrls?.[0] || p.primaryImageUrl || '/placeholder.png'
+                  const primaryImg = p.variants?.[0]?.images?.find(i => i.isPrimary)?.url || p.variants?.[0]?.imageUrls?.[0] || '/placeholder.png'
                   return (
                     <div key={p.id} className="size-6 sm:size-7 bg-white dark:bg-zinc-950 rounded-lg p-0.5 border border-border shrink-0 flex items-center justify-center">
                       <img src={primaryImg} alt={p.name} className="h-full w-full object-contain" />
@@ -124,7 +125,7 @@ export function CompareBasket() {
                 </span>
                 <span className="font-bold text-xs sm:text-sm">Compare Products</span>
                 <span className="text-[11px] sm:text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                  {compareIds.length} / 5 selected
+                  {compareIds.length} / 4 selected
                 </span>
               </div>
 
@@ -148,7 +149,7 @@ export function CompareBasket() {
             {/* Selected Product Cards */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {products.map(p => {
-                const primaryImg = p.variants?.[0]?.images?.find(i => i.isPrimary)?.url || p.variants?.[0]?.imageUrls?.[0] || p.primaryImageUrl || '/placeholder.png'
+                const primaryImg = p.variants?.[0]?.images?.find(i => i.isPrimary)?.url || p.variants?.[0]?.imageUrls?.[0] || '/placeholder.png'
                 return (
                   <div key={p.id} className="relative group/card shrink-0 flex flex-col items-center w-16 sm:w-20 bg-muted/40 p-1.5 rounded-xl border border-border/60">
                     <button 
@@ -168,8 +169,8 @@ export function CompareBasket() {
                 )
               })}
 
-              {/* Slot for adding more phones if under 5 */}
-              {compareIds.length < 5 && (
+              {/* Slot for adding more phones if under 4 */}
+              {compareIds.length < 4 && (
                 <Link
                   href="/shop"
                   onClick={(e) => e.stopPropagation()}

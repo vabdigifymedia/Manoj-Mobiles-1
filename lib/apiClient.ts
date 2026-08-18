@@ -342,6 +342,19 @@ export const apiClient = {
   moveWishlistToCart: (variantId: string) =>
     axiosInstance.post<ApiResponse<void>>(`/api/user/wishlist/${variantId}/move-to-cart`),
 
+  // --- Compare ---
+  getCompareList: () =>
+    axiosInstance.get<ApiResponse<import('./types').CompareItemDTO[]>>('/api/user/compare'),
+
+  addToCompareList: (variantId: string) =>
+    axiosInstance.post<ApiResponse<import('./types').CompareItemDTO>>(`/api/user/compare/${variantId}`),
+
+  removeFromCompareList: (variantId: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/user/compare/${variantId}`),
+
+  clearCompareList: () =>
+    axiosInstance.delete<ApiResponse<void>>('/api/user/compare'),
+
   // --- Coupons ---
   getActiveCoupons: () =>
     axiosInstance.get<ApiResponse<import('./types').ActiveCouponResponseDTO[]>>('/api/user/coupons/active'),

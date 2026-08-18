@@ -8,9 +8,10 @@ import { useStore } from '@/components/store-provider'
 import type { ProductResponseDTO, ProductListResponseDTO } from '@/lib/types'
 
 export function CompareClient() {
-  const { compareIds, addToCompare, removeFromCompare, clearCompare, addToCart } = useStore()
+  const { compareItems, addToCompare, removeFromCompare, clearCompare, addToCart } = useStore()
   
-  const [products, setProducts] = useState<ProductResponseDTO[]>([])
+  type ComparedProduct = ProductResponseDTO & { comparedVariantId: string }
+  const [products, setProducts] = useState<ComparedProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [showOnlyDifferences, setShowOnlyDifferences] = useState(false)
   
@@ -23,7 +24,7 @@ export function CompareClient() {
   // Fetch full details of products in compare list
   useEffect(() => {
     let isMounted = true
-    if (compareIds.length === 0) {
+    if (compareItems.length === 0) {
       setProducts([])
       setLoading(false)
       return
@@ -31,20 +32,20 @@ export function CompareClient() {
 
     setLoading(true)
     Promise.all(
-      compareIds.map(id => 
-        apiClient.getProductById(id)
-          .then(res => res.data.data)
+      compareItems.map(item => 
+        apiClient.getProductById(item.productId)
+          .then(res => ({ ...res.data.data, comparedVariantId: item.variantId }))
           .catch(() => null)
       )
     ).then(res => {
       if (isMounted) {
-        setProducts(res.filter((p): p is ProductResponseDTO => p !== null))
+        setProducts(res.filter((p): p is ComparedProduct => p !== null))
         setLoading(false)
       }
     })
 
     return () => { isMounted = false }
-  }, [compareIds])
+  }, [compareItems])
 
   // Search API call when searching products
   useEffect(() => {
@@ -69,7 +70,8 @@ export function CompareClient() {
     const groupMap: Record<string, Set<string>> = {}
 
     products.forEach(p => {
-      const specs = p.variants?.[0]?.specifications || []
+      const targetVariant = p.variants?.find(v => v.id === p.comparedVariantId) || p.variants?.[0]
+      const specs = targetVariant?.specifications || []
       specs.forEach(s => {
         const grp = s.specGroup || 'General'
         if (!groupMap[grp]) groupMap[grp] = new Set()
@@ -134,7 +136,8 @@ export function CompareClient() {
               <div className="py-8 text-center text-muted-foreground">No mobile phones found.</div>
             ) : (
               searchResults.map(p => {
-                const inCompare = compareIds.includes(p.id)
+                const targetId = p.defaultVariantId || p.id
+                const inCompare = compareItems.some(item => item.variantId === targetId)
                 return (
                   <div key={p.id} className="flex items-center justify-between p-3 border border-border rounded-xl hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3 min-w-0">
@@ -145,22 +148,22 @@ export function CompareClient() {
                       </div>
                     </div>
                     <button
-                      disabled={inCompare || compareIds.length >= 5}
+                      disabled={inCompare || compareItems.length >= 4}
                       onClick={() => {
-                        addToCompare(p.id)
-                        if (compareIds.length + 1 >= 5) {
+                        addToCompare(targetId, p.categoryId, p.id)
+                        if (compareItems.length + 1 >= 4) {
                           setShowSearchModal(false)
                         }
                       }}
                       className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors shrink-0 ${
                         inCompare
                           ? 'bg-emerald-500/10 text-emerald-600 cursor-default'
-                          : compareIds.length >= 5
+                          : compareItems.length >= 4
                           ? 'bg-muted text-muted-foreground cursor-not-allowed'
                           : 'bg-primary text-primary-foreground hover:bg-primary/90'
                       }`}
                     >
-                      {inCompare ? 'Added' : compareIds.length >= 5 ? 'Max 5' : '+ Compare'}
+                      {inCompare ? 'Added' : compareItems.length >= 4 ? 'Max 4' : '+ Compare'}
                     </button>
                   </div>
                 )
@@ -272,13 +275,13 @@ export function CompareClient() {
 
               {/* Dynamic Product Columns */}
               {products.map(p => {
-                const primaryVariant = p.variants?.[0]
+                const primaryVariant = p.variants?.find(v => v.id === p.comparedVariantId) || p.variants?.[0]
                 const primaryImg = primaryVariant?.images?.find(i => i.isPrimary)?.url || primaryVariant?.imageUrls?.[0] || '/placeholder.png'
                 return (
                   <th key={p.id} className="p-3 sm:p-5 align-top w-56 sm:w-64 min-w-[200px] sm:min-w-[250px] border-r border-border last:border-r-0 bg-card">
                     <div className="relative flex flex-col items-center text-center group">
                       <button 
-                        onClick={() => removeFromCompare(p.id)} 
+                        onClick={() => removeFromCompare(p.comparedVariantId)} 
                         className="absolute -top-1 -right-1 size-7 rounded-full bg-muted text-muted-foreground hover:bg-destructive hover:text-white grid place-items-center transition-colors shadow-2xs z-10"
                         title="Remove from compare"
                       >
@@ -295,7 +298,7 @@ export function CompareClient() {
                       </Link>
 
                       <p className="text-sm sm:text-base font-black text-foreground mt-1">
-                        {formatINR(primaryVariant?.sellingPrice || p.startingPrice)}
+                        {formatINR(primaryVariant?.sellingPrice || 0)}
                       </p>
                       
                       <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-amber-500">
@@ -332,17 +335,23 @@ export function CompareClient() {
               const priceOfferRows = [
                 {
                   label: 'Selling Price',
-                  getValue: (p: ProductResponseDTO) => formatINR(p.variants?.[0]?.sellingPrice || 0),
+                  getValue: (p: ComparedProduct) => {
+                    const v = p.variants?.find(v => v.id === p.comparedVariantId) || p.variants?.[0]
+                    return formatINR(v?.sellingPrice || 0)
+                  },
                   isBold: true
                 },
                 {
                   label: 'MRP',
-                  getValue: (p: ProductResponseDTO) => p.variants?.[0]?.mrp ? formatINR(p.variants[0].mrp) : '—',
+                  getValue: (p: ComparedProduct) => {
+                    const v = p.variants?.find(v => v.id === p.comparedVariantId) || p.variants?.[0]
+                    return v?.mrp ? formatINR(v.mrp) : '—'
+                  },
                 },
                 {
                   label: 'Discount',
-                  getValue: (p: ProductResponseDTO) => {
-                    const v = p.variants?.[0]
+                  getValue: (p: ComparedProduct) => {
+                    const v = p.variants?.find(v => v.id === p.comparedVariantId) || p.variants?.[0]
                     if (v && v.mrp && v.mrp > v.sellingPrice) {
                       const pct = Math.round(((v.mrp - v.sellingPrice) / v.mrp) * 100)
                       return `${pct}% Off`
@@ -352,26 +361,30 @@ export function CompareClient() {
                 },
                 {
                   label: 'Stock Availability',
-                  getValue: (p: ProductResponseDTO) => {
-                    const status = p.variants?.[0]?.stockStatus
+                  getValue: (p: ComparedProduct) => {
+                    const v = p.variants?.find(v => v.id === p.comparedVariantId) || p.variants?.[0]
+                    const status = v?.stockStatus
                     return status === 'IN_STOCK' ? 'In Stock' : status === 'LIMITED_STOCK' ? 'Limited Stock' : 'Out of Stock'
                   }
                 },
                 {
                   label: 'Exchange Offer',
-                  getValue: (p: ProductResponseDTO) => p.isReturnable ? 'Available on Exchange' : 'Not Available'
+                  getValue: (p: ComparedProduct) => p.isReturnable ? 'Available on Exchange' : 'Not Available'
                 },
                 {
                   label: 'Cash On Delivery',
-                  getValue: (p: ProductResponseDTO) => p.variants?.[0]?.codAvailable ? 'Available' : 'Not Available'
+                  getValue: (p: ComparedProduct) => {
+                    const v = p.variants?.find(v => v.id === p.comparedVariantId) || p.variants?.[0]
+                    return v?.codAvailable ? 'Available' : 'Not Available'
+                  }
                 },
                 {
                   label: 'Warranty',
-                  getValue: (p: ProductResponseDTO) => p.warrantyMonths ? `${p.warrantyMonths} Months Warranty` : '—'
+                  getValue: (p: ComparedProduct) => p.warrantyMonths ? `${p.warrantyMonths} Months Warranty` : '—'
                 },
                 {
                   label: 'Return Policy',
-                  getValue: (p: ProductResponseDTO) => p.returnPolicyDays ? `${p.returnPolicyDays} Days Replacement` : '—'
+                  getValue: (p: ComparedProduct) => p.returnPolicyDays ? `${p.returnPolicyDays} Days Replacement` : '—'
                 }
               ]
 
@@ -402,7 +415,6 @@ export function CompareClient() {
 
                     return (
                       <tr key={r.label} className={`border-b border-border/60 transition-colors ${different && showOnlyDifferences ? 'bg-amber-500/10 dark:bg-amber-500/15' : 'hover:bg-muted/20'}`}>
-                        {/* Fixed Left Specification Label Cell */}
                         <td className="p-3 sm:p-4 text-xs sm:text-sm font-semibold text-muted-foreground sticky left-0 z-10 bg-white dark:bg-zinc-950 border-r border-border shadow-[4px_0_12px_rgba(0,0,0,0.06)] dark:shadow-[4px_0_12px_rgba(0,0,0,0.3)] min-w-[140px] sm:min-w-[210px] w-40 sm:w-56">
                           {r.label}
                         </td>
@@ -429,12 +441,8 @@ export function CompareClient() {
 
               return (
                 <Fragment key="highlights">
-                  {/* Full-width Section Header */}
                   <tr className="bg-muted/90 border-t border-b border-border">
-                    <td 
-                      colSpan={totalCols} 
-                      className="p-0 border-t border-b border-border bg-muted/90"
-                    >
+                    <td colSpan={products.length + 1} className="p-0 border-t border-b border-border bg-muted/90">
                       <div className="sticky left-0 z-10 py-2.5 px-4 text-xs sm:text-sm font-black uppercase tracking-wider text-primary bg-muted/90 w-fit">
                         KEY HIGHLIGHTS
                       </div>
@@ -447,7 +455,6 @@ export function CompareClient() {
 
                     return (
                       <tr key={hText} className={`border-b border-border/60 transition-colors ${different && showOnlyDifferences ? 'bg-amber-500/10 dark:bg-amber-500/15' : 'hover:bg-muted/20'}`}>
-                        {/* Fixed Left Specification Label Cell */}
                         <td className="p-3 sm:p-4 text-xs sm:text-sm font-semibold text-muted-foreground sticky left-0 z-10 bg-white dark:bg-zinc-950 border-r border-border shadow-[4px_0_12px_rgba(0,0,0,0.06)] dark:shadow-[4px_0_12px_rgba(0,0,0,0.3)] min-w-[140px] sm:min-w-[210px] w-40 sm:w-56">
                           {hText}
                         </td>
