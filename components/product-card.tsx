@@ -46,8 +46,8 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
       <div className="flex flex-col flex-1 p-3 pt-2">
         
         {/* Title Container (Fixed 2-line height for aligned title baseline) */}
-        <div className="h-9 sm:h-10 flex items-start">
-          <Link href={`/product/${product.id}`} className="line-clamp-2 text-xs sm:text-sm font-medium leading-snug text-slate-800 dark:text-zinc-200 transition-colors hover:text-primary">
+        <div className="h-10 sm:h-11 flex items-start">
+          <Link href={`/product/${product.id}`} className="line-clamp-2 text-[15px] sm:text-base font-semibold leading-snug text-slate-900 dark:text-zinc-100 transition-colors hover:text-primary">
             {product.name}
           </Link>
         </div>

@@ -128,7 +128,7 @@ const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
             <div className="flex flex-col gap-1.5 md:contents">
               {/* Column 2: Product Details */}
               <div className="flex flex-col gap-1 md:gap-3 pr-8 md:pr-0">
-                <h2 className="text-[15px] md:text-lg font-normal md:font-semibold text-foreground line-clamp-2 leading-tight hover:text-blue-600 cursor-pointer">{title}</h2>
+                <h2 className="text-[15px] sm:text-base md:text-[17px] font-semibold text-foreground line-clamp-2 leading-snug hover:text-primary cursor-pointer">{title}</h2>
                 <div className="flex items-center gap-1.5 text-xs md:text-sm text-muted-foreground">
                   <div className="bg-green-600 text-white px-1 py-0.5 rounded-sm flex items-center gap-0.5 font-medium text-[10px] md:text-xs">
                     <span>{rating.toFixed(1)}</span>
