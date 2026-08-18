@@ -13,6 +13,7 @@ import {
   CreateStaffRequestDTO, UserResponseDTO,
   OrderResponseDTO, DashboardStatsDTO,
   ProductFilterRequestDTO,
+  SpecTemplateRequestDTO, SpecTemplateResponseDTO
 } from './types'
 
 // ===========================
@@ -429,6 +430,19 @@ export const apiClient = {
 
   reorderFaqs: (dto: import('./types').ReorderRequestDTO) =>
     axiosInstance.put<ApiResponse<void>>('/api/admin/faqs/reorder', dto),
+
+  // --- Spec Templates ---
+  getSpecTemplates: () =>
+    axiosInstance.get<ApiResponse<SpecTemplateResponseDTO[]>>('/api/admin/spec-templates'),
+
+  getSpecTemplateByCategoryId: (categoryId: string) =>
+    axiosInstance.get<ApiResponse<SpecTemplateResponseDTO>>(`/api/admin/spec-templates/category/${categoryId}`),
+
+  saveSpecTemplate: (dto: SpecTemplateRequestDTO) =>
+    axiosInstance.post<ApiResponse<SpecTemplateResponseDTO>>('/api/admin/spec-templates', dto),
+
+  deleteSpecTemplate: (id: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/admin/spec-templates/${id}`),
 }
 
 // ===========================

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen, FaCircleCheck } from 'react-icons/fa6'
+import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen, FaCircleCheck, FaListCheck } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 
 interface LocalHighlight {
@@ -290,6 +290,39 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   const handleDeleteSpecGroup = (group: string) => {
     setGlobalSpecs(globalSpecs.filter(s => s.specGroup !== group))
+  }
+
+  const [loadingTemplate, setLoadingTemplate] = useState(false)
+  const handleLoadCategoryTemplate = async () => {
+    if (!baseInfo.categoryId) return toast.error('Please select a category first (Step 1)')
+    setLoadingTemplate(true)
+    try {
+      const res = await apiClient.getSpecTemplateByCategoryId(baseInfo.categoryId)
+      if (res.data.data) {
+        const template = res.data.data
+        const newSpecs = [...globalSpecs]
+        
+        template.groups.forEach(g => {
+          g.specKeys.forEach(k => {
+            // Only add if this exact group+key combination doesn't exist
+            if (!newSpecs.some(s => s.specGroup === g.groupName && s.specKey === k)) {
+              newSpecs.push({ specGroup: g.groupName, specKey: k, specValue: '' })
+            }
+          })
+        })
+        
+        setGlobalSpecs(newSpecs)
+        toast.success(`Template "${template.templateName}" applied!`)
+      }
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        toast.error('No spec template found for this category')
+      } else {
+        toast.error('Failed to load spec template')
+      }
+    } finally {
+      setLoadingTemplate(false)
+    }
   }
 
   const handleMoveImage = (color: string, fromIndex: number, toIndex: number) => {
@@ -718,7 +751,17 @@ export function ProductWizard({ productId }: { productId?: string }) {
               const groups = Array.from(new Set(globalSpecs.map(s => s.specGroup || 'General')))
               return (
                 <div className="border border-border rounded-xl p-4 space-y-4">
-                  <h4 className="font-bold border-b border-border pb-2 text-primary">Common Specifications <span className="text-muted-foreground font-normal text-sm ml-2">(Applied to all variants)</span></h4>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-2">
+                    <h4 className="font-bold text-primary">Common Specifications <span className="text-muted-foreground font-normal text-sm ml-2">(Applied to all variants)</span></h4>
+                    <button 
+                      onClick={handleLoadCategoryTemplate} 
+                      disabled={loadingTemplate}
+                      className="text-sm bg-primary/10 text-primary hover:bg-primary/20 px-4 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-2"
+                    >
+                      <FaListCheck size={14} />
+                      {loadingTemplate ? 'Loading...' : 'Load Category Template'}
+                    </button>
+                  </div>
                   
                   {groups.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No specs added.</p>

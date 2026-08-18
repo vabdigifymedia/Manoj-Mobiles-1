@@ -167,6 +167,26 @@ export interface ProductSpecificationResponseDTO {
   specValue: string
 }
 
+// --- Spec Templates ---
+export interface SpecTemplateGroup {
+  groupName: string
+  specKeys: string[]
+}
+
+export interface SpecTemplateRequestDTO {
+  categoryId: string
+  templateName: string
+  groups: SpecTemplateGroup[]
+}
+
+export interface SpecTemplateResponseDTO {
+  id: string
+  categoryId: string
+  categoryName: string
+  templateName: string
+  groups: SpecTemplateGroup[]
+}
+
 // --- Review ---
 export interface CreateReviewRequestDTO {
   productId: string
