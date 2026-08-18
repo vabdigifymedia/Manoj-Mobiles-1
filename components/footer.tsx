@@ -53,6 +53,7 @@ export function Footer() {
               <li><Link href="/shop" className="hover:text-primary transition-colors">Samsung Galaxy</Link></li>
               <li><Link href="/track" className="hover:text-primary transition-colors">Track Order</Link></li>
               <li><Link href="/wishlist" className="hover:text-primary transition-colors">Your Wishlist</Link></li>
+              <li><Link href="/compare" className="hover:text-primary transition-colors">Compare</Link></li>
             </ul>
           </div>
           

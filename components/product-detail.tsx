@@ -93,7 +93,8 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
   const [pincode, setPincode] = useState('')
   const [deliveryStatus, setDeliveryStatus] = useState<'idle' | 'success' | 'error'>('idle')
   
-  const { addToCart } = useStore()
+  const { addToCart, toggleCompare, isInCompare } = useStore()
+  const isCompared = isInCompare(product.id)
   const router = useRouter()
 
   const handleBuyNow = () => {
@@ -234,6 +235,17 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
             </button>
             <button onClick={handleBuyNow} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
               <FaBolt size={20} /> Buy now
+            </button>
+            <button 
+              onClick={() => toggleCompare(product.id)}
+              className={`px-4 py-4 rounded-xl border-2 font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-colors ${
+                isCompared 
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:border-emerald-700 dark:text-emerald-400' 
+                  : 'border-border text-foreground hover:bg-muted'
+              }`}
+              title="Add to Compare"
+            >
+              {isCompared ? 'Compared' : 'Compare'}
             </button>
           </div>
           

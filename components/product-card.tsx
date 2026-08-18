@@ -7,8 +7,9 @@ import { useStore } from './store-provider'
 import type { ProductListResponseDTO } from '@/lib/types'
 
 export function ProductCard({ product, hideHeart }: { product: ProductListResponseDTO, hideHeart?: boolean }) {
-  const { toggleWishlist, wishlist } = useStore()
+  const { toggleWishlist, wishlist, toggleCompare, isInCompare } = useStore()
   const isWishlisted = wishlist.some(p => p.id === product.id)
+  const isCompared = isInCompare(product.id)
   
   // Heuristic: If sellingPrice > 3000, show EMI badge
   const showEMI = product.startingPrice > 3000
@@ -78,14 +79,24 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
 
         {/* Footer (Compare checkbox pinned to bottom) */}
         <div className="mt-auto pt-1 flex flex-col gap-2.5">
-          <label className="flex items-center gap-1.5 cursor-pointer group/cb w-fit">
+          <label 
+            className="flex items-center gap-1.5 cursor-pointer group/cb w-fit" 
+            onClick={(e) => { e.stopPropagation(); }}
+          >
             <div className="relative flex items-center justify-center">
-              <input type="checkbox" className="peer appearance-none w-3.5 h-3.5 rounded border border-slate-300 checked:bg-black checked:border-black dark:border-zinc-700 dark:checked:bg-white dark:checked:border-white transition-all cursor-pointer" />
+              <input 
+                type="checkbox" 
+                checked={isCompared}
+                onChange={() => toggleCompare(product.id)}
+                className="peer appearance-none w-3.5 h-3.5 rounded border border-slate-300 checked:bg-black checked:border-black dark:border-zinc-700 dark:checked:bg-white dark:checked:border-white transition-all cursor-pointer" 
+              />
               <svg className="absolute w-2 h-2 pointer-events-none opacity-0 peer-checked:opacity-100 text-white dark:text-black transition-opacity" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <span className="text-[10px] font-medium text-slate-500 group-hover/cb:text-slate-800 dark:text-zinc-400 dark:group-hover/cb:text-zinc-200">Compare</span>
+            <span className="text-[10px] font-medium text-slate-500 group-hover/cb:text-slate-800 dark:text-zinc-400 dark:group-hover/cb:text-zinc-200">
+              {isCompared ? 'Added to Compare' : 'Add to Compare'}
+            </span>
           </label>
         </div>
 

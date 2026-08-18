@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { MobileNav } from '@/components/mobile-nav'
+import { CompareBasket } from '@/components/compare-basket'
 import { Toaster } from 'sonner'
 import { ScrollbarManager } from '@/components/scrollbar-manager'
 
@@ -69,6 +70,7 @@ export default function RootLayout({
             </main>
             <Footer />
             <MobileNav />
+            <CompareBasket />
           </StoreProvider>
           {process.env.NODE_ENV === 'production' && <Analytics />}
           <Toaster position="top-right" richColors />

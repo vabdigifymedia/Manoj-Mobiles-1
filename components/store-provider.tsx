@@ -20,10 +20,18 @@ type StoreContextType = {
   fetchCart: () => void
   cartTotal: number
   
-  // Keep wishlist local for now since we haven't migrated it fully yet
+  // Wishlist
   wishlist: any[]
   toggleWishlist: (product: any) => void
   removeFromWishlist: (id: string) => void
+
+  // Compare
+  compareIds: string[]
+  addToCompare: (productId: string) => void
+  removeFromCompare: (productId: string) => void
+  toggleCompare: (productId: string) => void
+  isInCompare: (productId: string) => boolean
+  clearCompare: () => void
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined)
@@ -33,8 +41,50 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   
   const [cart, setCart] = useState<CartResponseDTO | null>(null)
   const [wishlist, setWishlist] = useState<any[]>([])
+  const [compareIds, setCompareIds] = useState<string[]>([])
   
   const [toast, setToast] = useState<ToastOptions | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('manoj-mobiles-compare')
+      if (saved) {
+        try { setCompareIds(JSON.parse(saved)) } catch (e) {}
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('manoj-mobiles-compare', JSON.stringify(compareIds))
+    }
+  }, [compareIds])
+
+  const addToCompare = (productId: string) => {
+    if (compareIds.includes(productId)) return
+    if (compareIds.length >= 5) {
+      showToast({ message: 'You can compare up to 5 products.', type: 'error' })
+      return
+    }
+    setCompareIds(prev => [...prev, productId])
+    showToast({ message: 'Added to compare list', type: 'success' })
+  }
+
+  const removeFromCompare = (productId: string) => {
+    setCompareIds(prev => prev.filter(id => id !== productId))
+    showToast({ message: 'Removed from compare list', type: 'info' })
+  }
+
+  const toggleCompare = (productId: string) => {
+    if (compareIds.includes(productId)) {
+      removeFromCompare(productId)
+    } else {
+      addToCompare(productId)
+    }
+  }
+
+  const isInCompare = (productId: string) => compareIds.includes(productId)
+  const clearCompare = () => setCompareIds([])
 
   const fetchCart = () => {
     if (isAuthenticated) {
@@ -169,7 +219,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <StoreContext.Provider value={{ cart, cartCount, cartTotal, addToCart, removeFromCart, updateQuantity, showToast, fetchCart, wishlist, toggleWishlist, removeFromWishlist }}>
+    <StoreContext.Provider value={{ cart, cartCount, cartTotal, addToCart, removeFromCart, updateQuantity, showToast, fetchCart, wishlist, toggleWishlist, removeFromWishlist, compareIds, addToCompare, removeFromCompare, toggleCompare, isInCompare, clearCompare }}>
       {children}
       
       {/* Toast UI */}
