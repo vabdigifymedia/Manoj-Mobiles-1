@@ -50,17 +50,17 @@
 :root {
   color-scheme: light;
   font-family: var(--font-inter), 'Inter', Arial, sans-serif;
-  --background: oklch(0.985 0.008 90);
+  --background: #F4F8FC;
   --foreground: oklch(0.18 0.025 255);
-  --card: oklch(1 0 0);
+  --card: #FFFFFF;
   --card-foreground: oklch(0.18 0.025 255);
-  --popover: oklch(1 0 0);
+  --popover: #FFFFFF;
   --popover-foreground: oklch(0.18 0.025 255);
   --primary: oklch(0 0 0);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.94 0.025 255);
+  --secondary: #EBF2FA;
   --secondary-foreground: oklch(0.25 0.08 255);
-  --muted: oklch(0.95 0.01 90);
+  --muted: #EEF4FA;
   --muted-foreground: oklch(0.49 0.03 255);
   --accent: oklch(0.78 0.17 55);
   --accent-foreground: oklch(0.22 0.05 50);
