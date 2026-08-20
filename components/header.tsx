@@ -166,7 +166,7 @@ export function Header() {
           )}
         </div>
       )}
-      <header className={`sticky top-0 z-20 border-b border-border bg-[#F4F8FC] dark:bg-zinc-950 dark:border-zinc-800 ${pathname?.startsWith('/product/') ? 'hidden md:block' : ''}`}>
+      <header className={`sticky top-0 z-50 border-b border-border bg-[#F4F8FC] dark:bg-zinc-950 dark:border-zinc-800 ${pathname?.startsWith('/product/') ? 'hidden md:block' : ''}`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 lg:px-8">
           {/* MOBILE TOP HEADER BRANDING (md:hidden) */}
           <div className="flex md:hidden items-center justify-between w-full min-h-[40px]">

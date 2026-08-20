@@ -114,7 +114,7 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
 
   return (
     <div
-      className="relative overflow-hidden rounded-3xl h-[180px] sm:h-[240px] md:h-[380px] lg:h-[420px] w-full group shadow-xl bg-zinc-950 select-none"
+      className="banner-container relative isolate z-0 overflow-hidden rounded-3xl h-[180px] sm:h-[240px] md:h-[380px] lg:h-[420px] w-full group shadow-xl bg-zinc-950 select-none"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
@@ -226,7 +226,7 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
 
       {/* Clean Bottom Navigation Dots (Only if multiple banners exist) */}
       {banners.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-md border border-white/10 shadow-lg">
+        <div className="absolute bottom-2.5 sm:bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto">
           {banners.map((_, i) => (
             <button
               key={i}
