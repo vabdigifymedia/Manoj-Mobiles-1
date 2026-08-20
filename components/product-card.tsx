@@ -9,7 +9,8 @@ import type { ProductListResponseDTO } from '@/lib/types'
 export function ProductCard({ product, hideHeart }: { product: ProductListResponseDTO, hideHeart?: boolean }) {
   const { toggleWishlist, wishlist, toggleCompare, isInCompare } = useStore()
   const isWishlisted = wishlist.some(p => p.id === product.id)
-  const isCompared = isInCompare(product.id)
+  const compareTargetId = product.defaultVariantId || product.id // Fallback in case no variants exist
+  const isCompared = isInCompare(compareTargetId)
   
   // Heuristic: If sellingPrice > 3000, show EMI badge
   const showEMI = product.startingPrice > 3000
@@ -87,7 +88,7 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
               <input 
                 type="checkbox" 
                 checked={isCompared}
-                onChange={() => toggleCompare(product.id)}
+                onChange={() => toggleCompare(compareTargetId, product.categoryId, product.id)}
                 className="peer appearance-none w-3.5 h-3.5 rounded border border-slate-300 checked:bg-black checked:border-black dark:border-zinc-700 dark:checked:bg-white dark:checked:border-white transition-all cursor-pointer" 
               />
               <svg className="absolute w-2 h-2 pointer-events-none opacity-0 peer-checked:opacity-100 text-white dark:text-black transition-opacity" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">

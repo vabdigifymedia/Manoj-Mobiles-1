@@ -26,11 +26,11 @@ type StoreContextType = {
   removeFromWishlist: (id: string) => void
 
   // Compare
-  compareIds: string[]
-  addToCompare: (productId: string) => void
-  removeFromCompare: (productId: string) => void
-  toggleCompare: (productId: string) => void
-  isInCompare: (productId: string) => boolean
+  compareItems: { variantId: string, categoryId: string, productId: string }[]
+  addToCompare: (variantId: string, categoryId: string, productId: string) => void
+  removeFromCompare: (variantId: string) => void
+  toggleCompare: (variantId: string, categoryId: string, productId: string) => void
+  isInCompare: (variantId: string) => boolean
   clearCompare: () => void
 }
 
@@ -41,50 +41,122 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   
   const [cart, setCart] = useState<CartResponseDTO | null>(null)
   const [wishlist, setWishlist] = useState<any[]>([])
-  const [compareIds, setCompareIds] = useState<string[]>([])
+  const [compareItems, setCompareItems] = useState<{ variantId: string, categoryId: string, productId: string }[]>([])
   
   const [toast, setToast] = useState<ToastOptions | null>(null)
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !isAuthenticated) {
       const saved = localStorage.getItem('manoj-mobiles-compare')
       if (saved) {
-        try { setCompareIds(JSON.parse(saved)) } catch (e) {}
+        try { 
+          const parsed = JSON.parse(saved)
+          // Handle legacy array of strings
+          if (Array.isArray(parsed) && typeof parsed[0] === 'string') {
+            setCompareItems(parsed.map(id => ({ variantId: id, categoryId: '', productId: id })))
+          } else {
+            setCompareItems(parsed)
+          }
+        } catch (e) {}
       }
     }
-  }, [])
+  }, [isAuthenticated])
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('manoj-mobiles-compare', JSON.stringify(compareIds))
+    if (typeof window !== 'undefined' && !isAuthenticated) {
+      localStorage.setItem('manoj-mobiles-compare', JSON.stringify(compareItems))
     }
-  }, [compareIds])
+  }, [compareItems, isAuthenticated])
 
-  const addToCompare = (productId: string) => {
-    if (compareIds.includes(productId)) return
-    if (compareIds.length >= 5) {
-      showToast({ message: 'You can compare up to 5 products.', type: 'error' })
+  const syncCompareToBackend = async (localItems: { variantId: string, categoryId: string, productId: string }[]) => {
+    for (const item of localItems) {
+      try {
+        await apiClient.addToCompareList(item.variantId)
+      } catch (err) {}
+    }
+    localStorage.removeItem('manoj-mobiles-compare')
+    fetchCompareList()
+  }
+
+  const fetchCompareList = async () => {
+    if (!isAuthenticated) return
+    try {
+      const res = await apiClient.getCompareList()
+      // We don't get categoryId from backend DTO, but backend enforces same category
+      setCompareItems(res.data.data.map(item => ({ variantId: item.variantId, categoryId: '', productId: item.productId })))
+    } catch (err) {
+      console.error('Failed to fetch compare list', err)
+    }
+  }
+
+  const addToCompare = async (variantId: string, categoryId: string, productId: string) => {
+    if (compareItems.some(item => item.variantId === variantId)) return
+    
+    // Enforce 4 limit
+    if (compareItems.length >= 4) {
+      showToast({ message: 'You can compare up to 4 products.', type: 'error' })
       return
     }
-    setCompareIds(prev => [...prev, productId])
-    showToast({ message: 'Added to compare list', type: 'success' })
-  }
 
-  const removeFromCompare = (productId: string) => {
-    setCompareIds(prev => prev.filter(id => id !== productId))
-    showToast({ message: 'Removed from compare list', type: 'info' })
-  }
+    // Enforce same category (for guest/optimistic)
+    if (compareItems.length > 0) {
+      const existingCategory = compareItems.find(i => i.categoryId)?.categoryId
+      // If we know the existing category, and it doesn't match the new one
+      if (existingCategory && categoryId && existingCategory !== categoryId) {
+        showToast({ message: 'You can only compare products within the same category.', type: 'error' })
+        return
+      }
+    }
 
-  const toggleCompare = (productId: string) => {
-    if (compareIds.includes(productId)) {
-      removeFromCompare(productId)
+    if (isAuthenticated) {
+      try {
+        await apiClient.addToCompareList(variantId)
+        showToast({ message: 'Added to compare list', type: 'success' })
+        fetchCompareList()
+      } catch (err: any) {
+        showToast({ message: err.response?.data?.message || 'Failed to add to compare', type: 'error' })
+      }
     } else {
-      addToCompare(productId)
+      setCompareItems(prev => [...prev, { variantId, categoryId, productId }])
+      showToast({ message: 'Added to compare list', type: 'success' })
     }
   }
 
-  const isInCompare = (productId: string) => compareIds.includes(productId)
-  const clearCompare = () => setCompareIds([])
+  const removeFromCompare = async (variantId: string) => {
+    if (isAuthenticated) {
+      try {
+        await apiClient.removeFromCompareList(variantId)
+        showToast({ message: 'Removed from compare list', type: 'info' })
+        fetchCompareList()
+      } catch (err: any) {
+        showToast({ message: 'Failed to remove', type: 'error' })
+      }
+    } else {
+      setCompareItems(prev => prev.filter(item => item.variantId !== variantId))
+      showToast({ message: 'Removed from compare list', type: 'info' })
+    }
+  }
+
+  const toggleCompare = (variantId: string, categoryId: string, productId: string) => {
+    if (compareItems.some(item => item.variantId === variantId)) {
+      removeFromCompare(variantId)
+    } else {
+      addToCompare(variantId, categoryId, productId)
+    }
+  }
+
+  const isInCompare = (variantId: string) => compareItems.some(item => item.variantId === variantId)
+  
+  const clearCompare = async () => {
+    if (isAuthenticated) {
+      try {
+        await apiClient.clearCompareList()
+        fetchCompareList()
+      } catch (err) {}
+    } else {
+      setCompareItems([])
+    }
+  }
 
   const fetchCart = () => {
     if (isAuthenticated) {
@@ -94,6 +166,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       apiClient.getWishlist()
         .then(res => setWishlist(res.data.data.content))
         .catch(err => console.error('Failed to fetch wishlist', err))
+        
+      // Sync guest compare list and fetch
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('manoj-mobiles-compare') : null
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (parsed && parsed.length > 0) {
+             const localItems = Array.isArray(parsed) && typeof parsed[0] === 'string' 
+                ? parsed.map((id: string) => ({ variantId: id, categoryId: '', productId: id }))
+                : parsed
+             syncCompareToBackend(localItems)
+          } else {
+             fetchCompareList()
+          }
+        } catch (e) {
+          fetchCompareList()
+        }
+      } else {
+        fetchCompareList()
+      }
+      
     } else {
       setCart(null)
       const savedWishlist = typeof window !== 'undefined' ? window.localStorage.getItem('manoj-mobiles-wishlist') : null
@@ -219,7 +312,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <StoreContext.Provider value={{ cart, cartCount, cartTotal, addToCart, removeFromCart, updateQuantity, showToast, fetchCart, wishlist, toggleWishlist, removeFromWishlist, compareIds, addToCompare, removeFromCompare, toggleCompare, isInCompare, clearCompare }}>
+    <StoreContext.Provider value={{ cart, cartCount, cartTotal, addToCart, removeFromCart, updateQuantity, showToast, fetchCart, wishlist, toggleWishlist, removeFromWishlist, compareItems, addToCompare, removeFromCompare, toggleCompare, isInCompare, clearCompare }}>
       {children}
       
       {/* Toast UI */}

@@ -13,12 +13,15 @@ import {
   CreateStaffRequestDTO, UserResponseDTO,
   OrderResponseDTO, DashboardStatsDTO,
   ProductFilterRequestDTO,
+  SpecTemplateRequestDTO, SpecTemplateResponseDTO
 } from './types'
 
 // ===========================
 // Axios Instance
 // ===========================
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://200.141.14.212.nip.io'
+// Uses Next.js rewrites proxy to avoid CORS issues in development.
+// All /api/* requests are proxied server-side to the backend.
+const BASE_URL = ''
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -339,6 +342,19 @@ export const apiClient = {
   moveWishlistToCart: (variantId: string) =>
     axiosInstance.post<ApiResponse<void>>(`/api/user/wishlist/${variantId}/move-to-cart`),
 
+  // --- Compare ---
+  getCompareList: () =>
+    axiosInstance.get<ApiResponse<import('./types').CompareItemDTO[]>>('/api/user/compare'),
+
+  addToCompareList: (variantId: string) =>
+    axiosInstance.post<ApiResponse<import('./types').CompareItemDTO>>(`/api/user/compare/${variantId}`),
+
+  removeFromCompareList: (variantId: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/user/compare/${variantId}`),
+
+  clearCompareList: () =>
+    axiosInstance.delete<ApiResponse<void>>('/api/user/compare'),
+
   // --- Coupons ---
   getActiveCoupons: () =>
     axiosInstance.get<ApiResponse<import('./types').ActiveCouponResponseDTO[]>>('/api/user/coupons/active'),
@@ -429,6 +445,19 @@ export const apiClient = {
 
   reorderFaqs: (dto: import('./types').ReorderRequestDTO) =>
     axiosInstance.put<ApiResponse<void>>('/api/admin/faqs/reorder', dto),
+
+  // --- Spec Templates ---
+  getSpecTemplates: () =>
+    axiosInstance.get<ApiResponse<SpecTemplateResponseDTO[]>>('/api/admin/spec-templates'),
+
+  getSpecTemplateByCategoryId: (categoryId: string) =>
+    axiosInstance.get<ApiResponse<SpecTemplateResponseDTO>>(`/api/admin/spec-templates/category/${categoryId}`),
+
+  saveSpecTemplate: (dto: SpecTemplateRequestDTO) =>
+    axiosInstance.post<ApiResponse<SpecTemplateResponseDTO>>('/api/admin/spec-templates', dto),
+
+  deleteSpecTemplate: (id: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/admin/spec-templates/${id}`),
 }
 
 // ===========================
@@ -441,8 +470,10 @@ export const formatINR = (value: number) =>
 // Server-side fetch helper for SSR pages (no auth needed, public endpoints only)
 // ===========================
 export async function serverFetch<T>(path: string): Promise<T | null> {
+  // Server-side fetch needs a full URL (no browser origin available)
+  const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'https://200.141.14.212.nip.io'
   try {
-    const res = await fetch(`${BASE_URL}${path}`, { cache: 'no-store' })
+    const res = await fetch(`${serverUrl}${path}`, { cache: 'no-store' })
     if (!res.ok) return null
     const json = await res.json()
     return json.data as T

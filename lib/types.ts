@@ -95,12 +95,14 @@ export interface ProductListResponseDTO {
   name: string
   brandName: string
   categoryName: string
+  categoryId: string
   slug: string
   status: string
+  defaultVariantId: string
   startingPrice: number
+  primaryImageUrl?: string
   mrp?: number
   discountPercent?: number
-  primaryImageUrl?: string
   avgRating?: number
   totalReviews?: number
   highlights?: string[]
@@ -167,6 +169,26 @@ export interface ProductSpecificationResponseDTO {
   specValue: string
 }
 
+// --- Spec Templates ---
+export interface SpecTemplateGroup {
+  groupName: string
+  specKeys: string[]
+}
+
+export interface SpecTemplateRequestDTO {
+  categoryId: string
+  templateName: string
+  groups: SpecTemplateGroup[]
+}
+
+export interface SpecTemplateResponseDTO {
+  id: string
+  categoryId: string
+  categoryName: string
+  templateName: string
+  groups: SpecTemplateGroup[]
+}
+
 // --- Review ---
 export interface CreateReviewRequestDTO {
   productId: string
@@ -214,6 +236,18 @@ export interface HighlightResponseDTO {
   iconName: IconName
   text: string
   displayOrder: number
+}
+
+// --- Compare ---
+export interface CompareItemDTO {
+  id: string
+  variantId: string
+  productId: string
+  variantName: string
+  productName: string
+  price: number
+  imageUrl: string
+  specifications: Record<string, string>
 }
 
 // --- User / Staff ---
