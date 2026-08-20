@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { FaMicrochip, FaCircleCheck, FaArrowLeft, FaBolt, FaHardDrive, FaBatteryFull, FaCamera, FaShieldHalved, FaWifi, FaMobileScreen, FaComment, FaLocationDot, FaGear, FaBluetooth, FaMemory, FaTruckFast, FaStar, FaCartShopping } from 'react-icons/fa6'
 import { formatINR } from '@/lib/apiClient'
 import { useStore } from '@/components/store-provider'
+import { useAuth } from '@/lib/auth-context'
 import type { ProductResponseDTO, ProductVariantResponseDTO } from '@/lib/types'
 import { ProductReviews } from '@/components/product-reviews'
 
