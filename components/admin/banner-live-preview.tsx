@@ -13,7 +13,6 @@ export function BannerLivePreview({ banner }: BannerLivePreviewProps) {
 
   const isImageOnly =
     banner.bannerMode === 'IMAGE_ONLY' ||
-    banner.bannerMode === 'image' ||
     banner.badgeText === '[IMAGE_ONLY]' ||
     banner.title?.includes('[IMAGE_ONLY]')
   const displayImage = viewMode === 'mobile' && banner.mobileImageUrl ? banner.mobileImageUrl : banner.imageUrl

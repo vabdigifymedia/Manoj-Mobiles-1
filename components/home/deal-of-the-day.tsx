@@ -47,7 +47,6 @@ export function DealOfTheDay({ banner }: { banner: BannerResponseDTO | null }) {
 
   const isImageOnly =
     banner.bannerMode === 'IMAGE_ONLY' ||
-    banner.bannerMode === 'image' ||
     banner.badgeText === '[IMAGE_ONLY]' ||
     banner.title?.includes('[IMAGE_ONLY]')
 

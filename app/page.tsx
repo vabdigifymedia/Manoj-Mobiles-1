@@ -36,7 +36,7 @@ export default async function HomePage() {
   const newProducts = newArrivals?.content || []
   const bestProducts = bestSellers?.content || []
   const budgetProducts = budgetPicks?.content || []
-  
+
   const allProducts = allProductsData?.content || []
 
   // Filter for Samsung products dynamically from backend API data
@@ -99,7 +99,7 @@ export default async function HomePage() {
       <BrandSpotlight brandName="Samsung" title="Best Of Samsung" products={samsungProducts} />
 
       {/* Brand Spotlight - iPhone */}
-      <BrandSpotlight brandName="Apple" title="Best Of iPhone" products={iphoneProducts} />
+      <BrandSpotlight brandName="Apple" title="Best Of Apple" products={iphoneProducts} />
 
       {/* Deal of the Day */}
       <DealOfTheDay banner={activeDeal} />
@@ -121,7 +121,7 @@ export default async function HomePage() {
                 'bg-amber-500',
                 'bg-cyan-500',
               ]
-              
+
               const getCategoryIcon = (name: string) => {
                 const n = name.toLowerCase()
                 if (n.includes('mobile') || n.includes('phone') || n.includes('smartphone')) return FaMobileScreen
@@ -142,7 +142,7 @@ export default async function HomePage() {
                 >
                   {/* Subtle Background Glow */}
                   <div className={`absolute -right-6 -top-6 z-0 h-32 w-32 rounded-full blur-3xl opacity-10 transition-all duration-500 group-hover:scale-150 group-hover:opacity-20 ${glowColors[i % glowColors.length]}`}></div>
-                  
+
                   <div className="relative z-10 flex h-full items-center justify-between gap-4">
                     <div>
                       <h3 className="text-xl font-black text-foreground mb-1.5">{cat.name}</h3>
@@ -150,13 +150,13 @@ export default async function HomePage() {
                         Explore <FaArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
                       </p>
                     </div>
-                    
+
                     {cat.imageUrl ? (
                       <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0">
-                        <img 
-                          src={cat.imageUrl} 
-                          alt={cat.name} 
-                          className="h-full w-full object-contain drop-shadow-md transition-transform duration-500 group-hover:scale-110" 
+                        <img
+                          src={cat.imageUrl}
+                          alt={cat.name}
+                          className="h-full w-full object-contain drop-shadow-md transition-transform duration-500 group-hover:scale-110"
                         />
                       </div>
                     ) : (
@@ -219,12 +219,12 @@ export default async function HomePage() {
             <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#25D366] via-emerald-600 to-teal-900 p-8 text-white transition-all">
               {/* Decorative Background Elements */}
               <div className="pointer-events-none absolute -right-10 -top-10 z-0 opacity-10 transition-transform duration-700 ease-out group-hover:scale-110 group-hover:opacity-20">
-                <FaMessage size={250}  />
+                <FaMessage size={250} />
               </div>
               <div className="pointer-events-none absolute -bottom-20 -left-10 z-0 opacity-10">
                 <div className="h-40 w-40 rounded-full bg-white blur-3xl"></div>
               </div>
-              
+
               <div className="relative z-10">
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
                   <FaMessage size={14} className="animate-pulse" />
@@ -242,7 +242,7 @@ export default async function HomePage() {
                   rel="noopener noreferrer"
                   className="inline-flex w-fit items-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-black text-emerald-700 transition-all duration-300 hover:-translate-y-1 hover:bg-emerald-50"
                 >
-                  <FaMessage size={18} /> 
+                  <FaMessage size={18} />
                   Chat on WhatsApp
                 </a>
               </div>

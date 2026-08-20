@@ -75,7 +75,6 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
   const banner = banners[current]
   const isImageOnly =
     banner.bannerMode === 'IMAGE_ONLY' ||
-    banner.bannerMode === 'image' ||
     banner.badgeText === '[IMAGE_ONLY]' ||
     banner.title?.includes('[IMAGE_ONLY]')
 

@@ -12,7 +12,7 @@ import { ProductReviews } from '@/components/product-reviews'
 
 export function ProductDetailClient({ product: initialProduct }: { product: ProductResponseDTO }) {
   const [product] = useState<ProductResponseDTO>(initialProduct)
-  
+
   // Helper to extract clean Variant Name (stripping color suffix if appended in parenthesis)
   const getCleanVariantName = (v: ProductVariantResponseDTO) => {
     if (!v || !v.variantName) return ''
@@ -31,7 +31,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
   // Selected Variant Name state
   const [selectedVariantName, setSelectedVariantName] = useState<string>('')
-  
+
   // Selected Color state
   const [selectedColor, setSelectedColor] = useState<string>('')
 
@@ -90,21 +90,27 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
       setMobileImageIndex(0)
     }
   }, [selectedVariant])
-  
+
   const [pincode, setPincode] = useState('')
   const [deliveryStatus, setDeliveryStatus] = useState<'idle' | 'success' | 'error'>('idle')
-  
-  const { addToCart, toggleCompare, isInCompare } = useStore()
+
+  const { addToCart, toggleCompare, isInCompare, cart } = useStore()
   const { isAuthenticated } = useAuth()
   const isCompared = isInCompare(selectedVariant.id)
   const router = useRouter()
 
+  const isVariantInCart = selectedVariant ? cart?.items?.some(i => i.variantId === selectedVariant.id || i.id === selectedVariant.id) : false
+
   const handleAddToCart = () => {
+    if (isVariantInCart) {
+      router.push('/cart')
+      return
+    }
     if (selectedVariant) {
       const primaryImg = selectedVariant.images?.find(img => img.isPrimary)?.url || selectedVariant.imageUrls?.[0] || '/placeholder.png'
       addToCart(selectedVariant.id, 1, {
         productName: product.name,
-        variantName: selectedVariant.variantName || `${selectedVariant.ram || ''} ${selectedVariant.storage || ''} ${selectedColor || ''}`.trim(),
+        variantName: selectedVariant.variantName || selectedColor.trim() || 'Default',
         sku: selectedVariant.sku,
         primaryImage: primaryImg,
         currentPrice: selectedVariant.sellingPrice,
@@ -137,10 +143,10 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-4 md:py-8 pb-28 lg:pb-8 lg:px-8">
-      
+
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="flex flex-col gap-4 self-start lg:sticky lg:top-24 min-w-0">
-          
+
           {/* Desktop View Image Gallery */}
           <div className="hidden lg:flex flex-col gap-4">
             <div className="rounded-3xl bg-[#F4F4F5] p-6 dark:bg-white">
@@ -163,7 +169,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
           {/* Mobile View Image Slider */}
           <div className="lg:hidden flex flex-col gap-3">
-            <div 
+            <div
               className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide rounded-3xl bg-[#F4F4F5] dark:bg-white"
               onScroll={(e) => {
                 const scrollLeft = e.currentTarget.scrollLeft
@@ -172,11 +178,11 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
               }}
             >
               {allImages.length > 0 ? allImages.map((url, idx) => (
-                <div key={idx} className="w-full shrink-0 snap-center p-6">
+                <div key={idx} className="w-full shrink-0 snap-center p-4 md:p-6">
                   <img src={url} alt={`${product.name} ${idx + 1}`} className="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
                 </div>
               )) : (
-                <div className="w-full shrink-0 snap-center p-6">
+                <div className="w-full shrink-0 snap-center p-4 md:p-6">
                   <img src={primaryImage} alt={product.name} className="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
                 </div>
               )}
@@ -184,8 +190,8 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
             {allImages.length > 1 && (
               <div className="flex justify-center gap-1.5 mt-1">
                 {allImages.map((_, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className={`h-1.5 rounded-full transition-all duration-300 ${idx === mobileImageIndex ? 'w-4 bg-primary' : 'w-1.5 bg-border'}`}
                   />
                 ))}
@@ -194,35 +200,35 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
           </div>
 
         </div>
-        
+
         <div className="flex flex-col gap-4 md:gap-6 min-w-0">
           <div>
             <p className="text-[10px] md:text-xs font-bold uppercase tracking-[.18em] text-primary dark:text-zinc-400">{product.brandName}</p>
-            <h1 className="mt-1 text-2xl md:text-3xl lg:text-4xl font-black leading-tight">{product.name}</h1>
-            <div className="mt-3 flex items-center gap-2">
-              <FaStar size={17} fill="currentColor" className="text-accent" />
-              <b>{product.avgRating || 0}</b>
-              <a href="#reviews" className="text-sm text-muted-foreground hover:text-primary hover:underline">{product.totalReviews || 0} reviews</a>
+            <h1 className="mt-1 text-xl md:text-3xl lg:text-4xl font-black leading-tight">{product.name}</h1>
+            <div className="mt-2.5 md:mt-3 flex items-center gap-1.5 md:gap-2">
+              <FaStar className="size-[15px] md:size-[17px] text-accent" fill="currentColor" />
+              <b className="text-sm md:text-base">{product.avgRating || 0}</b>
+              <a href="#reviews" className="text-xs md:text-sm text-muted-foreground hover:text-primary hover:underline">{product.totalReviews || 0} reviews</a>
             </div>
           </div>
-          
+
           <div>
-            <p className="text-2xl md:text-3xl font-black">{formatINR(selectedVariant.sellingPrice)}</p>
+            <p className="text-xl md:text-3xl font-black">{formatINR(selectedVariant.sellingPrice)}</p>
             {selectedVariant.mrp && selectedVariant.mrp > selectedVariant.sellingPrice && (
-              <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-muted-foreground">MRP <span className="line-through">{formatINR(selectedVariant.mrp)}</span></p>
+              <p className="mt-0.5 md:mt-1 text-[11px] md:text-sm text-muted-foreground">MRP <span className="line-through">{formatINR(selectedVariant.mrp)}</span></p>
             )}
           </div>
-          
+
           {/* CASE 2: Show Variant Selector ONLY if uniqueVariantNames.length > 1 */}
           {uniqueVariantNames.length > 1 && (
             <div>
-              <p className="mb-3 text-sm font-bold">Variant</p>
+              <p className="mb-2 md:mb-3 text-xs md:text-sm font-bold">Variant</p>
               <div className="flex flex-wrap gap-2">
                 {uniqueVariantNames.map(name => (
-                  <button 
-                    key={name} 
-                    onClick={() => setSelectedVariantName(name)} 
-                    className={`rounded-xl border px-3.5 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium transition-colors ${selectedVariantName === name ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
+                  <button
+                    key={name}
+                    onClick={() => setSelectedVariantName(name)}
+                    className={`rounded-lg md:rounded-xl border px-3 md:px-4 py-1.5 md:py-2.5 text-[11px] md:text-sm font-medium transition-colors ${selectedVariantName === name ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
                   >
                     {name}
                   </button>
@@ -234,13 +240,13 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
           {/* Color Selector: Shown if multiple colors exist or if variant selector is hidden but color exists */}
           {availableColorsForSelectedName.length > 0 && (availableColorsForSelectedName.length > 1 || uniqueVariantNames.length > 1) && (
             <div>
-              <p className="mb-3 text-sm font-bold">Color: <span className="font-normal text-muted-foreground">{selectedColor}</span></p>
+              <p className="mb-2 md:mb-3 text-xs md:text-sm font-bold">Color: <span className="font-normal text-muted-foreground">{selectedColor}</span></p>
               <div className="flex flex-wrap gap-2">
                 {availableColorsForSelectedName.map(color => (
-                  <button 
-                    key={color} 
-                    onClick={() => setSelectedColor(color)} 
-                    className={`rounded-xl border px-3.5 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium transition-colors ${selectedColor === color ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`rounded-lg md:rounded-xl border px-3 md:px-4 py-1.5 md:py-2.5 text-[11px] md:text-sm font-medium transition-colors ${selectedColor === color ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-foreground/30'}`}
                   >
                     {color}
                   </button>
@@ -248,33 +254,49 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
               </div>
             </div>
           )}
-          
+
           <div className="mt-2 hidden lg:flex gap-3">
-            <button onClick={handleAddToCart} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary px-5 py-4 font-bold text-primary hover:bg-primary/5 transition-colors">
-              <FaCartShopping size={20} /> Add to cart
+            <button 
+              onClick={handleAddToCart} 
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl border-2 px-5 py-4 font-bold transition-all duration-300 active:scale-95 ${
+                isVariantInCart 
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:border-emerald-700 dark:text-emerald-400' 
+                  : 'border-primary text-primary hover:bg-primary/5'
+              }`}
+            >
+              {isVariantInCart ? (
+                <>
+                  <FaCircleCheck size={20} className="animate-bounce" style={{ animationIterationCount: 1, animationDuration: '0.5s' }} /> 
+                  <span>Go to cart</span>
+                </>
+              ) : (
+                <>
+                  <FaCartShopping size={20} /> 
+                  <span>Add to cart</span>
+                </>
+              )}
             </button>
             <button onClick={handleBuyNow} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
               <FaBolt size={20} /> Buy now
             </button>
-            <button 
+            <button
               onClick={() => toggleCompare(selectedVariant.id, product.categoryId, product.id)}
-              className={`px-4 py-4 rounded-xl border-2 font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-colors ${
-                isCompared 
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:border-emerald-700 dark:text-emerald-400' 
+              className={`px-4 py-4 rounded-xl border-2 font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-colors ${isCompared
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:border-emerald-700 dark:text-emerald-400'
                   : 'border-border text-foreground hover:bg-muted'
-              }`}
+                }`}
               title="Add to Compare"
             >
               {isCompared ? 'Compared' : 'Compare'}
             </button>
           </div>
-          
+
           <form onSubmit={checkPincode} className="rounded-2xl border border-border p-4 bg-muted/30">
             <p className="text-sm font-bold flex items-center gap-2 mb-3">
               <FaLocationDot size={16} className="text-primary" /> Delivery Options
             </p>
             <div className="flex gap-2">
-              <input 
+              <input
                 type="text" placeholder="Enter 6-digit Pincode" value={pincode}
                 onChange={(e) => { setPincode(e.target.value); setDeliveryStatus('idle'); }}
                 className="flex-1 min-w-0 rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
@@ -296,30 +318,30 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
               <div className="grid gap-3 sm:grid-cols-2">
                 {product.highlights.map(h => {
                   const Icon = h.iconName === 'MemoryStick' ? FaMemory :
-                               h.iconName === 'HardDrive' ? FaHardDrive :
-                               h.iconName === 'Microchip' ? FaMicrochip :
-                               h.iconName === 'ShieldCheck' ? FaShieldHalved :
-                               h.iconName === 'Truck' ? FaTruckFast :
-                               h.iconName === 'Cpu' ? FaMicrochip :
-                               h.iconName === 'Battery' ? FaBatteryFull :
-                               h.iconName === 'Star' ? FaStar :
-                               h.iconName === 'Settings' ? FaGear :
-                               h.iconName === 'Smartphone' ? FaMobileScreen :
-                               h.iconName === 'Camera' ? FaCamera :
-                               h.iconName === 'Wifi' ? FaWifi :
-                               h.iconName === 'Bluetooth' ? FaBluetooth :
-                               h.iconName === 'Zap' ? FaBolt : FaCircleCheck;
-                  
+                    h.iconName === 'HardDrive' ? FaHardDrive :
+                      h.iconName === 'Microchip' ? FaMicrochip :
+                        h.iconName === 'ShieldCheck' ? FaShieldHalved :
+                          h.iconName === 'Truck' ? FaTruckFast :
+                            h.iconName === 'Cpu' ? FaMicrochip :
+                              h.iconName === 'Battery' ? FaBatteryFull :
+                                h.iconName === 'Star' ? FaStar :
+                                  h.iconName === 'Settings' ? FaGear :
+                                    h.iconName === 'Smartphone' ? FaMobileScreen :
+                                      h.iconName === 'Camera' ? FaCamera :
+                                        h.iconName === 'Wifi' ? FaWifi :
+                                          h.iconName === 'Bluetooth' ? FaBluetooth :
+                                            h.iconName === 'Zap' ? FaBolt : FaCircleCheck;
+
                   const cleanName = getCleanVariantName(selectedVariant);
                   let text = h.text.replace('{variant}', cleanName);
-                  
+
                   // Auto-detect RAM and ROM from variant name (e.g. "512 GB + 12 GB")
                   const sizes = [...cleanName.matchAll(/(\d+)\s*(GB|TB|MB)/gi)].map(m => ({
                     value: parseInt(m[1]),
                     unit: m[2].toUpperCase(),
                     original: m[0]
                   }));
-                  
+
                   if (sizes.length === 2 && (text.includes('{ram}') || text.includes('{rom}'))) {
                     sizes.sort((a, b) => {
                       const aVal = a.unit === 'TB' ? a.value * 1024 : a.unit === 'MB' ? a.value / 1024 : a.value;
@@ -328,7 +350,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
                     });
                     text = text.replace(/{ram}/gi, sizes[0].original).replace(/{rom}/gi, sizes[1].original);
                   }
-                  
+
                   return (
                     <div key={h.id} className="flex items-center gap-3">
                       <div className="rounded-full bg-primary/10 p-2 text-primary">
@@ -376,16 +398,33 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
       </div>
 
       <hr className="my-12 border-border" />
-      
+
       <ProductReviews productId={product.id} />
-      
+
       {/* Mobile Fixed Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-3 border-t border-border bg-background p-4 lg:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
-        <button onClick={handleAddToCart} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary py-3.5 font-bold text-primary hover:bg-primary/5 transition-colors">
-          <FaCartShopping size={18} /> Add to cart
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-2.5 border-t border-border bg-background p-3 lg:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>
+        <button 
+          onClick={handleAddToCart} 
+          className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl border-2 py-2.5 text-sm font-bold transition-all duration-300 active:scale-95 ${
+            isVariantInCart 
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:border-emerald-700 dark:text-emerald-400' 
+              : 'border-primary text-primary hover:bg-primary/5'
+          }`}
+        >
+          {isVariantInCart ? (
+            <>
+              <FaCircleCheck size={16} className="animate-bounce" style={{ animationIterationCount: 1, animationDuration: '0.5s' }} /> 
+              <span>Go to cart</span>
+            </>
+          ) : (
+            <>
+              <FaCartShopping size={16} /> 
+              <span>Add to cart</span>
+            </>
+          )}
         </button>
-        <button onClick={handleBuyNow} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
-          <FaBolt size={18} /> Buy now
+        <button onClick={handleBuyNow} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
+          <FaBolt size={16} /> Buy now
         </button>
       </div>
     </main>

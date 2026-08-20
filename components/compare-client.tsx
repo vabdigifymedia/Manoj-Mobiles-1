@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import Link from 'next/link'
-import { FaPlus, FaXmark, FaCheck, FaStar, FaCartShopping, FaArrowRight, FaMagnifyingGlass, FaSliders } from 'react-icons/fa6'
+import { FaPlus, FaXmark, FaCheck, FaStar, FaCartShopping, FaArrowRight, FaMagnifyingGlass, FaSliders, FaCircleCheck } from 'react-icons/fa6'
+import { useRouter } from 'next/navigation'
 import { apiClient, formatINR } from '@/lib/apiClient'
 import { useStore } from '@/components/store-provider'
 import type { ProductResponseDTO, ProductListResponseDTO } from '@/lib/types'
 
 export function CompareClient() {
-  const { compareItems, addToCompare, removeFromCompare, clearCompare, addToCart } = useStore()
+  const { compareItems, addToCompare, removeFromCompare, clearCompare, addToCart, cart } = useStore()
+  const router = useRouter()
   
   type ComparedProduct = ProductResponseDTO & { comparedVariantId: string }
   const [products, setProducts] = useState<ComparedProduct[]>([])
@@ -309,10 +311,32 @@ export function CompareClient() {
 
                       <div className="mt-3 flex flex-col gap-1.5 w-full">
                         <button 
-                          onClick={() => primaryVariant && addToCart(primaryVariant.id, 1)}
-                          className="w-full py-2 px-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-primary/90 transition-colors shadow-xs"
+                          onClick={() => {
+                            if (!primaryVariant) return
+                            const isVariantInCart = cart?.items?.some(i => i.variantId === primaryVariant.id || i.id === primaryVariant.id)
+                            if (isVariantInCart) {
+                              router.push('/cart')
+                            } else {
+                              addToCart(primaryVariant.id, 1)
+                            }
+                          }}
+                          className={`w-full py-2 px-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-95 shadow-xs ${
+                            cart?.items?.some(i => i.variantId === primaryVariant?.id || i.id === primaryVariant?.id)
+                              ? 'border border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:border-emerald-700 dark:text-emerald-400'
+                              : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                          }`}
                         >
-                          <FaCartShopping size={13} /> Add to Cart
+                          {cart?.items?.some(i => i.variantId === primaryVariant?.id || i.id === primaryVariant?.id) ? (
+                            <>
+                              <FaCircleCheck size={13} className="animate-bounce" style={{ animationIterationCount: 1, animationDuration: '0.5s' }} /> 
+                              <span>Go to Cart</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaCartShopping size={13} /> 
+                              <span>Add to Cart</span>
+                            </>
+                          )}
                         </button>
                         <Link 
                           href={`/product/${p.id}`}
