@@ -14,6 +14,8 @@ import { apiClient } from '@/lib/apiClient'
 
 interface BannerImageUploaderProps {
   label: string
+  recommendedSize?: string
+  helperText?: string
   existingUrl?: string
   onUploadSuccess: (url: string) => void
   onRemove: () => void
@@ -23,6 +25,8 @@ interface BannerImageUploaderProps {
 
 export function BannerImageUploader({
   label,
+  recommendedSize,
+  helperText,
   existingUrl,
   onUploadSuccess,
   onRemove,
@@ -146,7 +150,17 @@ export function BannerImageUploader({
 
   return (
     <div className="w-full">
-      <label className="block text-sm font-bold mb-1.5 text-foreground">{label}</label>
+      <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
+        <label className="text-sm font-bold text-foreground">{label}</label>
+        {recommendedSize && (
+          <span className="text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
+            Recommended size: {recommendedSize}
+          </span>
+        )}
+      </div>
+      {helperText && (
+        <p className="text-xs text-muted-foreground mb-2 leading-relaxed">{helperText}</p>
+      )}
 
       {/* Strictly hidden native file input */}
       <input

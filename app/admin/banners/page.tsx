@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import type { BannerResponseDTO, BannerRequestDTO, BannerType } from '@/lib/types'
+import { BANNER_DIMENSIONS } from '@/lib/constants'
 import { BannerImageUploader } from '@/components/admin/banner-image-uploader'
 import { BannerLivePreview } from '@/components/admin/banner-live-preview'
 
@@ -227,7 +228,12 @@ export default function AdminBannersPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-black">Banners & Promotions</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-black">Banners & Promotions</h1>
+            <span className="text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">
+              Recommended Banner Size: {BANNER_DIMENSIONS.desktop.label}
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             Manage hero sliders, deals, and promo banners
           </p>
@@ -343,6 +349,8 @@ export default function AdminBannersPage() {
             <div className="grid gap-6 sm:grid-cols-2">
               <BannerImageUploader
                 label="Desktop Banner Image *"
+                recommendedSize={BANNER_DIMENSIONS.desktop.label}
+                helperText={BANNER_DIMENSIONS.desktop.helperText}
                 existingUrl={form.imageUrl}
                 onUploadSuccess={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
                 onRemove={() => setForm((prev) => ({ ...prev, imageUrl: '' }))}
@@ -352,6 +360,8 @@ export default function AdminBannersPage() {
 
               <BannerImageUploader
                 label="Mobile Banner Image (Optional)"
+                recommendedSize={BANNER_DIMENSIONS.mobile.label}
+                helperText={BANNER_DIMENSIONS.mobile.helperText}
                 existingUrl={form.mobileImageUrl}
                 onUploadSuccess={(url) => setForm((prev) => ({ ...prev, mobileImageUrl: url }))}
                 onRemove={() => setForm((prev) => ({ ...prev, mobileImageUrl: '' }))}

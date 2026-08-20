@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { FaChevronLeft, FaFire, FaChevronRight } from 'react-icons/fa6'
+import { FaFire } from 'react-icons/fa6'
 import { FastAverageColor } from 'fast-average-color'
 import type { BannerResponseDTO } from '@/lib/types'
 
 export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
   const [current, setCurrent] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
+  const touchStartX = useRef<number | null>(null)
 
   const next = useCallback(() => {
     setCurrent((c) => (c + 1) % banners.length)
@@ -23,6 +24,25 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
     const timer = setInterval(next, 5000)
     return () => clearInterval(timer)
   }, [next, isHovered, banners.length])
+
+  // Touch Swipe Handlers for Mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const touchEndX = e.changedTouches[0].clientX
+    const diff = touchStartX.current - touchEndX
+
+    if (diff > 40) {
+      next()
+    } else if (diff < -40) {
+      prev()
+    }
+
+    touchStartX.current = null
+  }
 
   if (banners.length === 0) {
     return (
@@ -68,7 +88,6 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
     if (!banner?.imageUrl || !imgRef.current || isImageOnly) return
     const fac = new FastAverageColor()
 
-    // Create an offscreen image that ignores cross-origin issues just for color calculation
     const img = new Image()
     img.crossOrigin = 'Anonymous'
     img.src = banner.imageUrl
@@ -86,25 +105,20 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
     return () => fac.destroy()
   }, [banner?.imageUrl, isImageOnly])
 
-  // Dynamic classes based on adaptive color
   const textClass = isDark ? 'text-white' : 'text-black'
   const subTextClass = isDark ? 'text-white/80' : 'text-black/70'
   const badgeClass = isDark ? 'bg-white/15' : 'bg-black/10'
   const btnClass = isDark
     ? 'bg-white text-black hover:bg-white/90'
     : 'bg-black text-white hover:bg-black/90'
-  const navBtnClass = isDark || isImageOnly
-    ? 'bg-black/40 text-white hover:bg-black/60 border border-white/20'
-    : 'bg-black/10 text-black hover:bg-black/20'
-  const dotActiveClass = isDark || isImageOnly ? 'bg-white shadow-md' : 'bg-black'
-  const dotInactiveClass =
-    isDark || isImageOnly ? 'bg-white/40 hover:bg-white/60' : 'bg-black/20 hover:bg-black/40'
 
   return (
     <div
-      className="relative overflow-hidden rounded-3xl h-[180px] sm:h-[240px] md:h-[380px] lg:h-[420px] w-full group shadow-xl bg-zinc-950"
+      className="relative overflow-hidden rounded-3xl h-[180px] sm:h-[240px] md:h-[380px] lg:h-[420px] w-full group shadow-xl bg-zinc-950 select-none"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {/* ================= MODE 1: PURE READYMADE IMAGE BANNER ================= */}
       {isImageOnly ? (
@@ -123,7 +137,7 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
       ) : (
         /* ================= MODE 2: TEXT + IMAGE DYNAMIC BANNER ================= */
         <>
-          {/* Background Layer (Transitions smoothly from fallback dark to adaptive color) */}
+          {/* Background Layer */}
           <div
             className="absolute inset-0 transition-colors duration-1000 ease-in-out"
             style={{ backgroundColor: adaptiveColor || '#0a0a0a' }}
@@ -140,7 +154,6 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
                   alt={banner.title}
                   className="h-full w-full object-cover object-right md:object-center opacity-90 lg:opacity-100"
                 />
-                {/* Fallback Blend Overlay for Mobile */}
                 <div
                   className="absolute inset-0 lg:hidden"
                   style={{
@@ -148,7 +161,6 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
                       'linear-gradient(to right, rgba(10,10,10,0.9) 20%, transparent 80%), linear-gradient(to bottom, rgba(10,10,10,0.9) 0%, transparent 60%)',
                   }}
                 />
-                {/* Adaptive Blend Overlay for Mobile (Fades in) */}
                 <div
                   className={`absolute inset-0 lg:hidden transition-opacity duration-1000 ease-in-out ${
                     adaptiveColor ? 'opacity-100' : 'opacity-0'
@@ -160,7 +172,6 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
                   }}
                 />
 
-                {/* Fallback Blend Overlay for Desktop */}
                 <div
                   className="absolute inset-0 hidden lg:block"
                   style={{
@@ -168,7 +179,6 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
                       'linear-gradient(to right, rgba(10,10,10,0.9) 0%, transparent 40%)',
                   }}
                 />
-                {/* Adaptive Blend Overlay for Desktop (Fades in) */}
                 <div
                   className={`absolute inset-0 hidden lg:block transition-opacity duration-1000 ease-in-out ${
                     adaptiveColor ? 'opacity-100' : 'opacity-0'
@@ -214,35 +224,16 @@ export function HeroCarousel({ banners }: { banners: BannerResponseDTO[] }) {
         </>
       )}
 
-      {/* Navigation Arrows */}
+      {/* Clean Bottom Navigation Dots (Only if multiple banners exist) */}
       {banners.length > 1 && (
-        <>
-          <button
-            onClick={prev}
-            className={`absolute left-4 top-1/2 -translate-y-1/2 z-20 grid size-10 place-items-center rounded-full backdrop-blur-md transition-all ${navBtnClass}`}
-            aria-label="Previous banner"
-          >
-            <FaChevronLeft size={18} />
-          </button>
-          <button
-            onClick={next}
-            className={`absolute right-4 top-1/2 -translate-y-1/2 z-20 grid size-10 place-items-center rounded-full backdrop-blur-md transition-all ${navBtnClass}`}
-            aria-label="Next banner"
-          >
-            <FaChevronRight size={18} />
-          </button>
-        </>
-      )}
-
-      {/* Navigation Dots */}
-      {banners.length > 1 && (
-        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+        <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-md border border-white/10 shadow-lg">
           {banners.map((_, i) => (
             <button
               key={i}
+              type="button"
               onClick={() => setCurrent(i)}
               className={`h-2 rounded-full transition-all duration-300 ${
-                i === current ? `w-8 ${dotActiveClass}` : `w-2 ${dotInactiveClass}`
+                i === current ? 'w-6 bg-white shadow-xs' : 'w-2 bg-white/40 hover:bg-white/70'
               }`}
               aria-label={`Go to slide ${i + 1}`}
             />
