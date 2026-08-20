@@ -45,6 +45,26 @@ export function DealOfTheDay({ banner }: { banner: BannerResponseDTO | null }) {
 
   if (expired) return null
 
+  const isImageOnly =
+    banner.bannerMode === 'IMAGE_ONLY' ||
+    banner.bannerMode === 'image' ||
+    banner.badgeText === '[IMAGE_ONLY]' ||
+    banner.title?.includes('[IMAGE_ONLY]')
+
+  if (isImageOnly) {
+    return (
+      <section className="mx-auto max-w-7xl px-4 pb-12 lg:px-8">
+        <Link href={banner.linkUrl || '/shop'} className="block overflow-hidden rounded-3xl shadow-xl group">
+          <img
+            src={banner.imageUrl}
+            alt={banner.title?.replace('[IMAGE_ONLY]', '').trim() || 'Deal of the Day'}
+            className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-[1.005]"
+          />
+        </Link>
+      </section>
+    )
+  }
+
   return (
     <section className="mx-auto max-w-7xl px-4 pb-12 lg:px-8">
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 p-8 lg:p-10 shadow-xl">

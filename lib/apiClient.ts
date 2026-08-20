@@ -234,6 +234,36 @@ export const apiClient = {
     })
   },
 
+  uploadImageWithProgress: async (file: File, onProgress: (percent: number) => void, folder?: string) => {
+    let fileToUpload = file;
+    // Compress images larger than 800KB
+    if (file.type.startsWith('image/') && file.size > 800 * 1024) {
+      try {
+        fileToUpload = await imageCompression(file, {
+          maxSizeMB: 0.8,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+          fileType: file.type === 'image/png' && file.size > 2 * 1024 * 1024 ? 'image/jpeg' : undefined
+        });
+      } catch (err) {
+        console.error('Image compression failed', err);
+      }
+    }
+
+    const formData = new FormData()
+    formData.append('file', fileToUpload)
+    const params = folder ? `?folder=${encodeURIComponent(folder)}` : ''
+    return axiosInstance.post<ApiResponse<string>>(`/api/admin/upload${params}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          onProgress(percent)
+        }
+      }
+    })
+  },
+
   deleteImage: (url: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/api/admin/upload?url=${encodeURIComponent(url)}`),
 

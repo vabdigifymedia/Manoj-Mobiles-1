@@ -389,6 +389,7 @@ export interface BannerRequestDTO {
   linkUrl: string
   ctaText?: string
   bannerType: BannerType
+  bannerMode?: 'IMAGE_ONLY' | 'TEXT_IMAGE'
   bgGradient?: string
   displayOrder?: number
   isActive?: boolean
@@ -406,6 +407,7 @@ export interface BannerResponseDTO {
   linkUrl: string
   ctaText?: string
   bannerType: BannerType
+  bannerMode?: 'IMAGE_ONLY' | 'TEXT_IMAGE'
   bgGradient?: string
   displayOrder: number
   isActive: boolean
