@@ -420,6 +420,10 @@ export interface BannerResponseDTO {
 // --- Store Settings ---
 export interface StoreSettingRequestDTO {
   storeName: string
+  logoUrl?: string
+  storeLogo?: string
+  storeLogoUrl?: string
+  logo?: string
   announcementText?: string
   announcementLink?: string
   announcementActive?: boolean
@@ -437,6 +441,10 @@ export interface StoreSettingRequestDTO {
 export interface StoreSettingResponseDTO {
   id: string
   storeName: string
+  logoUrl?: string
+  storeLogo?: string
+  storeLogoUrl?: string
+  logo?: string
   announcementText?: string
   announcementLink?: string
   announcementActive: boolean

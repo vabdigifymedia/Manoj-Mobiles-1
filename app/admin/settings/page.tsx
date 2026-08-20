@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FaFloppyDisk, FaStore, FaMessage, FaTruckFast, FaLocationDot, FaBullhorn } from 'react-icons/fa6'
+import { FaFloppyDisk, FaStore, FaMessage, FaTruckFast, FaLocationDot, FaBullhorn, FaImage } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import type { StoreSettingResponseDTO, StoreSettingRequestDTO } from '@/lib/types'
+import { BannerImageUploader } from '@/components/admin/banner-image-uploader'
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<StoreSettingResponseDTO | null>(null)
@@ -14,7 +15,13 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     apiClient.getAdminStoreSettings()
-      .then(res => setSettings(res.data.data))
+      .then(res => {
+        const data = res.data.data
+        const logo = data?.logoUrl || data?.storeLogo || data?.storeLogoUrl || data?.logo || ''
+        const normalized = { ...data, logoUrl: logo, storeLogo: logo, storeLogoUrl: logo, logo: logo }
+        setSettings(normalized)
+        localStorage.setItem('manoj_store_settings', JSON.stringify(normalized))
+      })
       .catch(() => setError('Failed to load settings'))
       .finally(() => setLoading(false))
   }, [])
@@ -26,8 +33,13 @@ export default function AdminSettingsPage() {
     setError('')
     setSuccess('')
     try {
+      const activeLogo = settings.logoUrl || settings.storeLogo || settings.storeLogoUrl || settings.logo || ''
       const dto: StoreSettingRequestDTO = {
         storeName: settings.storeName,
+        logoUrl: activeLogo,
+        storeLogo: activeLogo,
+        storeLogoUrl: activeLogo,
+        logo: activeLogo,
         announcementText: settings.announcementText,
         announcementLink: settings.announcementLink,
         announcementActive: settings.announcementActive,
@@ -42,7 +54,12 @@ export default function AdminSettingsPage() {
         expressDeliveryText: settings.expressDeliveryText,
       }
       const res = await apiClient.updateAdminStoreSettings(dto)
-      setSettings(res.data.data)
+      const data = res.data?.data || dto
+      const finalLogo = data?.logoUrl || data?.storeLogo || data?.storeLogoUrl || data?.logo || activeLogo
+      const normalized = { ...settings, ...data, logoUrl: finalLogo, storeLogo: finalLogo, storeLogoUrl: finalLogo, logo: finalLogo }
+      setSettings(normalized)
+      localStorage.setItem('manoj_store_settings', JSON.stringify(normalized))
+      window.dispatchEvent(new CustomEvent('store_settings_updated', { detail: normalized }))
       setSuccess('Settings saved successfully!')
       setTimeout(() => setSuccess(''), 3000)
     } catch (err: unknown) {
@@ -60,12 +77,14 @@ export default function AdminSettingsPage() {
 
   if (!settings) return <div className="p-8 text-center text-destructive">Failed to load settings</div>
 
+  const logoUrl = settings.logoUrl || settings.storeLogo || settings.storeLogoUrl || settings.logo || ''
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-black">Store Settings</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage announcements, contact info, and store configuration</p>
+          <p className="text-sm text-muted-foreground mt-1">Manage announcements, branding logo, contact info, and store configuration</p>
         </div>
       </div>
 
@@ -73,6 +92,27 @@ export default function AdminSettingsPage() {
       {success && <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{success}</div>}
 
       <form onSubmit={handleSave} className="space-y-6">
+        {/* Store Logo & Branding */}
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <FaImage size={18} className="text-primary" />
+            <h2 className="text-lg font-bold">Store Logo & Branding</h2>
+          </div>
+          <BannerImageUploader
+            label="Store Logo"
+            recommendedSize="PNG / JPG / WEBP"
+            helperText="Upload a transparent PNG, WEBP, or JPG logo. This logo will automatically display before the brand name in the website navbar and favicon."
+            existingUrl={logoUrl}
+            onUploadSuccess={(url) => {
+              setSettings(prev => prev ? { ...prev, logoUrl: url, storeLogo: url, storeLogoUrl: url, logo: url } : null)
+            }}
+            onRemove={() => {
+              setSettings(prev => prev ? { ...prev, logoUrl: '', storeLogo: '', storeLogoUrl: '', logo: '' } : null)
+            }}
+            folder="logos"
+          />
+        </div>
+
         {/* General */}
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">

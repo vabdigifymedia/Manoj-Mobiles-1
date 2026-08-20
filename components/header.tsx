@@ -47,11 +47,63 @@ export function Header() {
   }, [])
 
   useEffect(() => {
-    apiClient.getPublicStoreSettings().then(res => setStoreSettings(res.data.data)).catch(() => {})
+    try {
+      const cached = localStorage.getItem('manoj_store_settings')
+      if (cached) {
+        setStoreSettings(JSON.parse(cached))
+      }
+    } catch {}
+
+    apiClient.getPublicStoreSettings()
+      .then(res => {
+        if (res.data?.data) {
+          const data = res.data.data
+          const logo = data?.logoUrl || data?.storeLogo || data?.storeLogoUrl || data?.logo || ''
+          const normalized = { ...data, logoUrl: logo, storeLogo: logo, storeLogoUrl: logo, logo: logo }
+          setStoreSettings(normalized)
+          localStorage.setItem('manoj_store_settings', JSON.stringify(normalized))
+        }
+      })
+      .catch(() => {})
+
+    const handleUpdate = (e: CustomEvent<StoreSettingResponseDTO>) => {
+      if (e.detail) {
+        setStoreSettings(e.detail)
+      }
+    }
+    window.addEventListener('store_settings_updated', handleUpdate as EventListener)
+
     setMounted(true)
     apiClient.getCategories().then(res => setCategories(res.data.data)).catch(() => {})
     apiClient.getBrands(0, 100).then(res => setBrands(res.data.data.content)).catch(() => {})
+
+    return () => {
+      window.removeEventListener('store_settings_updated', handleUpdate as EventListener)
+    }
   }, [])
+
+  const logoUrl = storeSettings?.logoUrl || storeSettings?.storeLogo || storeSettings?.storeLogoUrl || storeSettings?.logo
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (logoUrl) {
+      let faviconLink = document.querySelector<HTMLLinkElement>("link[rel*='icon']")
+      if (!faviconLink) {
+        faviconLink = document.createElement('link')
+        faviconLink.rel = 'shortcut icon'
+        document.head.appendChild(faviconLink)
+      }
+      faviconLink.href = logoUrl
+
+      let appleIconLink = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']")
+      if (!appleIconLink) {
+        appleIconLink = document.createElement('link')
+        appleIconLink.rel = 'apple-touch-icon'
+        document.head.appendChild(appleIconLink)
+      }
+      appleIconLink.href = logoUrl
+    }
+  }, [logoUrl])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -117,35 +169,42 @@ export function Header() {
       <header className={`sticky top-0 z-20 border-b border-border bg-[#F4F8FC] dark:bg-zinc-950 dark:border-zinc-800 ${pathname?.startsWith('/product/') ? 'hidden md:block' : ''}`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 lg:px-8">
           {/* MOBILE TOP HEADER BRANDING (md:hidden) */}
-          <div className="flex md:hidden items-center justify-center w-full relative min-h-[40px]">
+          <div className="flex md:hidden items-center justify-between w-full min-h-[40px]">
+            <Link href="/" className="flex items-center gap-2 text-left">
+              {logoUrl && (
+                <img
+                  src={logoUrl}
+                  alt="ManojMobiles Logo"
+                  className="max-h-8 max-w-[100px] w-auto h-auto object-contain shrink-0"
+                />
+              )}
+              <span className="text-xl font-black tracking-tight text-zinc-900 dark:text-white font-sans">
+                Manoj<span className="text-blue-600 dark:text-blue-400 font-black">Mobiles</span>
+              </span>
+            </Link>
+
             <button 
-              className="absolute left-0 grid size-10 place-items-center rounded-full hover:bg-muted -ml-2 text-foreground" 
+              className="grid size-10 place-items-center rounded-full hover:bg-muted -mr-2 text-foreground" 
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open navigation menu"
             >
               <FaBars size={24} />
             </button>
-            <Link href="/" className="flex items-center justify-center text-center">
-              <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white font-sans">
-                Manoj<span className="text-blue-600 dark:text-blue-400 font-bold">Mobiles</span>
-              </span>
-            </Link>
           </div>
 
           {/* DESKTOP TOP HEADER BRANDING (hidden md:flex) */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-3 text-left">
-              <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground">
-                <FaMobileScreen size={20} />
+            <Link href="/" className="flex items-center gap-2.5 text-left">
+              {logoUrl && (
+                <img
+                  src={logoUrl}
+                  alt="ManojMobiles Logo"
+                  className="max-h-9 max-w-[120px] w-auto h-auto object-contain shrink-0"
+                />
+              )}
+              <span className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white font-sans">
+                Manoj<span className="text-blue-600 dark:text-blue-400 font-black">Mobiles</span>
               </span>
-              <div className="flex flex-col">
-                <strong className="block text-xl tracking-tight leading-none text-zinc-900 dark:text-white">
-                  manoj<span className="text-[#F97316]">mobiles</span>
-                </strong>
-                <small className="text-[10px] font-semibold tracking-wider text-muted-foreground dark:text-zinc-400 mt-0.5">
-                  SMARTER CHOICES
-                </small>
-              </div>
             </Link>
           </div>
           <nav className="hidden items-center gap-7 text-sm font-bold lg:flex ml-4">
@@ -341,9 +400,18 @@ export function Header() {
             
             {/* Drawer Header */}
             <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
-              <span className="block text-xl font-bold tracking-tight text-zinc-900 dark:text-white font-sans">
-                Manoj<span className="text-blue-600 dark:text-blue-400 font-bold">Mobiles</span>
-              </span>
+              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
+                {storeSettings?.logoUrl && (
+                  <img
+                    src={storeSettings.logoUrl}
+                    alt="ManojMobiles Logo"
+                    className="max-h-7 max-w-[90px] w-auto h-auto object-contain shrink-0"
+                  />
+                )}
+                <span className="block text-xl font-black tracking-tight text-zinc-900 dark:text-white font-sans">
+                  Manoj<span className="text-blue-600 dark:text-blue-400 font-black">Mobiles</span>
+                </span>
+              </Link>
               <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground">
                 <FaXmark size={20} />
               </button>
