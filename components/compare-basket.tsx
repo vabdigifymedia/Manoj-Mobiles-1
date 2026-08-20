@@ -7,6 +7,7 @@ import { FaXmark, FaSliders, FaPlus, FaArrowRight, FaChevronUp, FaChevronDown } 
 import { useStore } from '@/components/store-provider'
 import { apiClient } from '@/lib/apiClient'
 import type { ProductResponseDTO } from '@/lib/types'
+import { useFooterObserver } from '@/lib/use-footer-observer'
 
 export function CompareBasket() {
   const pathname = usePathname()
@@ -14,6 +15,7 @@ export function CompareBasket() {
   const { compareIds, removeFromCompare, clearCompare } = useStore()
   const [products, setProducts] = useState<ProductResponseDTO[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
+  const isFooterVisible = useFooterObserver()
 
   // Hook must be called unconditionally before any early returns (Rules of Hooks)
   useEffect(() => {
@@ -57,7 +59,9 @@ export function CompareBasket() {
   }
 
   return (
-    <div className="fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-1/2 sm:-translate-x-1/2 z-40 sm:max-w-xl transition-all duration-300 font-sans">
+    <div className={`fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-1/2 sm:-translate-x-1/2 z-40 sm:max-w-xl transition-all duration-300 font-sans ${
+      isFooterVisible ? 'max-md:translate-y-[250%] max-md:opacity-0 max-md:pointer-events-none' : 'translate-y-0 opacity-100'
+    }`}>
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
         className="bg-card/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-border/90 shadow-2xl rounded-2xl p-2.5 sm:p-3 text-foreground cursor-pointer group hover:border-primary/40 transition-all select-none"

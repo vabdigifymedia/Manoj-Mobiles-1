@@ -12,7 +12,7 @@ export function Footer() {
   }
 
   return (
-    <footer className="border-t border-border bg-card text-foreground mt-auto">
+    <footer id="site-footer" className="border-t border-border bg-card text-foreground mt-auto">
       <div className="mx-auto max-w-7xl px-4 py-16 lg:px-8">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           {/* Brand Col */}

@@ -5,11 +5,13 @@ import { usePathname } from 'next/navigation'
 import { FaHouse, FaHeart, FaBagShopping, FaUser, FaReceipt } from 'react-icons/fa6'
 import { useStore } from './store-provider'
 import { useAuth } from '@/lib/auth-context'
+import { useFooterObserver } from '@/lib/use-footer-observer'
 
 export function MobileNav() {
   const pathname = usePathname()
   const { cartCount } = useStore()
   const { isAuthenticated } = useAuth()
+  const isFooterVisible = useFooterObserver()
 
   // Hide on admin pages and product pages (which have their own fixed bar)
   if (pathname?.startsWith('/admin') || pathname?.startsWith('/product/')) return null
@@ -24,7 +26,11 @@ export function MobileNav() {
 
   return (
     <div 
-      className="fixed bottom-3 left-3 right-3 z-50 md:hidden pointer-events-none"
+      className={`fixed bottom-3 left-3 right-3 z-50 md:hidden transition-all duration-300 ease-in-out ${
+        isFooterVisible 
+          ? 'translate-y-[150%] opacity-0 pointer-events-none' 
+          : 'translate-y-0 opacity-100 pointer-events-none'
+      }`}
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <nav className="pointer-events-auto relative mx-auto max-w-md rounded-full border border-border/80 bg-background/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-2xl px-3 py-1.5 flex items-center justify-between">
