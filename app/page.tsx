@@ -10,12 +10,13 @@ import { FaqAccordion } from '@/components/home/faq-accordion'
 import { QuickFeatures } from '@/components/home/quick-features'
 import { BankOffers } from '@/components/home/bank-offers'
 import { BrandSpotlight } from '@/components/home/brand-spotlight'
+import { BudgetPhones } from '@/components/home/budget-phones'
 import { FeaturesCarousel } from '@/components/home/features-carousel'
 import { InstagramReels } from '@/components/home/instagram-reels'
 
 export default async function HomePage() {
   // Parallel SSR data fetching for all home page sections
-  const [heroBanners, dealBanner, storeSettings, faqs, brands, categories, newArrivals, bestSellers, budgetPicks, appleProductsData, reelsData] = await Promise.all([
+  const [heroBanners, dealBanner, storeSettings, faqs, brands, categories, newArrivals, bestSellers, budgetPicks, allProductsData, reelsData] = await Promise.all([
     serverFetch<BannerResponseDTO[]>('/api/public/banners?type=HERO_SLIDER'),
     serverFetch<BannerResponseDTO[]>('/api/public/banners?type=DEAL_OF_THE_DAY'),
     serverFetch<StoreSettingResponseDTO>('/api/public/settings'),
@@ -36,9 +37,47 @@ export default async function HomePage() {
   const bestProducts = bestSellers?.content || []
   const budgetProducts = budgetPicks?.content || []
   
-  // Filter for Samsung products since the backend doesn't support brandSlug in GET /api/public/products
-  const allProductsForBrand = appleProductsData?.content || []
-  const samsungProducts = allProductsForBrand.filter(p => p.brandName.toLowerCase() === 'samsung').slice(0, 6)
+  const allProducts = allProductsData?.content || []
+
+  // Filter for Samsung products dynamically from backend API data
+  const samsungProducts = allProducts.filter(p => {
+    const brand = (p.brandName || '').toLowerCase()
+    const name = (p.name || '').toLowerCase()
+    return brand === 'samsung' || name.includes('samsung') || name.includes('galaxy')
+  }).slice(0, 6)
+
+  // Filter for Apple/iPhone products dynamically from backend API data
+  const iphoneProducts = allProducts.filter(p => {
+    const brand = (p.brandName || '').toLowerCase()
+    const name = (p.name || '').toLowerCase()
+    return brand === 'apple' || brand === 'iphone' || brand.includes('apple') || brand.includes('iphone') || name.includes('iphone')
+  }).slice(0, 6)
+
+  // Identify mobile phone products & sort by startingPrice ASC for Budget Phones
+  const isMobilePhone = (p: ProductListResponseDTO) => {
+    const cat = (p.categoryName || '').toLowerCase()
+    const name = (p.name || '').toLowerCase()
+    if (
+      cat.includes('audio') ||
+      cat.includes('ear') ||
+      cat.includes('head') ||
+      cat.includes('watch') ||
+      cat.includes('laptop') ||
+      cat.includes('tablet') ||
+      cat.includes('access') ||
+      cat.includes('cover') ||
+      cat.includes('case') ||
+      cat.includes('charger')
+    ) {
+      return false
+    }
+    return true
+  }
+
+  const budgetPhoneProducts = [...allProducts]
+    .filter(isMobilePhone)
+    .sort((a, b) => (a.startingPrice || 0) - (b.startingPrice || 0))
+    .slice(0, 8)
 
   return (
     <>
@@ -56,13 +95,19 @@ export default async function HomePage() {
       {/* Shop by Brand Showcase */}
       <BrandShowcase brands={brandList} />
 
-      {/* Brand Spotlight */}
+      {/* Brand Spotlight - Samsung */}
       <BrandSpotlight brandName="Samsung" title="Best Of Samsung" products={samsungProducts} />
+
+      {/* Brand Spotlight - iPhone */}
+      <BrandSpotlight brandName="Apple" title="Best Of iPhone" products={iphoneProducts} />
 
       {/* Deal of the Day */}
       <DealOfTheDay banner={activeDeal} />
 
-      {/* Categories FaTableCellsLarge */}
+      {/* Budget Phones Section */}
+      <BudgetPhones products={budgetPhoneProducts.length > 0 ? budgetPhoneProducts : budgetProducts} />
+
+      {/* Categories */}
       {categoryList.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-16 lg:px-8">
           <h2 className="text-2xl font-black mb-6">Shop by Category</h2>
