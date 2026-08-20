@@ -13,11 +13,11 @@ export type ToastOptions = {
 type StoreContextType = {
   cart: CartResponseDTO | null
   cartCount: number
-  addToCart: (variantId: string, qty?: number) => void
+  addToCart: (variantId: string, qty?: number, itemMeta?: Partial<CartItemResponseDTO>) => void
   removeFromCart: (variantId: string) => void
   updateQuantity: (variantId: string, delta: number) => void
   showToast: (options: ToastOptions) => void
-  fetchCart: () => void
+  fetchCart: () => Promise<void>
   cartTotal: number
   
   // Wishlist
@@ -36,6 +36,34 @@ type StoreContextType = {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined)
 
+const GUEST_CART_KEY = 'manoj-mobiles-guest-cart'
+
+function getLocalGuestCart(): CartItemResponseDTO[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(GUEST_CART_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function saveLocalGuestCart(items: CartItemResponseDTO[]) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items))
+  } catch {}
+}
+
+function buildGuestCartResponse(items: CartItemResponseDTO[]): CartResponseDTO {
+  const cartTotal = items.reduce((sum, item) => sum + (item.currentPrice * item.qty), 0)
+  return {
+    id: 'guest-cart',
+    items,
+    cartTotal
+  }
+}
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
   
@@ -51,7 +79,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (saved) {
         try { 
           const parsed = JSON.parse(saved)
-          // Handle legacy array of strings
           if (Array.isArray(parsed) && typeof parsed[0] === 'string') {
             setCompareItems(parsed.map(id => ({ variantId: id, categoryId: '', productId: id })))
           } else {
@@ -82,7 +109,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated) return
     try {
       const res = await apiClient.getCompareList()
-      // We don't get categoryId from backend DTO, but backend enforces same category
       setCompareItems(res.data.data.map(item => ({ variantId: item.variantId, categoryId: '', productId: item.productId })))
     } catch (err) {
       console.error('Failed to fetch compare list', err)
@@ -92,16 +118,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const addToCompare = async (variantId: string, categoryId: string, productId: string) => {
     if (compareItems.some(item => item.variantId === variantId)) return
     
-    // Enforce 4 limit
     if (compareItems.length >= 4) {
       showToast({ message: 'You can compare up to 4 products.', type: 'error' })
       return
     }
 
-    // Enforce same category (for guest/optimistic)
     if (compareItems.length > 0) {
       const existingCategory = compareItems.find(i => i.categoryId)?.categoryId
-      // If we know the existing category, and it doesn't match the new one
       if (existingCategory && categoryId && existingCategory !== categoryId) {
         showToast({ message: 'You can only compare products within the same category.', type: 'error' })
         return
@@ -158,16 +181,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const fetchCart = () => {
+  const syncGuestCartToBackend = async () => {
+    const guestItems = getLocalGuestCart()
+    if (guestItems.length > 0) {
+      for (const item of guestItems) {
+        try {
+          await apiClient.addToCart({ variantId: item.variantId, qty: item.qty })
+        } catch (err) {
+          console.error('Failed to sync guest cart item to backend', item.variantId, err)
+        }
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(GUEST_CART_KEY)
+      }
+    }
+  }
+
+  const fetchCart = async () => {
     if (isAuthenticated) {
-      apiClient.getCart()
-        .then(res => setCart(res.data.data))
-        .catch(err => console.error('Failed to fetch cart', err))
+      try {
+        await syncGuestCartToBackend()
+        const res = await apiClient.getCart()
+        setCart(res.data.data)
+      } catch (err) {
+        console.error('Failed to fetch cart', err)
+      }
       apiClient.getWishlist()
         .then(res => setWishlist(res.data.data.content))
         .catch(err => console.error('Failed to fetch wishlist', err))
         
-      // Sync guest compare list and fetch
       const saved = typeof window !== 'undefined' ? localStorage.getItem('manoj-mobiles-compare') : null
       if (saved) {
         try {
@@ -186,9 +228,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       } else {
         fetchCompareList()
       }
-      
     } else {
-      setCart(null)
+      const guestItems = getLocalGuestCart()
+      setCart(buildGuestCartResponse(guestItems))
+
       const savedWishlist = typeof window !== 'undefined' ? window.localStorage.getItem('manoj-mobiles-wishlist') : null
       if (savedWishlist) {
         try { setWishlist(JSON.parse(savedWishlist)) } catch (e) {}
@@ -214,18 +257,54 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => setToast(null), 3000)
   }
 
-  const addToCart = async (variantId: string, qty = 1) => {
-    if (!isAuthenticated) {
-      showToast({ message: 'Please login to add to cart', type: 'error' })
-      return
-    }
-    
-    try {
-      await apiClient.addToCart({ variantId, qty })
+  const addToCart = async (variantId: string, qty = 1, itemMeta?: Partial<CartItemResponseDTO>) => {
+    if (isAuthenticated) {
+      try {
+        await apiClient.addToCart({ variantId, qty })
+        showToast({ message: 'Added to cart successfully', type: 'success' })
+        await fetchCart()
+      } catch (err: any) {
+        showToast({ message: err.response?.data?.message || 'Failed to add to cart', type: 'error' })
+      }
+    } else {
+      const currentItems = getLocalGuestCart()
+      const existingIndex = currentItems.findIndex(i => i.variantId === variantId || i.id === variantId)
+
+      let updatedItems = [...currentItems]
+      if (existingIndex > -1) {
+        const existing = updatedItems[existingIndex]
+        const newQty = existing.qty + qty
+        if (newQty > 5) {
+          showToast({ message: 'Maximum quantity reached (5)', type: 'error' })
+          return
+        }
+        updatedItems[existingIndex] = {
+          ...existing,
+          qty: newQty,
+          subtotal: existing.currentPrice * newQty
+        }
+      } else {
+        const price = itemMeta?.currentPrice || itemMeta?.priceAtAdd || 0
+        const newItem: CartItemResponseDTO = {
+          id: itemMeta?.id || variantId,
+          variantId: variantId,
+          variantName: itemMeta?.variantName || 'Standard Variant',
+          productName: itemMeta?.productName || 'Smartphone',
+          sku: itemMeta?.sku || variantId,
+          primaryImage: itemMeta?.primaryImage || '/placeholder.png',
+          qty: qty,
+          priceAtAdd: price,
+          currentPrice: price,
+          subtotal: price * qty,
+          stockStatus: itemMeta?.stockStatus || 'IN_STOCK',
+          isAvailable: true
+        }
+        updatedItems.push(newItem)
+      }
+
+      saveLocalGuestCart(updatedItems)
+      setCart(buildGuestCartResponse(updatedItems))
       showToast({ message: 'Added to cart successfully', type: 'success' })
-      fetchCart()
-    } catch (err: any) {
-      showToast({ message: err.response?.data?.message || 'Failed to add to cart', type: 'error' })
     }
   }
 
@@ -236,7 +315,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     
     const newQty = item.qty + delta
     if (newQty < 1) {
-      removeFromCart(item.id)
+      removeFromCart(item.variantId || item.id)
       return
     }
     if (newQty > 5) {
@@ -244,25 +323,50 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return
     }
     
-    try {
-      await apiClient.updateCartItem(item.id, newQty)
-      fetchCart()
-    } catch (err: any) {
-      showToast({ message: 'Failed to update quantity', type: 'error' })
+    if (isAuthenticated) {
+      try {
+        await apiClient.updateCartItem(item.id, newQty)
+        fetchCart()
+      } catch (err: any) {
+        showToast({ message: 'Failed to update quantity', type: 'error' })
+      }
+    } else {
+      const currentItems = getLocalGuestCart()
+      const updated = currentItems.map(i => {
+        if (i.variantId === item.variantId || i.id === item.id) {
+          return {
+            ...i,
+            qty: newQty,
+            subtotal: i.currentPrice * newQty
+          }
+        }
+        return i
+      })
+      saveLocalGuestCart(updated)
+      setCart(buildGuestCartResponse(updated))
     }
   }
 
   const removeFromCart = async (itemIdOrVariantId: string) => {
     if (!cart) return
     const item = cart.items.find(i => i.id === itemIdOrVariantId || i.variantId === itemIdOrVariantId)
-    const idToRemove = item ? item.id : itemIdOrVariantId
 
-    try {
-      await apiClient.removeFromCart(idToRemove)
+    if (isAuthenticated) {
+      const idToRemove = item ? item.id : itemIdOrVariantId
+      try {
+        await apiClient.removeFromCart(idToRemove)
+        showToast({ message: 'Item removed', type: 'info' })
+        fetchCart()
+      } catch (err) {
+        showToast({ message: 'Failed to remove item', type: 'error' })
+      }
+    } else {
+      const targetVariantId = item ? item.variantId : itemIdOrVariantId
+      const currentItems = getLocalGuestCart()
+      const updated = currentItems.filter(i => i.variantId !== targetVariantId && i.id !== itemIdOrVariantId)
+      saveLocalGuestCart(updated)
+      setCart(buildGuestCartResponse(updated))
       showToast({ message: 'Item removed', type: 'info' })
-      fetchCart()
-    } catch (err) {
-      showToast({ message: 'Failed to remove item', type: 'error' })
     }
   }
 

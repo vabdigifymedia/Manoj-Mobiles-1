@@ -94,13 +94,32 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
   const [deliveryStatus, setDeliveryStatus] = useState<'idle' | 'success' | 'error'>('idle')
   
   const { addToCart, toggleCompare, isInCompare } = useStore()
+  const { isAuthenticated } = useAuth()
   const isCompared = isInCompare(selectedVariant.id)
   const router = useRouter()
 
+  const handleAddToCart = () => {
+    if (selectedVariant) {
+      const primaryImg = selectedVariant.images?.find(img => img.isPrimary)?.url || selectedVariant.imageUrls?.[0] || '/placeholder.png'
+      addToCart(selectedVariant.id, 1, {
+        productName: product.name,
+        variantName: selectedVariant.variantName || `${selectedVariant.ram || ''} ${selectedVariant.storage || ''} ${selectedColor || ''}`.trim(),
+        sku: selectedVariant.sku,
+        primaryImage: primaryImg,
+        currentPrice: selectedVariant.sellingPrice,
+        priceAtAdd: selectedVariant.sellingPrice
+      })
+    }
+  }
+
   const handleBuyNow = () => {
     if (selectedVariant) {
-      addToCart(selectedVariant.id, 1)
-      router.push('/checkout')
+      handleAddToCart()
+      if (isAuthenticated) {
+        router.push('/checkout')
+      } else {
+        router.push('/auth?redirect=/checkout')
+      }
     }
   }
 
@@ -230,7 +249,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
           )}
           
           <div className="mt-2 hidden lg:flex gap-3">
-            <button onClick={() => addToCart(selectedVariant.id, 1)} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary px-5 py-4 font-bold text-primary hover:bg-primary/5 transition-colors">
+            <button onClick={handleAddToCart} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary px-5 py-4 font-bold text-primary hover:bg-primary/5 transition-colors">
               <FaCartShopping size={20} /> Add to cart
             </button>
             <button onClick={handleBuyNow} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
@@ -361,7 +380,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
       
       {/* Mobile Fixed Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-3 border-t border-border bg-background p-4 lg:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
-        <button onClick={() => addToCart(selectedVariant.id, 1)} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary py-3.5 font-bold text-primary hover:bg-primary/5 transition-colors">
+        <button onClick={handleAddToCart} className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-primary py-3.5 font-bold text-primary hover:bg-primary/5 transition-colors">
           <FaCartShopping size={18} /> Add to cart
         </button>
         <button onClick={handleBuyNow} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">

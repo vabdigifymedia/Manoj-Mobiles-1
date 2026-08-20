@@ -31,7 +31,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/auth')
+      router.push('/auth?redirect=/checkout')
     }
   }, [authLoading, isAuthenticated, router])
 

@@ -136,6 +136,21 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileMenuOpen])
+
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
   const matchedBrands = debouncedQuery.trim().length > 1 
     ? brands.filter(b => b.name.toLowerCase().includes(debouncedQuery.toLowerCase())).slice(0, 3) 
     : []
@@ -166,7 +181,7 @@ export function Header() {
           )}
         </div>
       )}
-      <header className={`sticky top-0 z-50 border-b border-border bg-[#F4F8FC] dark:bg-zinc-950 dark:border-zinc-800 ${pathname?.startsWith('/product/') ? 'hidden md:block' : ''}`}>
+      <header className={`sticky top-0 z-40 border-b border-border bg-[#F4F8FC] dark:bg-zinc-950 dark:border-zinc-800 ${pathname?.startsWith('/product/') ? 'hidden md:block' : ''}`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 lg:px-8">
           {/* MOBILE TOP HEADER BRANDING (md:hidden) */}
           <div className="flex md:hidden items-center justify-between w-full min-h-[40px]">
@@ -184,11 +199,11 @@ export function Header() {
             </Link>
 
             <button 
-              className="grid size-10 place-items-center rounded-full hover:bg-muted -mr-2 text-foreground" 
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label="Open navigation menu"
+              className="grid size-10 place-items-center rounded-full hover:bg-muted -mr-2 text-foreground transition-colors" 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
             >
-              <FaBars size={24} />
+              {mobileMenuOpen ? <FaXmark size={24} /> : <FaBars size={24} />}
             </button>
           </div>
 
@@ -386,17 +401,16 @@ export function Header() {
         </header>
       )}
 
-      {/* Mobile Sidebar Navigation Drawer (bounded above fixed bottom navigation bar) */}
+      {/* Mobile Sidebar Navigation Drawer */}
       {mobileMenuOpen && (
         <div 
-          className="fixed top-0 left-0 right-0 z-40 flex md:hidden"
-          style={{ bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))' }}
+          className="fixed top-[57px] left-0 right-0 bottom-0 z-50 flex md:hidden"
         >
-          {/* Backdrop (Covers viewport above bottom navbar) */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setMobileMenuOpen(false)} />
+          {/* Backdrop (Covers mobile search bar, page content, banner & bottom navbar) */}
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity" onClick={() => setMobileMenuOpen(false)} />
 
           {/* Drawer Panel */}
-          <div className="relative w-4/5 max-w-sm bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-left border-r border-border">
+          <div className="relative z-10 w-4/5 max-w-sm bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-left border-r border-border">
             
             {/* Drawer Header */}
             <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
@@ -431,7 +445,7 @@ export function Header() {
               </Link>
             </div>
 
-            {/* Dark Mode / Light Mode Toggle anchored cleanly above bottom navbar */}
+            {/* Dark Mode / Light Mode Toggle */}
             <div className="p-4 border-t border-border bg-card/60 shrink-0">
               <button 
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}

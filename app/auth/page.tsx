@@ -34,14 +34,19 @@ export default function AuthPage() {
     }
   }
 
-  const saveAuthData = (data: any) => {
+  const saveAuthData = async (data: any) => {
     Cookies.set('accessToken', data.token, { expires: 1 })
     Cookies.set('refreshToken', data.refreshToken, { expires: 7 })
     if (data.userId) Cookies.set('userId', data.userId, { expires: 7 })
     Cookies.set('userName', data.name || 'Customer', { expires: 7 })
     Cookies.set('userRole', data.role || 'CUSTOMER', { expires: 7 })
-    fetchCart()
-    window.location.href = '/'
+    
+    await fetchCart()
+    
+    const target = typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('redirect') || '/'
+      : '/'
+    window.location.href = target
   }
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
