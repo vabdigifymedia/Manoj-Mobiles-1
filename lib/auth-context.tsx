@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   login: async () => {},
   logout: () => {},
-  loading: true,
+  loading: false,
 })
 
 export const useAuth = () => useContext(AuthContext)
@@ -45,6 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedRole = Cookies.get('userRole')
     if (token && storedName && storedRole) {
       setUser({ name: storedName, role: storedRole })
+    } else {
+      setUser(null)
     }
     setLoading(false)
   }, [])

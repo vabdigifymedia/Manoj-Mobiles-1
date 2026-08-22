@@ -111,7 +111,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const res = await apiClient.getCompareList()
       setCompareItems(res.data.data.map(item => ({ variantId: item.variantId, categoryId: '', productId: item.productId })))
     } catch (err) {
-      console.error('Failed to fetch compare list', err)
+      // Handle compare list error silently for unauthenticated/expired sessions
     }
   }
 
@@ -188,7 +188,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         try {
           await apiClient.addToCart({ variantId: item.variantId, qty: item.qty })
         } catch (err) {
-          console.error('Failed to sync guest cart item to backend', item.variantId, err)
+          // Ignore invalid guest item sync errors
         }
       }
       if (typeof window !== 'undefined') {
@@ -204,11 +204,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const res = await apiClient.getCart()
         setCart(res.data.data)
       } catch (err) {
-        console.error('Failed to fetch cart', err)
+        // Handle cart fetch failure silently
       }
       apiClient.getWishlist()
         .then(res => setWishlist(res.data.data.content))
-        .catch(err => console.error('Failed to fetch wishlist', err))
+        .catch(() => {})
         
       const saved = typeof window !== 'undefined' ? localStorage.getItem('manoj-mobiles-compare') : null
       if (saved) {
@@ -419,17 +419,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     <StoreContext.Provider value={{ cart, cartCount, cartTotal, addToCart, removeFromCart, updateQuantity, showToast, fetchCart, wishlist, toggleWishlist, removeFromWishlist, compareItems, addToCompare, removeFromCompare, toggleCompare, isInCompare, clearCompare }}>
       {children}
       
-      {/* Toast UI */}
+      {/* Toast UI - Fixed Top Right */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-zinc-900 px-5 py-4 text-white shadow-2xl animate-in slide-in-from-bottom-5 fade-in duration-300 dark:bg-white dark:text-zinc-900">
+        <div className="fixed top-20 right-4 sm:top-24 sm:right-6 z-[100] flex max-w-[calc(100vw-2rem)] sm:max-w-sm items-center gap-3 rounded-2xl bg-zinc-900/95 px-4 py-3.5 text-white shadow-2xl backdrop-blur-md border border-white/10 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-200/50 animate-in slide-in-from-top-5 fade-in duration-200 pointer-events-auto">
           {toast.type === 'error' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <div className="grid size-7 shrink-0 place-items-center rounded-xl bg-red-500/20 text-red-400 dark:bg-red-100 dark:text-red-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
           ) : toast.type === 'success' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            <div className="grid size-7 shrink-0 place-items-center rounded-xl bg-emerald-500/20 text-emerald-400 dark:bg-emerald-100 dark:text-emerald-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <div className="grid size-7 shrink-0 place-items-center rounded-xl bg-blue-500/20 text-blue-400 dark:bg-blue-100 dark:text-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </div>
           )}
-          <div className="text-sm font-bold">{toast.message}</div>
+          <div className="flex-1 text-xs sm:text-sm font-bold tracking-tight">{toast.message}</div>
+          <button 
+            onClick={() => setToast(null)} 
+            className="ml-1 rounded-lg p-1 text-zinc-400 hover:text-white dark:text-zinc-500 dark:hover:text-zinc-900 transition-colors"
+            aria-label="Close notification"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       )}
     </StoreContext.Provider>

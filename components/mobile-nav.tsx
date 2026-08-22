@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { FaHouse, FaHeart, FaBagShopping, FaUser, FaReceipt } from 'react-icons/fa6'
@@ -12,11 +13,33 @@ export function MobileNav() {
   const { cartCount } = useStore()
   const { isAuthenticated } = useAuth()
   const isFooterVisible = useFooterObserver()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const handleMenuToggle = (e: CustomEvent<boolean>) => {
+      setIsMenuOpen(!!e.detail)
+    }
+    window.addEventListener('mobile_menu_toggled', handleMenuToggle as EventListener)
+
+    if (typeof document !== 'undefined' && document.body.hasAttribute('data-mobile-menu-open')) {
+      setIsMenuOpen(true)
+    }
+
+    return () => {
+      window.removeEventListener('mobile_menu_toggled', handleMenuToggle as EventListener)
+    }
+  }, [])
+
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Hide on admin pages and product pages (which have their own fixed bar)
   if (pathname?.startsWith('/admin') || pathname?.startsWith('/product/')) return null
 
-  const accountHref = isAuthenticated ? '/account' : '/auth'
+  const accountHref = mounted && isAuthenticated ? '/account' : '/auth'
 
   const isHomeActive = pathname === '/'
   const isWishlistActive = pathname === '/wishlist'
@@ -24,12 +47,14 @@ export function MobileNav() {
   const isOrdersActive = pathname === '/orders'
   const isAccountActive = pathname === '/account' || pathname === '/auth'
 
+  const isHidden = isFooterVisible || isMenuOpen
+
   return (
     <div 
-      className={`fixed bottom-3 left-3 right-3 z-50 md:hidden transition-all duration-300 ease-in-out ${
-        isFooterVisible 
+      className={`fixed bottom-3 left-3 right-3 z-40 md:hidden transition-all duration-300 ease-in-out ${
+        isHidden 
           ? 'translate-y-[150%] opacity-0 pointer-events-none' 
-          : 'translate-y-0 opacity-100 pointer-events-none'
+          : 'translate-y-0 opacity-100'
       }`}
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >

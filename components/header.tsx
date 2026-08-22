@@ -137,13 +137,19 @@ export function Header() {
   }, [])
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('mobile_menu_toggled', { detail: mobileMenuOpen }))
+    }
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden'
+      document.body.setAttribute('data-mobile-menu-open', 'true')
     } else {
       document.body.style.overflow = ''
+      document.body.removeAttribute('data-mobile-menu-open')
     }
     return () => {
       document.body.style.overflow = ''
+      document.body.removeAttribute('data-mobile-menu-open')
     }
   }, [mobileMenuOpen])
 
@@ -346,7 +352,7 @@ export function Header() {
               <FaHeart size={22} />
             </Link>
 
-            <Link href={isAuthenticated ? "/account" : "/auth"} className="hidden md:flex relative items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Account">
+            <Link href={mounted && isAuthenticated ? "/account" : "/auth"} className="hidden md:flex relative items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Account">
               <FaUser size={22}  />
             </Link>
 
@@ -404,16 +410,16 @@ export function Header() {
       {/* Mobile Sidebar Navigation Drawer */}
       {mobileMenuOpen && (
         <div 
-          className="fixed top-[57px] left-0 right-0 bottom-0 z-50 flex md:hidden"
+          className="fixed inset-0 z-[100] flex md:hidden"
         >
-          {/* Backdrop (Covers mobile search bar, page content, banner & bottom navbar) */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity" onClick={() => setMobileMenuOpen(false)} />
+          {/* Backdrop (Covers mobile search bar, page content, header & bottom navbar) */}
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300" onClick={() => setMobileMenuOpen(false)} />
 
           {/* Drawer Panel */}
-          <div className="relative z-10 w-4/5 max-w-sm bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-left border-r border-border">
+          <div className="relative z-[101] w-4/5 max-w-sm bg-background h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-300 border-r border-border">
             
-            {/* Drawer Header */}
-            <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
+            {/* Single Unified Drawer Header */}
+            <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-background">
               <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
                 {storeSettings?.logoUrl && (
                   <img
@@ -426,8 +432,12 @@ export function Header() {
                   Manoj<span className="text-blue-600 dark:text-blue-400 font-black">Mobiles</span>
                 </span>
               </Link>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground">
-                <FaXmark size={20} />
+              <button 
+                onClick={() => setMobileMenuOpen(false)} 
+                className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close menu"
+              >
+                <FaXmark size={22} />
               </button>
             </div>
 
@@ -440,8 +450,8 @@ export function Header() {
               ))}
               <hr className="my-1 border-border" />
               <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">Wishlist</Link>
-              <Link href={isAuthenticated ? "/account" : "/auth"} onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">
-                {isAuthenticated ? "My Account" : "Login"}
+              <Link href={mounted && isAuthenticated ? "/account" : "/auth"} onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">
+                {mounted && isAuthenticated ? "My Account" : "Login"}
               </Link>
             </div>
 

@@ -17,6 +17,22 @@ export function CompareBasket() {
   const [products, setProducts] = useState<ProductResponseDTO[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
   const isFooterVisible = useFooterObserver()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const handleMenuToggle = (e: CustomEvent<boolean>) => {
+      setIsMenuOpen(!!e.detail)
+    }
+    window.addEventListener('mobile_menu_toggled', handleMenuToggle as EventListener)
+
+    if (typeof document !== 'undefined' && document.body.hasAttribute('data-mobile-menu-open')) {
+      setIsMenuOpen(true)
+    }
+
+    return () => {
+      window.removeEventListener('mobile_menu_toggled', handleMenuToggle as EventListener)
+    }
+  }, [])
 
   // Hook must be called unconditionally before any early returns (Rules of Hooks)
   useEffect(() => {
@@ -61,7 +77,7 @@ export function CompareBasket() {
 
   return (
     <div className={`fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-1/2 sm:-translate-x-1/2 z-40 sm:max-w-xl transition-all duration-300 font-sans ${
-      isFooterVisible ? 'max-md:translate-y-[250%] max-md:opacity-0 max-md:pointer-events-none' : 'translate-y-0 opacity-100'
+      isFooterVisible || isMenuOpen ? 'max-md:translate-y-[250%] max-md:opacity-0 max-md:pointer-events-none' : 'translate-y-0 opacity-100'
     }`}>
       <div 
         onClick={() => setIsExpanded(!isExpanded)}

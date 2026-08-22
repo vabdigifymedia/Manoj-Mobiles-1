@@ -54,7 +54,7 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -75,7 +75,9 @@ axiosInstance.interceptors.response.use(
         Cookies.remove('accessToken')
         Cookies.remove('refreshToken')
         Cookies.remove('userId')
-        if (typeof window !== 'undefined') {
+        Cookies.remove('userName')
+        Cookies.remove('userRole')
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
           window.location.href = '/admin/login'
         }
         return Promise.reject(error)
@@ -101,7 +103,9 @@ axiosInstance.interceptors.response.use(
         Cookies.remove('accessToken')
         Cookies.remove('refreshToken')
         Cookies.remove('userId')
-        if (typeof window !== 'undefined') {
+        Cookies.remove('userName')
+        Cookies.remove('userRole')
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
           window.location.href = '/admin/login'
         }
         return Promise.reject(refreshError)

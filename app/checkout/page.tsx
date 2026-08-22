@@ -31,7 +31,10 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/auth?redirect=/checkout')
+      const timer = setTimeout(() => {
+        router.push('/auth?redirect=/checkout')
+      }, 0)
+      return () => clearTimeout(timer)
     }
   }, [authLoading, isAuthenticated, router])
 

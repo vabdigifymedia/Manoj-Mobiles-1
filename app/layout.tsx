@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { AuthProvider } from '@/lib/auth-context'
 import { StoreProvider } from '@/components/store-provider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Header } from '@/components/header'
@@ -10,6 +11,7 @@ import { MobileNav } from '@/components/mobile-nav'
 import { CompareBasket } from '@/components/compare-basket'
 import { Toaster } from 'sonner'
 import { ScrollbarManager } from '@/components/scrollbar-manager'
+import Script from 'next/script'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -63,21 +65,25 @@ export default function RootLayout({
       <body className={`${inter.className} font-sans antialiased flex min-h-screen flex-col bg-background pb-[env(safe-area-inset-bottom)]`} suppressHydrationWarning>
         <ScrollbarManager />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-          <StoreProvider>
-            <Header />
-            <main className="flex-1 pb-16 md:pb-0">
-              {children}
-            </main>
-            <Footer />
-            <MobileNav />
-            <CompareBasket />
-          </StoreProvider>
+          <AuthProvider>
+            <StoreProvider>
+              <Header />
+              <main className="flex-1 pb-16 md:pb-0">
+                {children}
+              </main>
+              <Footer />
+              <MobileNav />
+              <CompareBasket />
+            </StoreProvider>
+          </AuthProvider>
           {process.env.NODE_ENV === 'production' && <Analytics />}
           <Toaster position="top-right" richColors />
         </ThemeProvider>
-        <script
+        <Script
+          id="service-worker-register"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js')})}`
+            __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js')})}`,
           }}
         />
       </body>

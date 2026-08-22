@@ -20,7 +20,10 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
   // Redirect to login if not authenticated (skip for login page itself)
   useEffect(() => {
     if (!loading && !isAuthenticated && pathname !== '/admin/login') {
-      router.push('/admin/login')
+      const timer = setTimeout(() => {
+        router.push('/admin/login')
+      }, 0)
+      return () => clearTimeout(timer)
     }
   }, [loading, isAuthenticated, pathname, router])
 
