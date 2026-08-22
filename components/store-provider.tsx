@@ -203,12 +203,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         await syncGuestCartToBackend()
         const res = await apiClient.getCart()
         setCart(res.data.data)
-      } catch (err) {
-        // Handle cart fetch failure silently
-      }
-      apiClient.getWishlist()
-        .then(res => setWishlist(res.data.data.content))
-        .catch(() => {})
+      } catch (err) {}
+
+      try {
+        const wishlistRes = await apiClient.getWishlist()
+        if (wishlistRes.data?.data?.content) {
+          setWishlist(wishlistRes.data.data.content)
+        }
+      } catch (err) {}
         
       const saved = typeof window !== 'undefined' ? localStorage.getItem('manoj-mobiles-compare') : null
       if (saved) {
@@ -234,7 +236,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
       const savedWishlist = typeof window !== 'undefined' ? window.localStorage.getItem('manoj-mobiles-wishlist') : null
       if (savedWishlist) {
-        try { setWishlist(JSON.parse(savedWishlist)) } catch (e) {}
+        try { setWishlist(JSON.parse(savedWishlist)) } catch (e) { setWishlist([]) }
+      } else {
+        setWishlist([])
+      }
+
+      const savedCompare = typeof window !== 'undefined' ? localStorage.getItem('manoj-mobiles-compare') : null
+      if (savedCompare) {
+        try {
+          const parsed = JSON.parse(savedCompare)
+          if (Array.isArray(parsed) && typeof parsed[0] === 'string') {
+            setCompareItems(parsed.map(id => ({ variantId: id, categoryId: '', productId: id })))
+          } else if (Array.isArray(parsed)) {
+            setCompareItems(parsed)
+          }
+        } catch (e) {}
       }
     }
   }

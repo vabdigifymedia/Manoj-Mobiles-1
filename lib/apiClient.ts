@@ -77,8 +77,11 @@ axiosInstance.interceptors.response.use(
         Cookies.remove('userId')
         Cookies.remove('userName')
         Cookies.remove('userRole')
-        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
-          window.location.href = '/admin/login'
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('auth_session_expired'))
+          if (window.location.pathname.startsWith('/admin')) {
+            window.location.href = '/admin/login'
+          }
         }
         return Promise.reject(error)
       }
@@ -105,8 +108,11 @@ axiosInstance.interceptors.response.use(
         Cookies.remove('userId')
         Cookies.remove('userName')
         Cookies.remove('userRole')
-        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
-          window.location.href = '/admin/login'
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('auth_session_expired'))
+          if (window.location.pathname.startsWith('/admin')) {
+            window.location.href = '/admin/login'
+          }
         }
         return Promise.reject(refreshError)
       } finally {

@@ -23,6 +23,10 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext)
 
+function isValidToken(token: string | undefined): boolean {
+  return typeof token === 'string' && token.trim().length > 0 && token !== 'undefined' && token !== 'null'
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<{ name: string; role: string } | null>(() => {
     // Initialize synchronously from cookies to avoid flash
@@ -30,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = Cookies.get('accessToken')
       const storedName = Cookies.get('userName')
       const storedRole = Cookies.get('userRole')
-      if (token && storedName && storedRole) {
+      if (isValidToken(token) && storedName && storedRole) {
         return { name: storedName, role: storedRole }
       }
     }
@@ -38,18 +42,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
   const [loading, setLoading] = useState(true)
 
+  const logout = useCallback(() => {
+    Cookies.remove('accessToken')
+    Cookies.remove('refreshToken')
+    Cookies.remove('userId')
+    Cookies.remove('userName')
+    Cookies.remove('userRole')
+    setUser(null)
+  }, [])
+
   useEffect(() => {
     // Double-check cookies on mount
     const token = Cookies.get('accessToken')
     const storedName = Cookies.get('userName')
     const storedRole = Cookies.get('userRole')
-    if (token && storedName && storedRole) {
+    if (isValidToken(token) && storedName && storedRole) {
       setUser({ name: storedName, role: storedRole })
     } else {
       setUser(null)
     }
     setLoading(false)
-  }, [])
+
+    const handleSessionExpired = () => {
+      logout()
+    }
+    window.addEventListener('auth_session_expired', handleSessionExpired)
+    return () => {
+      window.removeEventListener('auth_session_expired', handleSessionExpired)
+    }
+  }, [logout])
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await apiClient.login({ email, password })
@@ -60,15 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     Cookies.set('userName', data.name || 'Admin', { expires: 7 })
     Cookies.set('userRole', data.role || 'ADMIN', { expires: 7 })
     setUser({ name: data.name || 'Admin', role: data.role || 'ADMIN' })
-  }, [])
-
-  const logout = useCallback(() => {
-    Cookies.remove('accessToken')
-    Cookies.remove('refreshToken')
-    Cookies.remove('userId')
-    Cookies.remove('userName')
-    Cookies.remove('userRole')
-    setUser(null)
   }, [])
 
   return (
