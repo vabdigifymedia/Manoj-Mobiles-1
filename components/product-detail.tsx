@@ -10,6 +10,7 @@ import { useBulkInquiry } from '@/components/bulk-inquiry-provider'
 import { useAuth } from '@/lib/auth-context'
 import type { ProductResponseDTO, ProductVariantResponseDTO } from '@/lib/types'
 import { ProductReviews } from '@/components/product-reviews'
+import { parseRamRomFromText } from '@/lib/utils'
 
 export function ProductDetailClient({ product: initialProduct }: { product: ProductResponseDTO }) {
   const [product] = useState<ProductResponseDTO>(initialProduct)
@@ -356,20 +357,25 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
                   const cleanName = getCleanVariantName(selectedVariant);
                   let text = h.text.replace('{variant}', cleanName);
 
-                  // Auto-detect RAM and ROM from variant name (e.g. "512 GB + 12 GB")
-                  const sizes = [...cleanName.matchAll(/(\d+)\s*(GB|TB|MB)/gi)].map(m => ({
-                    value: parseInt(m[1]),
-                    unit: m[2].toUpperCase(),
-                    original: m[0]
-                  }));
+                  const isMemoryHighlight = h.iconName === 'MemoryStick' || 
+                    text.toUpperCase().includes('RAM') || 
+                    text.toUpperCase().includes('ROM') || 
+                    text.includes('{ram}') || 
+                    text.includes('{rom}');
 
-                  if (sizes.length === 2 && (text.includes('{ram}') || text.includes('{rom}'))) {
-                    sizes.sort((a, b) => {
-                      const aVal = a.unit === 'TB' ? a.value * 1024 : a.unit === 'MB' ? a.value / 1024 : a.value;
-                      const bVal = b.unit === 'TB' ? b.value * 1024 : b.unit === 'MB' ? b.value / 1024 : b.value;
-                      return aVal - bVal;
-                    });
-                    text = text.replace(/{ram}/gi, sizes[0].original).replace(/{rom}/gi, sizes[1].original);
+                  if (isMemoryHighlight) {
+                    let parsed = parseRamRomFromText(cleanName);
+                    if (!parsed.ram && !parsed.rom) {
+                      parsed = parseRamRomFromText(text);
+                    }
+
+                    if (parsed.ram && parsed.rom) {
+                      text = `${parsed.ram} | ${parsed.rom}`;
+                    } else if (parsed.rom) {
+                      text = parsed.rom;
+                    } else if (parsed.ram) {
+                      text = parsed.ram;
+                    }
                   }
 
                   return (
