@@ -1,15 +1,67 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { FaPhone, FaEnvelope, FaLocationDot } from 'react-icons/fa6'
+import { apiClient } from '@/lib/apiClient'
+import type { StoreSettingResponseDTO } from '@/lib/types'
 
 export function Footer() {
   const pathname = usePathname()
+  const [storeSettings, setStoreSettings] = useState<StoreSettingResponseDTO | null>(null)
+
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('manoj_store_settings')
+      if (cached) {
+        setStoreSettings(JSON.parse(cached))
+      }
+    } catch {}
+
+    apiClient.getPublicStoreSettings()
+      .then(res => {
+        if (res.data?.data) {
+          const data = res.data.data
+          const logo = data?.logoUrl || data?.storeLogo || data?.storeLogoUrl || data?.logo || ''
+          const normalized = { ...data, logoUrl: logo, storeLogo: logo, storeLogoUrl: logo, logo: logo }
+          setStoreSettings(normalized)
+          localStorage.setItem('manoj_store_settings', JSON.stringify(normalized))
+        }
+      })
+      .catch(() => {})
+
+    const handleUpdate = (e: CustomEvent<StoreSettingResponseDTO>) => {
+      if (e.detail) {
+        setStoreSettings(e.detail)
+      }
+    }
+
+    const handleStorage = () => {
+      try {
+        const cached = localStorage.getItem('manoj_store_settings')
+        if (cached) setStoreSettings(JSON.parse(cached))
+      } catch {}
+    }
+
+    window.addEventListener('store_settings_updated', handleUpdate as EventListener)
+    window.addEventListener('storage', handleStorage)
+
+    return () => {
+      window.removeEventListener('store_settings_updated', handleUpdate as EventListener)
+      window.removeEventListener('storage', handleStorage)
+    }
+  }, [])
 
   if (pathname?.startsWith('/admin')) {
     return null
   }
+
+  const logoUrl = storeSettings?.logoUrl || storeSettings?.storeLogo || storeSettings?.storeLogoUrl || storeSettings?.logo
+  const storeName = storeSettings?.storeName || 'Manoj Mobiles'
+  const storeAddress = storeSettings?.storeAddress || '123 Tech Park, Electronic City, Bangalore, 560100'
+  const supportPhone = storeSettings?.supportPhone || '+91 98765 43210'
+  const supportEmail = storeSettings?.supportEmail || 'support@manojmobiles.com'
 
   return (
     <footer id="site-footer" className="border-t border-border bg-card text-foreground mt-auto">
@@ -18,8 +70,16 @@ export function Footer() {
           {/* Brand Col */}
           <div className="pr-8">
             <Link href="/" className="flex items-center gap-2 mb-6">
-              <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground font-black">M</span>
-              <span className="text-2xl font-black tracking-tight">Manoj Mobiles</span>
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={`${storeName} Logo`}
+                  className="max-h-9 max-w-[120px] w-auto h-auto object-contain shrink-0"
+                />
+              ) : (
+                <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground font-black">M</span>
+              )}
+              <span className="text-2xl font-black tracking-tight">{storeName}</span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-sm">
               Your trusted partner for genuine smartphones, accessories, and tech gadgets. We believe in transparency, fast delivery, and excellent customer service.
@@ -75,22 +135,22 @@ export function Footer() {
             <ul className="space-y-5 text-sm text-muted-foreground">
               <li className="flex items-start gap-3">
                 <FaLocationDot size={18} className="text-primary shrink-0 mt-0.5" />
-                <span className="leading-relaxed">123 Tech Park, Electronic City,<br/>Bangalore, 560100</span>
+                <span className="leading-relaxed whitespace-pre-line">{storeAddress}</span>
               </li>
               <li className="flex items-center gap-3">
                 <FaPhone size={18} className="text-primary shrink-0" />
-                <span>+91 98765 43210</span>
+                <a href={`tel:${supportPhone}`} className="hover:text-primary transition-colors">{supportPhone}</a>
               </li>
               <li className="flex items-center gap-3">
                 <FaEnvelope size={18} className="text-primary shrink-0" />
-                <span>support@manojmobiles.com</span>
+                <a href={`mailto:${supportEmail}`} className="hover:text-primary transition-colors">{supportEmail}</a>
               </li>
             </ul>
           </div>
         </div>
         
         <div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
-          <p>© 2026 Manoj Mobiles. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {storeName}. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
