@@ -39,6 +39,56 @@ import { ImageUpload } from './image-upload'
 
 const availableIcons = { Settings: FaGear, Camera: FaCamera, Cpu: FaMicrochip, Zap: FaBolt, Battery: FaBatteryFull, Bluetooth: FaBluetooth, MemoryStick: FaMemory, Microchip: FaMicrochip, Star: FaStar, Wifi: FaWifi, CheckCircle: FaCircleCheck, Truck: FaTruckFast, Smartphone: FaMobileScreen, HardDrive: FaHardDrive, ShieldCheck: FaShieldHalved }
 
+export function parseRamRomFromText(text: string): { ram: string; rom: string } {
+  if (!text || !text.trim()) return { ram: '', rom: '' }
+
+  const matches = Array.from(text.matchAll(/(\d+)\s*(GB|TB)/gi))
+
+  if (matches.length >= 2) {
+    const parseGB = (numStr: string, unit: string) => {
+      const val = parseInt(numStr, 10)
+      return unit.toUpperCase() === 'TB' ? val * 1024 : val
+    }
+
+    const val1 = parseGB(matches[0][1], matches[0][2])
+    const val2 = parseGB(matches[1][1], matches[1][2])
+
+    const str1 = `${matches[0][1]}${matches[0][2].toUpperCase()}`
+    const str2 = `${matches[1][1]}${matches[1][2].toUpperCase()}`
+
+    if (val1 <= val2) {
+      return { ram: `${str1} RAM`, rom: `${str2} ROM` }
+    } else {
+      return { ram: `${str2} RAM`, rom: `${str1} ROM` }
+    }
+  } else if (matches.length === 1) {
+    // Single number -> ROM ONLY
+    const str = `${matches[0][1]}${matches[0][2].toUpperCase()}`
+    return { ram: '', rom: `${str} ROM` }
+  }
+
+  // Fallback for numbers without explicit GB/TB
+  const numOnlyMatch = Array.from(text.matchAll(/\b(\d+)\b/g))
+  if (numOnlyMatch.length >= 2) {
+    const n1 = parseInt(numOnlyMatch[0][1], 10)
+    const n2 = parseInt(numOnlyMatch[1][1], 10)
+    if (n1 > 0 && n2 > 0) {
+      if (n1 <= n2) {
+        return { ram: `${n1}GB RAM`, rom: `${n2}GB ROM` }
+      } else {
+        return { ram: `${n2}GB RAM`, rom: `${n1}GB ROM` }
+      }
+    }
+  } else if (numOnlyMatch.length === 1) {
+    const n = parseInt(numOnlyMatch[0][1], 10)
+    if (n > 0) {
+      return { ram: '', rom: `${n}GB ROM` }
+    }
+  }
+
+  return { ram: '', rom: '' }
+}
+
 export function ProductWizard({ productId }: { productId?: string }) {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
@@ -143,12 +193,119 @@ export function ProductWizard({ productId }: { productId?: string }) {
     fetchData()
   }, [productId])
 
+  // Auto-generate RAM/ROM Highlight from globalSpecs or variants
+  const handleAutoGenerateRamRomHighlight = () => {
+    let ramVal = ''
+    let romVal = ''
+
+    // 1. Search in globalSpecs
+    globalSpecs.forEach(s => {
+      const k = (s.specKey || '').toLowerCase()
+      const v = (s.specValue || '').trim()
+      if (!v) return
+      if ((k.includes('ram') || k === 'memory') && !ramVal) {
+        ramVal = v.toUpperCase().includes('RAM') ? v : `${v} RAM`
+      }
+      if ((k.includes('rom') || k.includes('storage') || k.includes('internal')) && !romVal) {
+        romVal = v.toUpperCase().includes('ROM') || v.toUpperCase().includes('STORAGE') ? v : `${v} ROM`
+      }
+    })
+
+    // 2. Search in variant names (e.g. "4GB + 128GB" or "128GB")
+    if (!ramVal || !romVal) {
+      for (const v of variants) {
+        const parsed = parseRamRomFromText(v.variantName || '')
+        if (parsed.ram && !ramVal) ramVal = parsed.ram
+        if (parsed.rom && !romVal) romVal = parsed.rom
+        if (ramVal && romVal) break
+      }
+    }
+
+    if (ramVal || romVal) {
+      let highlightText = ''
+      if (ramVal && romVal) {
+        highlightText = `${ramVal} | ${romVal}`
+      } else if (romVal) {
+        highlightText = romVal
+      } else if (ramVal) {
+        highlightText = ramVal
+      }
+
+      setHighlights(prev => {
+        const existingIdx = prev.findIndex(h => 
+          h.iconName === 'MemoryStick' || 
+          h.text.toUpperCase().includes('RAM') || 
+          h.text.toUpperCase().includes('ROM')
+        )
+        if (existingIdx >= 0) {
+          if (prev[existingIdx].text !== highlightText) {
+            const updated = [...prev]
+            updated[existingIdx] = { ...updated[existingIdx], text: highlightText, iconName: 'MemoryStick' }
+            return updated
+          }
+          return prev
+        }
+        return [
+          { id: `h_auto_${Date.now()}`, iconName: 'MemoryStick', text: highlightText, displayOrder: 1 },
+          ...prev
+        ]
+      })
+      return true
+    }
+    return false
+  }
+
   useEffect(() => {
     if (!initialLoading) {
-      const draftKey = `product-draft-${productId || 'new'}`
-      localStorage.setItem(draftKey, JSON.stringify({ baseInfo, highlights, variants, globalSpecs, currentStep, highestStepReached }))
+      handleAutoGenerateRamRomHighlight()
     }
-  }, [baseInfo, highlights, variants, globalSpecs, currentStep, highestStepReached, initialLoading, productId])
+  }, [globalSpecs, variants, initialLoading])
+
+  const generateAutoSku = (variantName?: string, color?: string) => {
+    const brandObj = brands.find(b => b.id === baseInfo.brandId)
+    const brandStr = brandObj?.name || 'MNJ'
+    
+    const bCode = brandStr.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase() || 'MNJ'
+
+    const words = (baseInfo.name || 'MODEL').trim().split(/\s+/)
+    let pCode = ''
+    if (words.length === 1) {
+      pCode = words[0].replace(/[^a-zA-Z0-9]/g, '').substring(0, 5).toUpperCase()
+    } else {
+      pCode = words.map(w => w.replace(/[^a-zA-Z0-9]/g, '')).filter(Boolean).map(w => w[0]).join('').substring(0, 5).toUpperCase()
+    }
+    if (!pCode) pCode = 'MOB'
+
+    const vName = variantName ?? variantForm.variantName ?? ''
+    const parsed = parseRamRomFromText(vName)
+    let vCode = ''
+    if (parsed.ram && parsed.rom) {
+      const ramNum = parsed.ram.replace(/[^0-9]/g, '')
+      const romNum = parsed.rom.replace(/[^0-9]/g, '')
+      vCode = `${ramNum}-${romNum}`
+    } else if (parsed.rom) {
+      const romNum = parsed.rom.replace(/[^0-9]/g, '')
+      vCode = romNum
+    } else if (parsed.ram) {
+      const ramNum = parsed.ram.replace(/[^0-9]/g, '')
+      vCode = ramNum
+    } else {
+      vCode = vName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase() || 'STD'
+    }
+
+    const colorStr = (color ?? variantForm.color ?? '').trim()
+    let cCode = 'DEF'
+    if (colorStr) {
+      const cWords = colorStr.split(/\s+/)
+      if (cWords.length > 1) {
+        cCode = cWords.map(w => w[0]).join('').substring(0, 3).toUpperCase()
+      } else {
+        cCode = colorStr.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()
+      }
+    }
+
+    return `${bCode}-${pCode}-${vCode}-${cCode}`.toUpperCase()
+  }
 
   const handleRestoreDraft = () => {
     const draftStr = localStorage.getItem(`product-draft-${productId || 'new'}`)
@@ -199,11 +356,12 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   const handleAddVariant = (e: React.FormEvent) => {
     e.preventDefault()
+    const finalSku = variantForm.sku.trim() || generateAutoSku(variantForm.variantName, variantForm.color)
     if (editingVariantId) {
       setVariants(variants.map(v => v.id === editingVariantId ? {
         ...v,
         variantName: variantForm.variantName,
-        sku: variantForm.sku,
+        sku: finalSku,
         color: variantForm.color,
         mrp: Number(variantForm.mrp),
         sellingPrice: Number(variantForm.sellingPrice),
@@ -216,7 +374,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
       setVariants([...variants, {
         id: `v${Date.now()}`,
         variantName: variantForm.variantName,
-        sku: variantForm.sku,
+        sku: finalSku,
         color: variantForm.color,
         mrp: Number(variantForm.mrp),
         sellingPrice: Number(variantForm.sellingPrice),
@@ -233,7 +391,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const handleEditVariantClick = (v: LocalVariant) => {
     setVariantForm({
       variantName: v.variantName,
-      sku: v.sku,
+      sku: v.sku || generateAutoSku(v.variantName, v.color),
       color: v.color,
       mrp: v.mrp.toString(),
       sellingPrice: v.sellingPrice.toString(),
@@ -250,21 +408,35 @@ export function ProductWizard({ productId }: { productId?: string }) {
   }
 
   const handleOpenAddVariant = () => {
+    let initialVName = ''
+    let initialMrp = ''
+    let initialPrice = ''
+    let initialGst = 0
+    let initialStock = 0
+    let initialCod = true
+
     if (variants.length > 0) {
       const lastVariant = variants[variants.length - 1]
-      setVariantForm({
-        variantName: lastVariant.variantName,
-        sku: '',
-        color: '',
-        mrp: lastVariant.mrp.toString(),
-        sellingPrice: lastVariant.sellingPrice.toString(),
-        gstPercent: lastVariant.gstPercent,
-        stockQty: lastVariant.stockQty,
-        codAvailable: lastVariant.codAvailable
-      })
-    } else {
-      setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true })
+      initialVName = lastVariant.variantName
+      initialMrp = lastVariant.mrp.toString()
+      initialPrice = lastVariant.sellingPrice.toString()
+      initialGst = lastVariant.gstPercent
+      initialStock = lastVariant.stockQty
+      initialCod = lastVariant.codAvailable
     }
+
+    const autoSku = generateAutoSku(initialVName, '')
+
+    setVariantForm({
+      variantName: initialVName,
+      sku: autoSku,
+      color: '',
+      mrp: initialMrp,
+      sellingPrice: initialPrice,
+      gstPercent: initialGst,
+      stockQty: initialStock,
+      codAvailable: initialCod
+    })
     setEditingVariantId(null)
     setShowVariantForm(true)
   }
@@ -379,6 +551,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
       // 3. Variants
       for (const v of variants) {
+        const activeSku = v.sku?.trim() || generateAutoSku(v.variantName, v.color)
         let finalVariantId = v.id
         const isNewVariant = v.id.startsWith('v') // local id
         
@@ -386,7 +559,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
           const varRes = await apiClient.createVariant({
             productId: finalProductId,
             variantName: v.variantName,
-            sku: v.sku,
+            sku: activeSku,
             color: v.color,
             mrp: v.mrp,
             sellingPrice: v.sellingPrice,
@@ -399,7 +572,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
           await apiClient.updateVariant(finalVariantId, {
             productId: finalProductId,
             variantName: v.variantName,
-            sku: v.sku,
+            sku: activeSku,
             color: v.color,
             mrp: v.mrp,
             sellingPrice: v.sellingPrice,
@@ -568,7 +741,20 @@ export function ProductWizard({ productId }: { productId?: string }) {
           <div className="space-y-6">
             <h3 className="text-lg font-bold border-b border-border pb-2 flex justify-between items-center">
               Product Highlights
-              <button onClick={() => { setEditingHighlightId(null); setHighlightForm({ iconName: 'Star', text: '' }); setShowHighlightForm(true); }} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold"><FaPlus size={16}/> Add</button>
+              <div className="flex items-center gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const success = handleAutoGenerateRamRomHighlight()
+                    if (!success) toast.error('Add RAM & ROM in Specs or Variants first to auto-generate!')
+                    else toast.success('RAM | ROM Highlight updated!')
+                  }} 
+                  className="text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold hover:bg-blue-500/20 transition-colors cursor-pointer"
+                >
+                  <FaMemory size={14} /> Auto RAM|ROM
+                </button>
+                <button onClick={() => { setEditingHighlightId(null); setHighlightForm({ iconName: 'Star', text: '' }); setShowHighlightForm(true); }} className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg flex items-center gap-1 font-semibold hover:bg-primary/20 transition-colors cursor-pointer"><FaPlus size={14}/> Add</button>
+              </div>
             </h3>
 
             {showHighlightForm && (
@@ -598,7 +784,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
                 </div>
                 <div className="flex-[2]">
                   <label className="text-xs font-semibold mb-1 block">Text</label>
-                  <input required value={highlightForm.text} onChange={e => setHighlightForm({...highlightForm, text: e.target.value})} placeholder="e.g. 50MP Camera" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                  <input required value={highlightForm.text} onChange={e => setHighlightForm({...highlightForm, text: e.target.value})} placeholder="e.g. 8GB RAM | 128GB ROM" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
                 </div>
                 <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm">{editingHighlightId ? 'Update' : 'Save'}</button>
                 <button type="button" onClick={() => { setShowHighlightForm(false); setEditingHighlightId(null); setHighlightForm({ iconName: 'Star', text: '' }); }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
@@ -632,7 +818,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
           <div className="space-y-6">
             <h3 className="text-lg font-bold border-b border-border pb-2 flex justify-between items-center">
               Product Variants
-              <button onClick={handleOpenAddVariant} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold"><FaPlus size={16}/> Add Variant</button>
+              <button onClick={handleOpenAddVariant} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold cursor-pointer"><FaPlus size={16}/> Add Variant</button>
             </h3>
 
             {showVariantForm && (
@@ -640,15 +826,58 @@ export function ProductWizard({ productId }: { productId?: string }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold mb-1 block">Variant Name</label>
-                    <input required value={variantForm.variantName} onChange={e => setVariantForm({...variantForm, variantName: e.target.value})} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                    <input 
+                      required 
+                      value={variantForm.variantName} 
+                      onChange={e => {
+                        const val = e.target.value
+                        const autoSku = generateAutoSku(val, variantForm.color)
+                        setVariantForm(prev => ({
+                          ...prev,
+                          variantName: val,
+                          sku: (!prev.sku || prev.sku === generateAutoSku(prev.variantName, prev.color)) ? autoSku : prev.sku
+                        }))
+                      }} 
+                      placeholder="e.g. 8GB + 128GB"
+                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm" 
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-semibold mb-1 block">Color</label>
-                    <input required value={variantForm.color} onChange={e => setVariantForm({...variantForm, color: e.target.value})} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                    <input 
+                      required 
+                      value={variantForm.color} 
+                      onChange={e => {
+                        const val = e.target.value
+                        const autoSku = generateAutoSku(variantForm.variantName, val)
+                        setVariantForm(prev => ({
+                          ...prev,
+                          color: val,
+                          sku: (!prev.sku || prev.sku === generateAutoSku(prev.variantName, prev.color)) ? autoSku : prev.sku
+                        }))
+                      }} 
+                      placeholder="e.g. Phantom Black"
+                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm" 
+                    />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold mb-1 block">SKU</label>
-                    <input required value={variantForm.sku} onChange={e => setVariantForm({...variantForm, sku: e.target.value})} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold block">SKU</label>
+                      <button
+                        type="button"
+                        onClick={() => setVariantForm(prev => ({ ...prev, sku: generateAutoSku(prev.variantName, prev.color) }))}
+                        className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                      >
+                        Auto Generate SKU
+                      </button>
+                    </div>
+                    <input 
+                      required 
+                      value={variantForm.sku} 
+                      onChange={e => setVariantForm({...variantForm, sku: e.target.value})} 
+                      placeholder="e.g. SAM-S24U-8-128-BLK"
+                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm font-mono uppercase" 
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-semibold mb-1 block">Stock Quantity</label>
