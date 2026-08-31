@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { FaBoxesHolding, FaInbox, FaRotateRight, FaBuilding, FaMobile, FaEnvelope, FaPhone } from 'react-icons/fa6'
+import { FaBoxesPacking, FaInbox, FaRotateRight, FaBuilding, FaMobile, FaEnvelope, FaPhone } from 'react-icons/fa6'
 import { bulkInquiryService, BulkInquiryItem } from '@/lib/bulkInquiryService'
 
 /**
@@ -85,7 +85,7 @@ export default function AdminBulkInquiriesPage() {
           </p>
 
           <div className="mt-6 inline-flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground border border-border">
-            <FaBoxesHolding size={14} className="text-primary" />
+            <FaBoxesPacking size={14} className="text-primary" />
             <span>Architecture ready for future API integration</span>
           </div>
         </div>
