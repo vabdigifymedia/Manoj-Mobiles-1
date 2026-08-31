@@ -207,7 +207,17 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
         <div className="flex flex-col gap-4 md:gap-6 min-w-0">
           <div>
             <p className="text-[10px] md:text-xs font-bold uppercase tracking-[.18em] text-primary dark:text-zinc-400">{product.brandName}</p>
-            <h1 className="mt-1 text-xl md:text-3xl lg:text-4xl font-black leading-tight">{product.name}</h1>
+            {product.brandName && (
+              <div className="mt-0.5">
+                <Link
+                  href={`/shop?brand=${encodeURIComponent(product.brandName.toLowerCase().trim())}`}
+                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline cursor-pointer transition-colors"
+                >
+                  Visit Brand Store
+                </Link>
+              </div>
+            )}
+            <h1 className="mt-1.5 text-xl md:text-3xl lg:text-4xl font-black leading-tight">{product.name}</h1>
             <div className="mt-2.5 md:mt-3 flex items-center gap-1.5 md:gap-2">
               <FaStar className="size-[15px] md:size-[17px] text-accent" fill="currentColor" />
               <b className="text-sm md:text-base">{product.avgRating || 0}</b>
