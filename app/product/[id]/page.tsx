@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { cache } from 'react'
 import { serverFetch } from '@/lib/apiClient'
 import type { ProductResponseDTO } from '@/lib/types'
 import { ProductDetailClient } from '@/components/product-detail'
@@ -8,9 +9,14 @@ type Props = {
   params: Promise<{ id: string }>
 }
 
+// React cache() deduplicates requests across generateMetadata and ProductPage component
+const getProduct = cache(async (id: string) => {
+  return await serverFetch<ProductResponseDTO>(`/api/public/products/${id}`)
+})
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const product = await serverFetch<ProductResponseDTO>(`/api/public/products/${id}`)
+  const product = await getProduct(id)
 
   if (!product) {
     return {
@@ -49,7 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { id } = await params
-  const product = await serverFetch<ProductResponseDTO>(`/api/public/products/${id}`)
+  const product = await getProduct(id)
 
   if (!product) {
     notFound()

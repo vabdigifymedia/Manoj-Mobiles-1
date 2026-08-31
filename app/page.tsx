@@ -13,6 +13,7 @@ import { BrandSpotlight } from '@/components/home/brand-spotlight'
 import { BudgetPhones } from '@/components/home/budget-phones'
 import { FeaturesCarousel } from '@/components/home/features-carousel'
 import { InstagramReels } from '@/components/home/instagram-reels'
+import { BulkInquirySection } from '@/components/home/bulk-inquiry-section'
 
 export default async function HomePage() {
   // Parallel SSR data fetching for all home page sections
@@ -177,6 +178,9 @@ export default async function HomePage() {
 
       {/* Instagram Reels */}
       <InstagramReels reels={reelsData || []} />
+
+      {/* Bulk Inquiry Section — Positioned IMMEDIATELY after Trending Reels */}
+      <BulkInquirySection />
 
       {/* Why Shop With Us */}
       <section className="bg-muted py-20 border-y border-border">

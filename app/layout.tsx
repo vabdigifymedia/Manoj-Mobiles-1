@@ -13,6 +13,8 @@ import { Toaster } from 'sonner'
 import { ScrollbarManager } from '@/components/scrollbar-manager'
 import Script from 'next/script'
 
+import { BulkInquiryProvider } from '@/components/bulk-inquiry-provider'
+
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
@@ -67,13 +69,15 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
             <StoreProvider>
-              <Header />
-              <main className="flex-1 pb-16 md:pb-0">
-                {children}
-              </main>
-              <Footer />
-              <MobileNav />
-              <CompareBasket />
+              <BulkInquiryProvider>
+                <Header />
+                <main className="flex-1 pb-16 md:pb-0">
+                  {children}
+                </main>
+                <Footer />
+                <MobileNav />
+                <CompareBasket />
+              </BulkInquiryProvider>
             </StoreProvider>
           </AuthProvider>
           {process.env.NODE_ENV === 'production' && <Analytics />}

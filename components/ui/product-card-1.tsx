@@ -9,11 +9,14 @@ import { Heart, Star, ShieldCheck, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox"; // Assuming you have a shadcn Checkbox component
 import { Button } from "@/components/ui/button"; // Assuming you have a shadcn Button component
+import { useBulkInquiry } from "@/components/bulk-inquiry-provider";
+import { FaBoxesPacking } from "react-icons/fa6";
 
 import { HTMLMotionProps } from "framer-motion";
 
 // Define the types for the component props
 interface ProductCardProps extends HTMLMotionProps<"div"> {
+  id?: string;
   imageUrl: string;
   title: string;
   rating: number;
@@ -32,6 +35,7 @@ interface ProductCardProps extends HTMLMotionProps<"div"> {
 const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
   (
     {
+      id,
       className,
       imageUrl,
       title,
@@ -51,6 +55,7 @@ const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
     ref
   ) => {
     const [isWishlisted, setIsWishlisted] = React.useState(false);
+    const { openBulkInquiry } = useBulkInquiry();
 
     // Format numbers with commas for readability
     const formatNumber = (num: number) =>
@@ -153,7 +158,7 @@ const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
                 </ul>
               </div>
 
-              {/* Column 3: Pricing */}
+              {/* Column 3: Pricing & Actions */}
               <div className="flex flex-col gap-0.5 md:gap-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-green-600 font-semibold text-[13px] md:text-sm flex items-center">
@@ -172,6 +177,7 @@ const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
                   <Truck className="h-3 w-3 md:h-4 md:w-4" />
                   <span className="font-bold italic text-black dark:text-white">EXPRESS</span> Delivery tomorrow
                 </p>
+
                 {variantsCount && variantsCount > 1 && (
                   <div className="mt-2 md:mt-3">
                     <span className="inline-block text-[11px] md:text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 transition-colors">

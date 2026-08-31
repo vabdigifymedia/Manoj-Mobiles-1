@@ -513,7 +513,7 @@ export async function serverFetch<T>(path: string): Promise<T | null> {
   // Server-side fetch needs a full URL (no browser origin available)
   const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'https://200.141.14.212.nip.io'
   try {
-    const res = await fetch(`${serverUrl}${path}`, { cache: 'no-store' })
+    const res = await fetch(`${serverUrl}${path}`, { next: { revalidate: 30 } })
     if (!res.ok) return null
     const json = await res.json()
     return json.data as T

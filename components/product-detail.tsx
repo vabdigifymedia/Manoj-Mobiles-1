@@ -3,15 +3,17 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FaMicrochip, FaCircleCheck, FaArrowLeft, FaBolt, FaHardDrive, FaBatteryFull, FaCamera, FaShieldHalved, FaWifi, FaMobileScreen, FaComment, FaLocationDot, FaGear, FaBluetooth, FaMemory, FaTruckFast, FaStar, FaCartShopping } from 'react-icons/fa6'
+import { FaMicrochip, FaCircleCheck, FaArrowLeft, FaBolt, FaHardDrive, FaBatteryFull, FaCamera, FaShieldHalved, FaWifi, FaMobileScreen, FaComment, FaLocationDot, FaGear, FaBluetooth, FaMemory, FaTruckFast, FaStar, FaCartShopping, FaBoxesPacking } from 'react-icons/fa6'
 import { formatINR } from '@/lib/apiClient'
 import { useStore } from '@/components/store-provider'
+import { useBulkInquiry } from '@/components/bulk-inquiry-provider'
 import { useAuth } from '@/lib/auth-context'
 import type { ProductResponseDTO, ProductVariantResponseDTO } from '@/lib/types'
 import { ProductReviews } from '@/components/product-reviews'
 
 export function ProductDetailClient({ product: initialProduct }: { product: ProductResponseDTO }) {
   const [product] = useState<ProductResponseDTO>(initialProduct)
+  const { openBulkInquiry } = useBulkInquiry()
 
   // Helper to extract clean Variant Name (stripping color suffix if appended in parenthesis)
   const getCleanVariantName = (v: ProductVariantResponseDTO) => {
@@ -254,6 +256,25 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
               </div>
             </div>
           )}
+
+          {/* Bulk Inquiry Button — Positioned IMMEDIATELY below Colour Selection */}
+          <div className="mt-1 md:mt-2">
+            <button
+              type="button"
+              onClick={() => openBulkInquiry({
+                id: product.id,
+                name: product.name,
+                brandName: product.brandName,
+                selectedColor: selectedColor,
+                availableColors: availableColorsForSelectedName.length > 0 ? availableColorsForSelectedName : [selectedColor || 'Standard'],
+                isProductLocked: true
+              })}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-blue-600 bg-blue-600 hover:bg-blue-700 text-white py-3.5 px-4 text-xs md:text-sm font-extrabold transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer group/bulk"
+            >
+              <FaBoxesPacking size={16} className="shrink-0 text-white group-hover/bulk:scale-110 transition-transform" />
+              <span className="text-white font-extrabold">Bulk Inquiry</span>
+            </button>
+          </div>
 
           <div className="mt-2 hidden lg:flex gap-3">
             <button 
