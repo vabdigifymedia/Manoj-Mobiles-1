@@ -498,6 +498,36 @@ export const apiClient = {
 
   deleteSpecTemplate: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/api/admin/spec-templates/${id}`),
+
+  // --- Spec Importer ---
+  importSpecsFromUrl: async (url: string) => {
+    // Calling local Next.js API route directly
+    const res = await fetch('/api/import-specs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    })
+    return res.json() as Promise<{
+      success: boolean
+      count?: number
+      message?: string
+      data?: { specGroup: string; specKey: string; specValue: string }[]
+    }>
+  },
+
+  importSpecsFromImage: async (payload: { image?: string; text?: string }) => {
+    const res = await fetch('/api/import-specs-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    return res.json() as Promise<{
+      success: boolean
+      count?: number
+      message?: string
+      data?: { specGroup: string; specKey: string; specValue: string }[]
+    }>
+  },
 }
 
 // ===========================

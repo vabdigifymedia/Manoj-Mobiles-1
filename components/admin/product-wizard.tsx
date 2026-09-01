@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen, FaCircleCheck, FaListCheck } from 'react-icons/fa6'
+import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen, FaCircleCheck, FaListCheck, FaGlobe, FaDownload, FaSpinner, FaPaste } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
+import { parsePastedSpecsText, ALLOWED_GROUPS, ExtractedSpecItem } from '@/lib/specParser'
 
 interface LocalHighlight {
   id: string;
@@ -81,6 +82,201 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   // Step 4: Global Specs
   const [globalSpecs, setGlobalSpecs] = useState<{specGroup: string, specKey: string, specValue: string}[]>([])
+  const [importMode, setImportMode] = useState<'paste' | 'url' | 'screenshots'>('paste')
+  const [importUrl, setImportUrl] = useState('')
+  const [importLoading, setImportLoading] = useState(false)
+  const [screenshotFiles, setScreenshotFiles] = useState<{ file: File; previewUrl: string }[]>([])
+  const [screenshotImportLoading, setScreenshotImportLoading] = useState(false)
+
+  // Paste Specification Importer State
+  const [pastedText, setPastedText] = useState('')
+  const [parsedPreviewSpecs, setParsedPreviewSpecs] = useState<ExtractedSpecItem[] | null>(null)
+  const [unclassifiedPreview, setUnclassifiedPreview] = useState<{ line: string; group: string }[]>([])
+  const [validationStatus, setValidationStatus] = useState<{ totalCount: number; validCount: number; flaggedCount: number; message: string } | null>(null)
+  const [showPastePreview, setShowPastePreview] = useState(false)
+
+  const handleParsePastedSpecs = () => {
+    if (!pastedText.trim()) {
+      toast.error('Please paste specification text first.')
+      return
+    }
+
+    const { specs, unclassified, validationStatus } = parsePastedSpecsText(pastedText)
+
+    if (specs.length === 0 && unclassified.length === 0) {
+      toast.error('Could not find valid specifications in the pasted text. Please check the text and try again.')
+      return
+    }
+
+    setParsedPreviewSpecs(specs)
+    setUnclassifiedPreview(unclassified)
+    setValidationStatus(validationStatus)
+    setShowPastePreview(true)
+    toast.success(validationStatus.message)
+  }
+
+  const handleUpdatePreviewSpec = (index: number, field: 'specKey' | 'specValue' | 'specGroup', val: string) => {
+    if (!parsedPreviewSpecs) return
+    const copy = [...parsedPreviewSpecs]
+    copy[index] = { ...copy[index], [field]: val }
+    setParsedPreviewSpecs(copy)
+  }
+
+  const handleDeletePreviewSpec = (index: number) => {
+    if (!parsedPreviewSpecs) return
+    setParsedPreviewSpecs(parsedPreviewSpecs.filter((_, i) => i !== index))
+  }
+
+  const handleAddPreviewSpecToGroup = (groupName: string) => {
+    setParsedPreviewSpecs(prev => [
+      ...(prev || []),
+      { specGroup: groupName, specKey: '', specValue: '' }
+    ])
+  }
+
+  const handleAssignUnclassifiedToGroup = (unclassifiedIndex: number, targetGroup: string, asType: 'key' | 'value') => {
+    const item = unclassifiedPreview[unclassifiedIndex]
+    if (!item) return
+
+    setUnclassifiedPreview(prev => prev.filter((_, i) => i !== unclassifiedIndex))
+    setParsedPreviewSpecs(prev => [
+      ...(prev || []),
+      {
+        specGroup: targetGroup,
+        specKey: asType === 'key' ? item.line : 'Specification',
+        specValue: asType === 'value' ? item.line : ''
+      }
+    ])
+  }
+
+  const handleApplyPastedSpecs = () => {
+    if (!parsedPreviewSpecs || parsedPreviewSpecs.length === 0) {
+      toast.error('No valid specifications to apply.')
+      return
+    }
+
+    const validSpecs = parsedPreviewSpecs.filter(s => s.specKey.trim() && s.specValue.trim())
+
+    if (validSpecs.length === 0) {
+      toast.error('All specification rows are empty. Please enter spec names and values.')
+      return
+    }
+
+    setGlobalSpecs(prev => {
+      const updated = [...prev]
+      const existingKeyMap = new Map<string, number>()
+
+      prev.forEach((s, idx) => {
+        const uKey = `${(s.specGroup || 'General').toLowerCase()}___${s.specKey.toLowerCase().trim()}`
+        existingKeyMap.set(uKey, idx)
+      })
+
+      validSpecs.forEach(pSpec => {
+        const uKey = `${(pSpec.specGroup || 'General').toLowerCase()}___${pSpec.specKey.toLowerCase().trim()}`
+
+        if (existingKeyMap.has(uKey)) {
+          const idx = existingKeyMap.get(uKey)!
+          updated[idx] = {
+            ...updated[idx],
+            specValue: pSpec.specValue.trim()
+          }
+        } else {
+          updated.push({
+            specGroup: pSpec.specGroup || 'General',
+            specKey: pSpec.specKey.trim(),
+            specValue: pSpec.specValue.trim()
+          })
+          existingKeyMap.set(uKey, updated.length - 1)
+        }
+      })
+
+      return updated
+    })
+
+    setShowPastePreview(false)
+    setPastedText('')
+    setParsedPreviewSpecs(null)
+    setUnclassifiedPreview([])
+    toast.success(`Successfully applied ${validSpecs.length} specification(s) to product!`)
+    setTimeout(() => handleAutoGenerateRamRomHighlight(), 300)
+  }
+
+  const handleAddScreenshots = (files: FileList | File[]) => {
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    const fileArray = Array.from(files).filter(f => validTypes.includes(f.type) || f.name.match(/\.(jpg|jpeg|png|webp)$/i))
+    if (fileArray.length === 0) {
+      toast.error('Please select valid JPG, JPEG, PNG, or WEBP image files.')
+      return
+    }
+
+    const newItems = fileArray.map(file => ({
+      file,
+      previewUrl: URL.createObjectURL(file)
+    }))
+
+    setScreenshotFiles(prev => [...prev, ...newItems])
+    toast.success(`Added ${fileArray.length} screenshot(s)`)
+  }
+
+  const handleRemoveScreenshot = (index: number) => {
+    setScreenshotFiles(prev => {
+      const target = prev[index]
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl)
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
+  const handleImportSpecsFromScreenshots = async () => {
+    if (screenshotFiles.length === 0) {
+      toast.error('Please upload at least one screenshot image first.')
+      return
+    }
+
+    setScreenshotImportLoading(true)
+    try {
+      const base64Promises = screenshotFiles.map(({ file }) => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+      })
+
+      const base64Images = await Promise.all(base64Promises)
+      const res = await apiClient.importSpecsFromImage({ images: base64Images })
+
+      if (res.success && res.data && res.data.length > 0) {
+        setGlobalSpecs(prev => {
+          const existingKeys = new Set(prev.map(s => `${(s.specGroup || 'General').toLowerCase()}_${s.specKey.toLowerCase()}`))
+          const updated = [...prev]
+
+          res.data!.forEach(imp => {
+            const keyId = `${(imp.specGroup || 'General').toLowerCase()}_${imp.specKey.toLowerCase()}`
+            if (!existingKeys.has(keyId)) {
+              existingKeys.add(keyId)
+              updated.push({
+                specGroup: imp.specGroup || 'General',
+                specKey: imp.specKey,
+                specValue: imp.specValue
+              })
+            }
+          })
+
+          return updated
+        })
+
+        toast.success(`Successfully extracted & filled ${res.count || res.data.length} specifications from screenshot(s)!`)
+        setTimeout(() => handleAutoGenerateRamRomHighlight(), 300)
+      } else {
+        toast.error(res.message || 'Could not extract specifications from uploaded screenshots.')
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to process screenshot images.')
+    } finally {
+      setScreenshotImportLoading(false)
+    }
+  }
 
   // Dropdown data
   const [categories, setCategories] = useState<CategoryResponseDTO[]>([])
@@ -667,16 +863,57 @@ export function ProductWizard({ productId }: { productId?: string }) {
         })
         
         setGlobalSpecs(newSpecs)
-        toast.success(`Template "${template.templateName}" applied!`)
-      }
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        toast.error('No spec template found for this category')
+        toast.success(`Loaded spec template for category`)
       } else {
-        toast.error('Failed to load spec template')
+        toast.error('No template found for this category')
       }
+    } catch (e) {
+      toast.error('Failed to load category spec template')
     } finally {
       setLoadingTemplate(false)
+    }
+  }
+
+  const handleImportSpecsFromUrl = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const cleanUrl = importUrl.trim()
+    if (!cleanUrl) {
+      toast.error('Please paste a product URL first.')
+      return
+    }
+
+    setImportLoading(true)
+    try {
+      const res = await apiClient.importSpecsFromUrl(cleanUrl)
+      if (res.success && res.data && res.data.length > 0) {
+        setGlobalSpecs(prev => {
+          const existingKeys = new Set(prev.map(s => `${(s.specGroup || 'General').toLowerCase()}_${s.specKey.toLowerCase()}`))
+          const updated = [...prev]
+
+          res.data!.forEach(imp => {
+            const keyId = `${(imp.specGroup || 'General').toLowerCase()}_${imp.specKey.toLowerCase()}`
+            if (!existingKeys.has(keyId)) {
+              existingKeys.add(keyId)
+              updated.push({
+                specGroup: imp.specGroup || 'General',
+                specKey: imp.specKey,
+                specValue: imp.specValue
+              })
+            }
+          })
+
+          return updated
+        })
+
+        toast.success(`Successfully extracted & filled ${res.count || res.data.length} specifications!`)
+        setTimeout(() => handleAutoGenerateRamRomHighlight(), 300)
+      } else {
+        toast.error(res.message || 'No specifications found at this URL.')
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to fetch specifications from the URL.')
+    } finally {
+      setImportLoading(false)
     }
   }
 
@@ -1323,6 +1560,459 @@ export function ProductWizard({ productId }: { productId?: string }) {
         {currentStep === 4 && (
           <div className="space-y-6">
             <h3 className="text-lg font-bold border-b border-border pb-2">Specifications</h3>
+            
+            {/* Import Specifications Card */}
+            <div className="bg-gradient-to-r from-blue-500/10 via-primary/5 to-blue-500/10 border border-blue-500/30 rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-blue-500/20 pb-3">
+                <div>
+                  <h4 className="font-bold text-base text-foreground flex items-center gap-2">
+                    <FaGear className="text-blue-600 dark:text-blue-400" size={18} />
+                    Import Specifications
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Paste raw text copied from Flipkart/Amazon, paste a URL, or upload screenshots to auto-fill technical specs.
+                  </p>
+                </div>
+
+                {/* Options Switcher */}
+                <div className="flex flex-wrap items-center gap-1 bg-background/80 dark:bg-muted p-1 rounded-xl border border-border shadow-xs shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setImportMode('paste')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      importMode === 'paste'
+                        ? 'bg-primary text-primary-foreground shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    <FaPaste size={13} />
+                    <span>Paste / Import Specifications</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImportMode('url')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      importMode === 'url'
+                        ? 'bg-primary text-primary-foreground shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    <FaGlobe size={13} />
+                    <span>Import from Product URL</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImportMode('screenshots')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      importMode === 'screenshots'
+                        ? 'bg-primary text-primary-foreground shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    <FaImage size={13} />
+                    <span>Import from Screenshots</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Paste Specifications Mode */}
+              {importMode === 'paste' && (
+                <div className="space-y-4">
+                  <div>
+                    <h5 className="font-bold text-sm text-foreground">Paste Complete Specifications</h5>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Copy the complete Specifications section from Flipkart or Amazon and paste it directly below.
+                    </p>
+                  </div>
+
+                  <div className="relative">
+                    <textarea
+                      value={pastedText}
+                      onChange={(e) => setPastedText(e.target.value)}
+                      placeholder="Paste complete specifications here...&#10;&#10;Example:&#10;Battery & Power Features&#10;Battery Capacity&#10;3149 mAh&#10;Battery Type&#10;Lithium Ion&#10;Dual Battery&#10;No&#10;&#10;Dimensions&#10;Width&#10;74.7 mm (7.47 cm)&#10;Depth&#10;5.64 mm (0.56 cm)"
+                      rows={8}
+                      className="w-full rounded-xl border border-border bg-background p-4 text-xs font-mono outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-inner resize-y leading-relaxed"
+                    />
+                    {pastedText && (
+                      <button
+                        type="button"
+                        onClick={() => { setPastedText(''); setShowPastePreview(false); setParsedPreviewSpecs(null); }}
+                        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground text-xs font-bold bg-background/80 px-2 py-1 rounded-md border border-border shadow-xs"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <p className="text-[11px] text-muted-foreground">
+                      * Disallowed groups (e.g. Connectivity, Warranty, In The Box) will be automatically skipped.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={!pastedText.trim()}
+                      onClick={handleParsePastedSpecs}
+                      className="w-full sm:w-auto bg-primary text-primary-foreground font-bold px-6 py-2.5 rounded-xl text-sm transition-all hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                    >
+                      <FaBolt size={14} />
+                      <span>Parse Specifications</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* URL Import Mode */}
+              {importMode === 'url' && (
+                <form onSubmit={handleImportSpecsFromUrl} className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <input
+                      type="url"
+                      value={importUrl}
+                      onChange={(e) => setImportUrl(e.target.value)}
+                      placeholder="Paste Amazon / Flipkart / Product Page URL"
+                      className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary pr-8"
+                    />
+                    {importUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setImportUrl('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs font-bold"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={importLoading || !importUrl.trim()}
+                    className="bg-primary text-primary-foreground font-bold px-6 py-2.5 rounded-xl text-sm transition-all hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer shadow-xs"
+                  >
+                    {importLoading ? (
+                      <>
+                        <FaSpinner className="animate-spin" size={15} />
+                        <span>Fetching Specifications...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaDownload size={14} />
+                        <span>Fetch Specifications</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* Screenshot Import Mode */}
+              {importMode === 'screenshots' && (
+                <div className="space-y-4">
+                  <div>
+                    <h5 className="font-bold text-sm text-foreground">Import Specifications from Screenshots</h5>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Upload screenshots of the product's Specifications section. You can upload multiple screenshots.
+                    </p>
+                  </div>
+
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (e.dataTransfer.files) handleAddScreenshots(e.dataTransfer.files);
+                    }}
+                    className="border-2 border-dashed border-primary/40 hover:border-primary bg-background/60 hover:bg-background/90 transition-all rounded-xl p-6 text-center flex flex-col items-center justify-center space-y-3"
+                  >
+                    <div className="p-3 bg-primary/10 rounded-full text-primary">
+                      <FaImage size={24} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">Upload screenshots of the product's Specifications section.</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">You can upload multiple screenshots.</p>
+                    </div>
+
+                    <label className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2 cursor-pointer shadow-xs transition-all">
+                      <FaPlus size={13} />
+                      <span>+ Upload Screenshots</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/jpg"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            handleAddScreenshots(e.target.files)
+                            e.target.value = ''
+                          }
+                        }}
+                      />
+                    </label>
+
+                    <div className="pt-2 border-t border-border/40 w-full text-center">
+                      <p className="text-[11px] font-bold text-muted-foreground tracking-wide">
+                        Supported: <span className="text-foreground">JPG</span> • <span className="text-foreground">JPEG</span> • <span className="text-foreground">PNG</span> • <span className="text-foreground">WEBP</span>
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">You can upload multiple images.</p>
+                    </div>
+                  </div>
+
+                  {screenshotFiles.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-foreground">
+                          Uploaded Screenshots ({screenshotFiles.length})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setScreenshotFiles([])}
+                          className="text-[11px] font-bold text-rose-500 hover:underline cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                        {screenshotFiles.map((sf, idx) => (
+                          <div key={idx} className="relative group border border-border rounded-xl overflow-hidden bg-background shadow-xs">
+                            <img src={sf.previewUrl} alt={`Screenshot ${idx + 1}`} className="w-full h-24 object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveScreenshot(idx)}
+                              className="absolute top-1 right-1 bg-rose-500 text-white rounded-full p-1 shadow-md opacity-90 group-hover:opacity-100 hover:bg-rose-600 transition-all cursor-pointer"
+                              title="Remove screenshot"
+                            >
+                              <FaTrashCan size={11} />
+                            </button>
+                            <div className="p-1 text-[10px] font-bold text-center text-muted-foreground truncate bg-muted/40">
+                              {sf.file.name}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button
+                          type="button"
+                          disabled={screenshotImportLoading}
+                          onClick={handleImportSpecsFromScreenshots}
+                          className="bg-primary text-primary-foreground font-bold px-6 py-2.5 rounded-xl text-sm transition-all hover:opacity-90 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                        >
+                          {screenshotImportLoading ? (
+                            <>
+                              <FaSpinner className="animate-spin" size={15} />
+                              <span>Extracting & Organizing Specifications...</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaBolt size={14} />
+                              <span>Extract & Fill Specifications ({screenshotFiles.length})</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Specifications Found Editable Preview Card */}
+            {showPastePreview && parsedPreviewSpecs && (
+              <div className="bg-background border-2 border-primary/40 rounded-2xl p-5 shadow-lg space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+                  <div>
+                    <h4 className="font-bold text-lg text-foreground flex items-center gap-2">
+                      <FaCheck className="text-emerald-500" size={18} />
+                      Specifications Found
+                    </h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Review, edit, add, or remove specifications before applying them to your product.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPastePreview(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold border border-border hover:bg-muted text-muted-foreground transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApplyPastedSpecs}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                    >
+                      <FaCheck size={13} />
+                      <span>Apply Specifications</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Parser Validation Status Banner */}
+                {validationStatus && (
+                  <div className={`p-3.5 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-bold ${
+                    validationStatus.flaggedCount === 0
+                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                      : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold">
+                        {validationStatus.flaggedCount === 0 ? '✓' : '⚠️'}
+                      </span>
+                      <span>{validationStatus.message}</span>
+                    </div>
+                    <span className="text-[11px] font-normal text-muted-foreground">
+                      {validationStatus.validCount} verified cleanly • {validationStatus.flaggedCount} flagged
+                    </span>
+                  </div>
+                )}
+
+                {/* Grouped Preview Items */}
+                <div className="space-y-6 max-h-[500px] overflow-y-auto pr-1">
+                  {ALLOWED_GROUPS.map(groupName => {
+                    const groupSpecs = parsedPreviewSpecs
+                      .map((s, originalIdx) => ({ s, originalIdx }))
+                      .filter(item => item.s.specGroup === groupName)
+
+                    if (groupSpecs.length === 0) return null
+
+                    return (
+                      <div key={groupName} className="border border-border/80 rounded-xl p-4 bg-muted/20 space-y-3">
+                        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                          <h5 className="font-bold text-sm text-primary flex items-center gap-2">
+                            <span>{groupName}</span>
+                            <span className="text-[11px] font-semibold text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-border">
+                              {groupSpecs.length} specs
+                            </span>
+                          </h5>
+                          <button
+                            type="button"
+                            onClick={() => handleAddPreviewSpecToGroup(groupName)}
+                            className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <FaPlus size={10} />
+                            <span>Add Row</span>
+                          </button>
+                        </div>
+
+                        <div className="space-y-2">
+                          {groupSpecs.map(({ s, originalIdx }) => (
+                            <div key={originalIdx} className={`flex flex-col sm:flex-row items-center gap-2 bg-background p-2.5 rounded-lg border ${
+                              s.isFlagged ? 'border-amber-500/60 bg-amber-500/5' : 'border-border/60'
+                            }`}>
+                              <div className="w-full sm:w-1/3 relative">
+                                <input
+                                  type="text"
+                                  value={s.specKey}
+                                  onChange={(e) => handleUpdatePreviewSpec(originalIdx, 'specKey', e.target.value)}
+                                  placeholder="Specification Name"
+                                  className={`w-full rounded-lg border bg-background px-3 py-1.5 text-xs font-semibold outline-none focus:border-primary ${
+                                    s.isFlagged ? 'border-amber-500/50 text-amber-900 dark:text-amber-300' : 'border-border'
+                                  }`}
+                                />
+                                {s.isFlagged && (
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-amber-500 text-[10px] font-bold" title={s.flagReason || 'Needs Review'}>
+                                    ⚠️
+                                  </span>
+                                )}
+                              </div>
+                              <span className="hidden sm:inline text-muted-foreground font-bold text-xs">→</span>
+                              <div className="w-full sm:flex-1 flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={s.specValue}
+                                  onChange={(e) => handleUpdatePreviewSpec(originalIdx, 'specValue', e.target.value)}
+                                  placeholder="Specification Value"
+                                  className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-xs outline-none focus:border-primary"
+                                />
+                                {s.sourceGroup && s.sourceGroup !== s.specGroup && (
+                                  <span className="hidden md:inline text-[9px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border shrink-0" title={`Source section: ${s.sourceGroup}`}>
+                                    src: {s.sourceGroup}
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePreviewSpec(originalIdx)}
+                                className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 p-1.5 rounded-lg transition-all shrink-0 cursor-pointer"
+                                title="Delete specification"
+                              >
+                                <FaTrashCan size={13} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  {/* Unclassified / Needs Review Section */}
+                  {unclassifiedPreview.length > 0 && (
+                    <div className="border-2 border-amber-500/40 bg-amber-500/5 rounded-xl p-4 space-y-3">
+                      <h5 className="font-bold text-xs text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                        <span>⚠️ Unclassified / Needs Review ({unclassifiedPreview.length})</span>
+                      </h5>
+                      <p className="text-[11px] text-muted-foreground">
+                        The following lines could not be automatically paired. Assign them to a specification group or delete them.
+                      </p>
+
+                      <div className="space-y-2">
+                        {unclassifiedPreview.map((item, uIdx) => (
+                          <div key={uIdx} className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-background p-2.5 rounded-lg border border-amber-500/30">
+                            <span className="text-xs font-mono text-foreground truncate max-w-md flex-1">
+                              "{item.line}"
+                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Select onValueChange={(val) => handleAssignUnclassifiedToGroup(uIdx, val, 'value')}>
+                                <SelectTrigger className="h-7 text-[11px] w-40">
+                                  <SelectValue placeholder="Assign as Value..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {ALLOWED_GROUPS.map(g => (
+                                    <SelectItem key={g} value={g} className="text-xs">{g}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+
+                              <button
+                                type="button"
+                                onClick={() => setUnclassifiedPreview(prev => prev.filter((_, i) => i !== uIdx))}
+                                className="text-rose-500 hover:text-rose-600 p-1 cursor-pointer"
+                              >
+                                <FaTrashCan size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Actions */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border pt-4">
+                  <span className="text-xs text-muted-foreground">
+                    Total Specifications: <strong className="text-foreground">{parsedPreviewSpecs.length}</strong>
+                  </span>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => setShowPastePreview(false)}
+                      className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs font-bold border border-border hover:bg-muted text-muted-foreground transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApplyPastedSpecs}
+                      className="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer"
+                    >
+                      <FaCheck size={13} />
+                      <span>Apply Specifications</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {(() => {
               const groups = Array.from(new Set(globalSpecs.map(s => s.specGroup || 'General')))
