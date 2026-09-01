@@ -49,6 +49,10 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const [initialLoading, setInitialLoading] = useState(true)
   const [draftAvailable, setDraftAvailable] = useState(false)
 
+  // Validation & Database SKU tracking
+  const [existingDbSkus, setExistingDbSkus] = useState<Map<string, { productId: string; variantId: string }>>(new Map())
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
   // Step 1: Base FaCircleInfo
   const [baseInfo, setBaseInfo] = useState({
     name: '', brandId: '', categoryId: '', description: '',
@@ -78,19 +82,42 @@ export function ProductWizard({ productId }: { productId?: string }) {
   // Step 4: Global Specs
   const [globalSpecs, setGlobalSpecs] = useState<{specGroup: string, specKey: string, specValue: string}[]>([])
 
-  // Mock data for dropdowns
+  // Dropdown data
   const [categories, setCategories] = useState<CategoryResponseDTO[]>([])
   const [brands, setBrands] = useState<BrandResponseDTO[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catsRes, brandsRes] = await Promise.all([
+        const [catsRes, brandsRes, prodsRes] = await Promise.all([
           apiClient.getCategories(),
-          apiClient.getBrands(0, 100)
+          apiClient.getBrands(0, 100),
+          apiClient.getProducts(0, 100, true).catch(() => null)
         ])
         setCategories(catsRes.data.data)
         setBrands(brandsRes.data.data.content)
+
+        // Build existing DB SKU map
+        const skuMap = new Map<string, { productId: string; variantId: string }>()
+        if (prodsRes?.data?.data?.content) {
+          const prodList = prodsRes.data.data.content
+          await Promise.all(prodList.map(async (pItem) => {
+            try {
+              const fullProd = await apiClient.getProductById(pItem.id)
+              const pData = fullProd.data?.data
+              if (pData?.variants) {
+                pData.variants.forEach(v => {
+                  if (v.sku) {
+                    skuMap.set(v.sku.trim().toUpperCase(), { productId: pData.id, variantId: v.id })
+                  }
+                })
+              }
+            } catch (e) {
+              // Ignore individual product fetch failure
+            }
+          }))
+        }
+        setExistingDbSkus(skuMap)
 
         if (productId) {
           const prodRes = await apiClient.getProductById(productId)
@@ -259,6 +286,184 @@ export function ProductWizard({ productId }: { productId?: string }) {
     return `${bCode}-${pCode}-${vCode}-${cCode}`.toUpperCase()
   }
 
+  // --- SKU Duplication Check & Auto Unique SKU Generator ---
+  const isSkuTaken = (skuToTest: string, currentEditingVariantId?: string | null) => {
+    if (!skuToTest || !skuToTest.trim()) return false
+    const uppercaseSku = skuToTest.trim().toUpperCase()
+
+    // 1. Check in local form state (excluding current variant being edited)
+    const takenInLocalForm = variants.some(v => 
+      v.sku?.trim().toUpperCase() === uppercaseSku && 
+      v.id !== currentEditingVariantId
+    )
+    if (takenInLocalForm) return true
+
+    // 2. Check in DB SKU map
+    const dbInfo = existingDbSkus.get(uppercaseSku)
+    if (dbInfo) {
+      if (dbInfo.productId !== productId || dbInfo.variantId !== currentEditingVariantId) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  const generateUniqueSku = (variantName?: string, color?: string, currentEditingVariantId?: string | null) => {
+    const baseSku = generateAutoSku(variantName, color)
+    let candidate = baseSku
+    let counter = 1
+
+    while (isSkuTaken(candidate, currentEditingVariantId)) {
+      candidate = `${baseSku}-${counter}`
+      counter++
+    }
+
+    return candidate
+  }
+
+  // --- Real-time Validation Engine ---
+  const clearFieldError = (fieldKey: string) => {
+    setFormErrors(prev => {
+      if (!prev[fieldKey]) return prev
+      const copy = { ...prev }
+      delete copy[fieldKey]
+      return copy
+    })
+  }
+
+  const validateField = (fieldKey: string, value: any, extra?: any) => {
+    setFormErrors(prev => {
+      const copy = { ...prev }
+      
+      if (fieldKey === 'baseInfo_name') {
+        if (!value || !String(value).trim()) copy['baseInfo_name'] = 'Product Name is required.'
+        else delete copy['baseInfo_name']
+      }
+      if (fieldKey === 'baseInfo_brandId') {
+        if (!value) copy['baseInfo_brandId'] = 'Brand selection is required.'
+        else delete copy['baseInfo_brandId']
+      }
+      if (fieldKey === 'baseInfo_categoryId') {
+        if (!value) copy['baseInfo_categoryId'] = 'Category selection is required.'
+        else delete copy['baseInfo_categoryId']
+      }
+
+      if (fieldKey === 'variant_variantName') {
+        if (!value || !String(value).trim()) copy['variant_variantName'] = 'Variant Name is required.'
+        else delete copy['variant_variantName']
+      }
+      if (fieldKey === 'variant_color') {
+        if (!value || !String(value).trim()) copy['variant_color'] = 'Color is required.'
+        else delete copy['variant_color']
+      }
+      if (fieldKey === 'variant_sku') {
+        const skuVal = String(value || '').trim().toUpperCase()
+        if (!skuVal) {
+          copy['variant_sku'] = 'SKU is required.'
+        } else if (isSkuTaken(skuVal, editingVariantId)) {
+          copy['variant_sku'] = `SKU '${skuVal}' already exists in database or another variant.`
+        } else {
+          delete copy['variant_sku']
+        }
+      }
+      if (fieldKey === 'variant_mrp') {
+        const num = Number(value)
+        if (!value || isNaN(num) || num <= 0) copy['variant_mrp'] = 'MRP must be greater than 0.'
+        else delete copy['variant_mrp']
+      }
+      if (fieldKey === 'variant_sellingPrice') {
+        const priceNum = Number(value)
+        const mrpNum = Number(extra?.mrp ?? variantForm.mrp)
+        if (!value || isNaN(priceNum) || priceNum <= 0) {
+          copy['variant_sellingPrice'] = 'Selling price must be greater than 0.'
+        } else if (mrpNum > 0 && priceNum > mrpNum) {
+          copy['variant_sellingPrice'] = 'Selling price cannot exceed MRP.'
+        } else {
+          delete copy['variant_sellingPrice']
+        }
+      }
+      if (fieldKey === 'variant_stockQty') {
+        const stockNum = Number(value)
+        if (value === '' || value === undefined || isNaN(stockNum) || stockNum < 0) {
+          copy['variant_stockQty'] = 'Stock quantity cannot be negative.'
+        } else {
+          delete copy['variant_stockQty']
+        }
+      }
+
+      return copy
+    })
+  }
+
+  const validateStep1 = () => {
+    const errs: Record<string, string> = {}
+    if (!baseInfo.name || !baseInfo.name.trim()) errs['baseInfo_name'] = 'Product Name is required.'
+    if (!baseInfo.brandId) errs['baseInfo_brandId'] = 'Brand selection is required.'
+    if (!baseInfo.categoryId) errs['baseInfo_categoryId'] = 'Category selection is required.'
+    
+    setFormErrors(prev => ({ ...prev, ...errs }))
+    return Object.keys(errs).length === 0
+  }
+
+  const validateVariantForm = () => {
+    const errs: Record<string, string> = {}
+    if (!variantForm.variantName || !variantForm.variantName.trim()) errs['variant_variantName'] = 'Variant Name is required.'
+    if (!variantForm.color || !variantForm.color.trim()) errs['variant_color'] = 'Color is required.'
+    
+    const skuVal = (variantForm.sku || '').trim().toUpperCase()
+    if (!skuVal) {
+      errs['variant_sku'] = 'SKU is required.'
+    } else if (isSkuTaken(skuVal, editingVariantId)) {
+      errs['variant_sku'] = `SKU '${skuVal}' already exists in database or another variant.`
+    }
+
+    const mrpNum = Number(variantForm.mrp)
+    if (!variantForm.mrp || isNaN(mrpNum) || mrpNum <= 0) errs['variant_mrp'] = 'MRP must be greater than 0.'
+
+    const priceNum = Number(variantForm.sellingPrice)
+    if (!variantForm.sellingPrice || isNaN(priceNum) || priceNum <= 0) {
+      errs['variant_sellingPrice'] = 'Selling price must be greater than 0.'
+    } else if (mrpNum > 0 && priceNum > mrpNum) {
+      errs['variant_sellingPrice'] = 'Selling price cannot exceed MRP.'
+    }
+
+    const stockNum = Number(variantForm.stockQty)
+    if (variantForm.stockQty === '' || variantForm.stockQty === undefined || isNaN(stockNum) || stockNum < 0) {
+      errs['variant_stockQty'] = 'Stock quantity cannot be negative.'
+    }
+
+    setFormErrors(prev => ({ ...prev, ...errs }))
+    return Object.keys(errs).length === 0
+  }
+
+  const validateAllForPublish = () => {
+    const errs: Record<string, string> = {}
+    if (!baseInfo.name || !baseInfo.name.trim()) errs['baseInfo_name'] = 'Product Name is required.'
+    if (!baseInfo.brandId) errs['baseInfo_brandId'] = 'Brand selection is required.'
+    if (!baseInfo.categoryId) errs['baseInfo_categoryId'] = 'Category selection is required.'
+
+    if (variants.length === 0) {
+      errs['variants'] = 'At least 1 product variant is required before publishing.'
+    }
+
+    setFormErrors(errs)
+
+    if (errs['baseInfo_name'] || errs['baseInfo_brandId'] || errs['baseInfo_categoryId']) {
+      setCurrentStep(1)
+      toast.error('Please fix validation errors in Step 1 (Basic Information).')
+      return false
+    }
+
+    if (errs['variants']) {
+      setCurrentStep(3)
+      toast.error(errs['variants'])
+      return false
+    }
+
+    return Object.keys(errs).length === 0
+  }
+
   const handleRestoreDraft = () => {
     const draftStr = localStorage.getItem(`product-draft-${productId || 'new'}`)
     if (draftStr) {
@@ -308,7 +513,12 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   const handleAddVariant = (e: React.FormEvent) => {
     e.preventDefault()
-    const finalSku = variantForm.sku.trim() || generateAutoSku(variantForm.variantName, variantForm.color)
+    if (!validateVariantForm()) {
+      toast.error('Please fix highlighted errors in the variant form.')
+      return
+    }
+
+    const finalSku = (variantForm.sku.trim() || generateUniqueSku(variantForm.variantName, variantForm.color, editingVariantId)).toUpperCase()
     if (editingVariantId) {
       setVariants(variants.map(v => v.id === editingVariantId ? {
         ...v,
@@ -338,12 +548,13 @@ export function ProductWizard({ productId }: { productId?: string }) {
     }
     setShowVariantForm(false)
     setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true })
+    clearFieldError('variants')
   }
 
   const handleEditVariantClick = (v: LocalVariant) => {
     setVariantForm({
       variantName: v.variantName,
-      sku: v.sku || generateAutoSku(v.variantName, v.color),
+      sku: v.sku || generateUniqueSku(v.variantName, v.color, v.id),
       color: v.color,
       mrp: v.mrp.toString(),
       sellingPrice: v.sellingPrice.toString(),
@@ -353,6 +564,16 @@ export function ProductWizard({ productId }: { productId?: string }) {
     })
     setEditingVariantId(v.id)
     setShowVariantForm(true)
+    setFormErrors(prev => {
+      const copy = { ...prev }
+      delete copy['variant_variantName']
+      delete copy['variant_color']
+      delete copy['variant_sku']
+      delete copy['variant_mrp']
+      delete copy['variant_sellingPrice']
+      delete copy['variant_stockQty']
+      return copy
+    })
   }
 
   const handleDeleteVariant = (id: string) => {
@@ -377,7 +598,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
       initialCod = lastVariant.codAvailable
     }
 
-    const autoSku = generateAutoSku(initialVName, '')
+    const autoSku = generateUniqueSku(initialVName, '', null)
 
     setVariantForm({
       variantName: initialVName,
@@ -391,6 +612,16 @@ export function ProductWizard({ productId }: { productId?: string }) {
     })
     setEditingVariantId(null)
     setShowVariantForm(true)
+    setFormErrors(prev => {
+      const copy = { ...prev }
+      delete copy['variant_variantName']
+      delete copy['variant_color']
+      delete copy['variant_sku']
+      delete copy['variant_mrp']
+      delete copy['variant_sellingPrice']
+      delete copy['variant_stockQty']
+      return copy
+    })
   }
 
   // Simplified: Global Spec updates
@@ -463,11 +694,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   // Publish Product
   const handlePublish = async () => {
-    if (!baseInfo.brandId || !baseInfo.categoryId || !baseInfo.name) {
-      toast.error('Brand, Category, and Name are required.')
-      return
-    }
-    if (variants.length === 0) return toast.error('Add at least one variant')
+    if (!validateAllForPublish()) return
     
     setLoading(true)
     try {
@@ -642,17 +869,55 @@ export function ProductWizard({ productId }: { productId?: string }) {
       <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
         {/* Step 1: Base FaCircleInfo */}
         {currentStep === 1 && (
-          <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setCurrentStep(2); setHighestStepReached(Math.max(highestStepReached, 2)) }}>
+          <form className="space-y-6" onSubmit={(e) => { 
+            e.preventDefault(); 
+            if (validateStep1()) {
+              setCurrentStep(2); 
+              setHighestStepReached(Math.max(highestStepReached, 2)) 
+            } else {
+              toast.error('Please fix the highlighted required fields.')
+            }
+          }}>
             <h3 className="text-lg font-bold border-b border-border pb-2">Basic Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="text-sm font-semibold mb-1 block">Product Name</label>
-                <input required value={baseInfo.name} onChange={e => setBaseInfo({...baseInfo, name: e.target.value})} className="w-full rounded-xl border bg-background px-4 py-2 text-sm outline-none focus:border-primary" />
+                <label className="text-sm font-semibold mb-1 block">Product Name <span className="text-red-500">*</span></label>
+                <input 
+                  required 
+                  value={baseInfo.name} 
+                  onChange={e => {
+                    const val = e.target.value
+                    setBaseInfo({...baseInfo, name: val})
+                    validateField('baseInfo_name', val)
+                  }} 
+                  placeholder="e.g. Tecno Spark 50"
+                  className={`w-full rounded-xl border ${
+                    formErrors['baseInfo_name'] 
+                      ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-foreground focus:border-red-600 focus:ring-1 focus:ring-red-500' 
+                      : 'border-border bg-background focus:border-primary'
+                  } px-4 py-2 text-sm outline-none transition-colors`} 
+                />
+                {formErrors['baseInfo_name'] && (
+                  <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                    <span>⚠️</span> {formErrors['baseInfo_name']}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="text-sm font-semibold mb-1 block">Brand</label>
-                <Select value={baseInfo.brandId || null} onValueChange={val => setBaseInfo({...baseInfo, brandId: val || ''})}>
-                  <SelectTrigger className="w-full h-10 rounded-xl border bg-background px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary">
+                <label className="text-sm font-semibold mb-1 block">Brand <span className="text-red-500">*</span></label>
+                <Select 
+                  value={baseInfo.brandId || null} 
+                  onValueChange={val => {
+                    const selected = val || ''
+                    setBaseInfo({...baseInfo, brandId: selected})
+                    validateField('baseInfo_brandId', selected)
+                  }}
+                >
+                  <SelectTrigger className={`w-full h-10 rounded-xl border ${
+                    formErrors['baseInfo_brandId'] 
+                      ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-foreground focus:ring-1 focus:ring-red-500' 
+                      : 'border-border bg-background focus:ring-1 focus:ring-primary'
+                  } px-4 py-2 text-sm outline-none transition-colors`}>
                     <SelectValue placeholder="Select Brand...">
                       {brands.find(b => b.id === baseInfo.brandId)?.name}
                     </SelectValue>
@@ -661,11 +926,27 @@ export function ProductWizard({ productId }: { productId?: string }) {
                     {brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {formErrors['baseInfo_brandId'] && (
+                  <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                    <span>⚠️</span> {formErrors['baseInfo_brandId']}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="text-sm font-semibold mb-1 block">Category</label>
-                <Select value={baseInfo.categoryId || null} onValueChange={val => setBaseInfo({...baseInfo, categoryId: val || ''})}>
-                  <SelectTrigger className="w-full h-10 rounded-xl border bg-background px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary">
+                <label className="text-sm font-semibold mb-1 block">Category <span className="text-red-500">*</span></label>
+                <Select 
+                  value={baseInfo.categoryId || null} 
+                  onValueChange={val => {
+                    const selected = val || ''
+                    setBaseInfo({...baseInfo, categoryId: selected})
+                    validateField('baseInfo_categoryId', selected)
+                  }}
+                >
+                  <SelectTrigger className={`w-full h-10 rounded-xl border ${
+                    formErrors['baseInfo_categoryId'] 
+                      ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-foreground focus:ring-1 focus:ring-red-500' 
+                      : 'border-border bg-background focus:ring-1 focus:ring-primary'
+                  } px-4 py-2 text-sm outline-none transition-colors`}>
                     <SelectValue placeholder="Select Category...">
                       {categories.find(c => c.id === baseInfo.categoryId)?.name}
                     </SelectValue>
@@ -674,6 +955,11 @@ export function ProductWizard({ productId }: { productId?: string }) {
                     {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {formErrors['baseInfo_categoryId'] && (
+                  <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                    <span>⚠️</span> {formErrors['baseInfo_categoryId']}
+                  </p>
+                )}
               </div>
             </div>
             
@@ -773,79 +1059,189 @@ export function ProductWizard({ productId }: { productId?: string }) {
               <button onClick={handleOpenAddVariant} className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-lg flex items-center gap-1 font-semibold cursor-pointer"><FaPlus size={16}/> Add Variant</button>
             </h3>
 
+            {formErrors['variants'] && (
+              <div className="p-3.5 bg-red-500/10 border-2 border-red-500/40 rounded-xl text-red-500 text-sm font-semibold flex items-center gap-2 animate-in fade-in">
+                <span>⚠️</span> {formErrors['variants']}
+              </div>
+            )}
+
             {showVariantForm && (
               <form onSubmit={handleAddVariant} className="bg-muted/50 p-4 rounded-xl border border-border space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold mb-1 block">Variant Name</label>
+                    <label className="text-xs font-semibold mb-1 block">Variant Name <span className="text-red-500">*</span></label>
                     <input 
                       required 
                       value={variantForm.variantName} 
                       onChange={e => {
                         const val = e.target.value
-                        const autoSku = generateAutoSku(val, variantForm.color)
+                        const autoSku = generateUniqueSku(val, variantForm.color, editingVariantId)
                         setVariantForm(prev => ({
                           ...prev,
                           variantName: val,
                           sku: (!prev.sku || prev.sku === generateAutoSku(prev.variantName, prev.color)) ? autoSku : prev.sku
                         }))
+                        validateField('variant_variantName', val)
+                        if (!variantForm.sku || variantForm.sku === generateAutoSku(variantForm.variantName, variantForm.color)) {
+                          validateField('variant_sku', autoSku)
+                        }
                       }} 
                       placeholder="e.g. 8GB + 128GB"
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm" 
+                      className={`w-full rounded-lg border ${
+                        formErrors['variant_variantName'] 
+                          ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-200 focus:border-red-600 focus:ring-1 focus:ring-red-500' 
+                          : 'border-border bg-background focus:border-primary'
+                      } px-3 py-2 text-sm transition-colors`} 
                     />
+                    {formErrors['variant_variantName'] && (
+                      <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                        <span>⚠️</span> {formErrors['variant_variantName']}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="text-xs font-semibold mb-1 block">Color</label>
+                    <label className="text-xs font-semibold mb-1 block">Color <span className="text-red-500">*</span></label>
                     <input 
                       required 
                       value={variantForm.color} 
                       onChange={e => {
                         const val = e.target.value
-                        const autoSku = generateAutoSku(variantForm.variantName, val)
+                        const autoSku = generateUniqueSku(variantForm.variantName, val, editingVariantId)
                         setVariantForm(prev => ({
                           ...prev,
                           color: val,
                           sku: (!prev.sku || prev.sku === generateAutoSku(prev.variantName, prev.color)) ? autoSku : prev.sku
                         }))
+                        validateField('variant_color', val)
+                        if (!variantForm.sku || variantForm.sku === generateAutoSku(variantForm.variantName, variantForm.color)) {
+                          validateField('variant_sku', autoSku)
+                        }
                       }} 
                       placeholder="e.g. Phantom Black"
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm" 
+                      className={`w-full rounded-lg border ${
+                        formErrors['variant_color'] 
+                          ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-200 focus:border-red-600 focus:ring-1 focus:ring-red-500' 
+                          : 'border-border bg-background focus:border-primary'
+                      } px-3 py-2 text-sm transition-colors`} 
                     />
+                    {formErrors['variant_color'] && (
+                      <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                        <span>⚠️</span> {formErrors['variant_color']}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-semibold block">SKU</label>
+                      <label className="text-xs font-semibold block">SKU <span className="text-red-500">*</span></label>
                       <button
                         type="button"
-                        onClick={() => setVariantForm(prev => ({ ...prev, sku: generateAutoSku(prev.variantName, prev.color) }))}
-                        className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                        onClick={() => {
+                          const uniqueSku = generateUniqueSku(variantForm.variantName, variantForm.color, editingVariantId)
+                          setVariantForm(prev => ({ ...prev, sku: uniqueSku }))
+                          validateField('variant_sku', uniqueSku)
+                        }}
+                        className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1"
                       >
-                        Auto Generate SKU
+                        ⚡ Auto Generate Unique SKU
                       </button>
                     </div>
                     <input 
                       required 
                       value={variantForm.sku} 
-                      onChange={e => setVariantForm({...variantForm, sku: e.target.value})} 
-                      placeholder="e.g. SAM-S24U-8-128-BLK"
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm font-mono uppercase" 
+                      onChange={e => {
+                        const val = e.target.value.toUpperCase()
+                        setVariantForm({...variantForm, sku: val})
+                        validateField('variant_sku', val)
+                      }} 
+                      placeholder="e.g. TEC-SPARK50-4-128-BLK"
+                      className={`w-full rounded-lg border ${
+                        formErrors['variant_sku'] 
+                          ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-200 focus:border-red-600 focus:ring-1 focus:ring-red-500' 
+                          : 'border-border bg-background focus:border-primary'
+                      } px-3 py-2 text-sm font-mono uppercase transition-colors`} 
                     />
+                    {formErrors['variant_sku'] && (
+                      <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                        <span>⚠️</span> {formErrors['variant_sku']}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="text-xs font-semibold mb-1 block">Stock Quantity</label>
-                    <input required type="number" value={variantForm.stockQty} onChange={e => setVariantForm({...variantForm, stockQty: parseInt(e.target.value) || 0})} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                    <label className="text-xs font-semibold mb-1 block">Stock Quantity <span className="text-red-500">*</span></label>
+                    <input 
+                      required 
+                      type="number" 
+                      value={variantForm.stockQty} 
+                      onChange={e => {
+                        const val = e.target.value
+                        const numVal = parseInt(val) || 0
+                        setVariantForm({...variantForm, stockQty: numVal})
+                        validateField('variant_stockQty', numVal)
+                      }} 
+                      className={`w-full rounded-lg border ${
+                        formErrors['variant_stockQty'] 
+                          ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-200 focus:border-red-600 focus:ring-1 focus:ring-red-500' 
+                          : 'border-border bg-background focus:border-primary'
+                      } px-3 py-2 text-sm transition-colors`} 
+                    />
+                    {formErrors['variant_stockQty'] && (
+                      <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                        <span>⚠️</span> {formErrors['variant_stockQty']}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="text-xs font-semibold mb-1 block">MRP</label>
-                    <input required type="number" value={variantForm.mrp} onChange={e => setVariantForm({...variantForm, mrp: e.target.value})} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                    <label className="text-xs font-semibold mb-1 block">MRP <span className="text-red-500">*</span></label>
+                    <input 
+                      required 
+                      type="number" 
+                      value={variantForm.mrp} 
+                      onChange={e => {
+                        const val = e.target.value
+                        setVariantForm({...variantForm, mrp: val})
+                        validateField('variant_mrp', val)
+                        if (variantForm.sellingPrice) {
+                          validateField('variant_sellingPrice', variantForm.sellingPrice, { mrp: val })
+                        }
+                      }} 
+                      className={`w-full rounded-lg border ${
+                        formErrors['variant_mrp'] 
+                          ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-200 focus:border-red-600 focus:ring-1 focus:ring-red-500' 
+                          : 'border-border bg-background focus:border-primary'
+                      } px-3 py-2 text-sm transition-colors`} 
+                    />
+                    {formErrors['variant_mrp'] && (
+                      <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                        <span>⚠️</span> {formErrors['variant_mrp']}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="text-xs font-semibold mb-1 block">Selling Price</label>
-                    <input required type="number" value={variantForm.sellingPrice} onChange={e => setVariantForm({...variantForm, sellingPrice: e.target.value})} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                    <label className="text-xs font-semibold mb-1 block">Selling Price <span className="text-red-500">*</span></label>
+                    <input 
+                      required 
+                      type="number" 
+                      value={variantForm.sellingPrice} 
+                      onChange={e => {
+                        const val = e.target.value
+                        setVariantForm({...variantForm, sellingPrice: val})
+                        validateField('variant_sellingPrice', val, { mrp: variantForm.mrp })
+                      }} 
+                      className={`w-full rounded-lg border ${
+                        formErrors['variant_sellingPrice'] 
+                          ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-200 focus:border-red-600 focus:ring-1 focus:ring-red-500' 
+                          : 'border-border bg-background focus:border-primary'
+                      } px-3 py-2 text-sm transition-colors`} 
+                    />
+                    {formErrors['variant_sellingPrice'] && (
+                      <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                        <span>⚠️</span> {formErrors['variant_sellingPrice']}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={() => { setShowVariantForm(false); setEditingVariantId(null); setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true }) }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
+                  <button type="button" onClick={() => { setShowVariantForm(false); setEditingVariantId(null); setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true }); setFormErrors(prev => { const copy = {...prev}; delete copy['variant_variantName']; delete copy['variant_color']; delete copy['variant_sku']; delete copy['variant_mrp']; delete copy['variant_sellingPrice']; delete copy['variant_stockQty']; return copy; }) }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
                   <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm">{editingVariantId ? 'Update Variant' : 'Save Variant'}</button>
                 </div>
               </form>
