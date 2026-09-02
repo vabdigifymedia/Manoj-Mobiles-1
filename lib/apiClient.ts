@@ -319,7 +319,7 @@ export const apiClient = {
 
   // --- Customer Auth ---
   sendOtp: (phone: string) =>
-    axiosInstance.post<ApiResponse<void>>('/api/auth/send-otp', { phone }),
+    axiosInstance.post<ApiResponse<string>>('/api/auth/send-otp', { phone }),
 
   loginWithOtp: (phone: string, otp: string) =>
     axiosInstance.post<ApiResponse<import('./types').AuthResponseDTO>>('/api/auth/login', { phone, otp }),

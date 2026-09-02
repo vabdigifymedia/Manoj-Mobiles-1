@@ -24,7 +24,8 @@ export default function AuthPage() {
     setLoading(true)
     setError('')
     try {
-      await apiClient.sendOtp(phone)
+      const res = await apiClient.sendOtp(phone)
+      console.log("[DEV ONLY] The OTP is:", res.data.data)
       setStep(2)
     } catch (err: any) {
       // Proceed to OTP verification step even if mock server accepts any OTP

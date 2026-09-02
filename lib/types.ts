@@ -280,8 +280,9 @@ export interface OrderResponseDTO {
   deliveryCharge?: number
   gstAmount?: number
   invoiceNumber?: string
-  paymentMethod: 'COD' | 'CARD' | 'UPI' | 'WALLET'
+  paymentMethod: 'COD' | 'CARD' | 'UPI' | 'WALLET' | 'ONLINE'
   paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED'
+  paymentUrl?: string
   txnId?: string
   paidAt?: string
   placedAt: string
@@ -563,8 +564,9 @@ export interface AddressResponseDTO {
 // --- Order Placement & Actions ---
 export interface PlaceOrderRequestDTO {
   addressId: string
-  paymentMethod: 'COD' | 'CARD' | 'UPI' | 'WALLET'
+  paymentMethod: 'COD' | 'CARD' | 'UPI' | 'WALLET' | 'ONLINE'
   couponCode?: string
+  returnUrl?: string
 }
 
 export interface CancelOrderRequestDTO {

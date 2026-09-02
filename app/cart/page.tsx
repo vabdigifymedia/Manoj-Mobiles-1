@@ -1,13 +1,15 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { FaTrashCan, FaMinus, FaPlus } from 'react-icons/fa6'
 import { useStore } from '@/components/store-provider'
 import { useAuth } from '@/lib/auth-context'
 import { formatINR } from '@/lib/apiClient'
 
 export default function CartPage() {
-  const { cart, cartTotal, updateQuantity, removeFromCart } = useStore()
+  const router = useRouter()
+  const { cart, cartTotal, updateQuantity, removeFromCart, showToast } = useStore()
   const { isAuthenticated } = useAuth()
   
   const items = cart?.items || []
@@ -79,12 +81,19 @@ export default function CartPage() {
             </div>
             <p className="mt-1 text-sm text-muted-foreground">Shipping and taxes calculated at checkout.</p>
             
-            <Link 
-              href={isAuthenticated ? "/checkout" : "/auth?redirect=/checkout"} 
+            <button 
+              onClick={() => {
+                if (!isAuthenticated) {
+                  showToast({ message: 'You need to login to proceed to checkout.', type: 'info' })
+                  router.push('/auth?redirect=/checkout')
+                } else {
+                  router.push('/checkout')
+                }
+              }}
               className="mt-6 block text-center w-full rounded-xl bg-primary px-5 py-4 font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               Proceed to checkout
-            </Link>
+            </button>
           </div>
         </div>
       )}
