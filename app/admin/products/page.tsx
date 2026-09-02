@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
-import { FaArrowLeft, FaPen, FaMagnifyingGlass, FaTrashCan, FaStar, FaPlus, FaXmark, FaFilter } from 'react-icons/fa6'
+import { FaArrowLeft, FaPen, FaMagnifyingGlass, FaTrashCan, FaStar, FaPlus, FaXmark, FaFilter, FaFileLines } from 'react-icons/fa6'
 import { apiClient, formatINR } from '@/lib/apiClient'
 import { ProductListResponseDTO } from '@/lib/types'
 import { CompanyFilter, CompanyOption } from '@/components/admin/company-filter'
+import { getAllProductDrafts } from '@/lib/draftService'
 
 const PAGE_SIZE = 20
 
@@ -15,10 +16,13 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(0)
   const [selectedCompany, setSelectedCompany] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [draftCount, setDraftCount] = useState<number>(0)
 
   const loadProducts = async () => {
     try {
       setLoading(true)
+      const drafts = getAllProductDrafts()
+      setDraftCount(drafts.length)
       // Fetch products catalog with a large size to allow dynamic extraction & filtering
       const res = await apiClient.getProducts(0, 1000, true)
       if (res.data?.data?.content) {
@@ -145,12 +149,26 @@ export default function AdminProductsPage() {
             </p>
           </div>
 
-          <Link
-            href="/admin/products/new"
-            className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground whitespace-nowrap hover:bg-primary/90 transition-all shadow-sm active:scale-95 self-start sm:self-auto"
-          >
-            <FaPlus size={16} /> Add Product
-          </Link>
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+            <Link
+              href="/admin/products/drafts"
+              className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground whitespace-nowrap hover:bg-muted transition-all shadow-xs active:scale-95"
+            >
+              <FaFileLines size={15} className="text-amber-500" />
+              <span>Drafts</span>
+              {draftCount > 0 && (
+                <span className="rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-xs font-black border border-amber-500/30">
+                  {draftCount}
+                </span>
+              )}
+            </Link>
+            <Link
+              href="/admin/products/new"
+              className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground whitespace-nowrap hover:bg-primary/90 transition-all shadow-sm active:scale-95"
+            >
+              <FaPlus size={16} /> Add Product
+            </Link>
+          </div>
         </div>
 
         {/* Professional Filter & Search Controls Bar */}

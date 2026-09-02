@@ -97,35 +97,70 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     }))
   })
 
+  const activeBrandObj = brandQuery
+    ? brands.find(b => b.slug.toLowerCase() === brandQuery.toLowerCase() || b.name.toLowerCase() === brandQuery.toLowerCase() || b.id === brandQuery)
+    : undefined
+
   const hasFilters = brandQuery || categoryQuery || searchQuery || minPriceQuery || maxPriceQuery
 
   const pageTitle = searchQuery
     ? `Results for "${searchQuery}"`
-    : brandQuery
-    ? `${brands.find(b => b.slug === brandQuery)?.name || brandQuery} Phones`
+    : activeBrandObj
+    ? `${activeBrandObj.name} Mobiles`
     : categoryQuery
     ? `${categories.find(c => c.slug === categoryQuery)?.name || categoryQuery}`
     : 'Find your next phone'
 
-  const pageSubtitle = searchQuery ? 'Search Results' : hasFilters ? 'Filtered results' : 'The collection'
+  const pageSubtitle = searchQuery ? 'Search Results' : activeBrandObj ? 'Brand Store' : hasFilters ? 'Filtered results' : 'The collection'
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-      {/* Page Header */}
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-primary">
-            {pageSubtitle}
-          </p>
-          <h1 className="mt-1 text-2xl sm:text-3xl font-black">
-            {pageTitle}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">{displayVariants.length} phones found</p>
+      {/* Brand Header Section if filtering by Brand */}
+      {activeBrandObj ? (
+        <div className="mb-8 rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            {activeBrandObj.logoUrl ? (
+              <div className="flex h-20 w-32 shrink-0 items-center justify-center rounded-2xl bg-muted/50 p-3 border border-border">
+                <img
+                  src={activeBrandObj.logoUrl}
+                  alt={activeBrandObj.name}
+                  className="max-h-full max-w-full object-contain dark:invert dark:hue-rotate-180"
+                />
+              </div>
+            ) : (
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary font-black text-2xl border border-primary/20">
+                {activeBrandObj.name.substring(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="text-center sm:text-left flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-foreground">
+                {activeBrandObj.name}
+              </h1>
+              {activeBrandObj.description && activeBrandObj.description.trim() !== '' && (
+                <p className="mt-3 max-w-3xl text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-line border-l-2 border-primary/40 pl-4 py-1">
+                  "{activeBrandObj.description.trim()}"
+                </p>
+              )}
+            </div>
+          </div>
         </div>
+      ) : (
+        /* Standard Page Header */
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[.18em] text-primary">
+              {pageSubtitle}
+            </p>
+            <h1 className="mt-1 text-2xl sm:text-3xl font-black">
+              {pageTitle}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">{displayVariants.length} phones found</p>
+          </div>
 
-        {/* Mobile Filter Button */}
-        <FilterSheet brands={brands} categories={categories} />
-      </div>
+          {/* Mobile Filter Button */}
+          <FilterSheet brands={brands} categories={categories} />
+        </div>
+      )}
 
       {/* 2-Column Layout: Sidebar (Desktop) + Grid */}
       <div className="flex gap-8">
@@ -158,6 +193,18 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
               </a>
             ))}
           </div>
+
+          {/* Section Subheading for Brand Mobiles */}
+          {activeBrandObj && (
+            <div className="mb-4 pb-2 border-b border-border flex items-center justify-between">
+              <h3 className="text-xl font-extrabold tracking-tight text-foreground">
+                {activeBrandObj.name} Mobiles
+              </h3>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {displayVariants.length} products
+              </span>
+            </div>
+          )}
 
           {/* Products */}
           {displayVariants.length === 0 ? (

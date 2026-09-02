@@ -128,7 +128,13 @@ export default function AdminBrandsPage() {
             </div>
             <div>
               <label className="text-sm font-semibold mb-1 block">Description</label>
-              <input value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="w-full rounded-xl border border-border bg-background px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary" placeholder="Brand description..." />
+              <textarea 
+                value={form.description} 
+                onChange={e => setForm({...form, description: e.target.value})} 
+                rows={3}
+                className="w-full rounded-xl border border-border bg-background px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-primary resize-y" 
+                placeholder="Brand description (e.g. Apple designs smartphones and technology products focused on performance, innovation...)" 
+              />
             </div>
             <div>
               <ImageUpload 

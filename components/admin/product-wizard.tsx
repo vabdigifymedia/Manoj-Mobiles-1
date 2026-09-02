@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen, FaCircleCheck, FaListCheck, FaGlobe, FaDownload, FaSpinner, FaPaste } from 'react-icons/fa6'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen, FaCircleCheck, FaListCheck, FaGlobe, FaDownload, FaSpinner, FaPaste, FaCloudCheck, FaFileLines, FaTriangleExclamation } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import { parsePastedSpecsText, ALLOWED_GROUPS, ExtractedSpecItem } from '@/lib/specParser'
+import { saveProductDraft, getProductDraft, clearDraftForProduct, deleteProductDraft, getAllProductDrafts, ProductDraft, formatRelativeTime } from '@/lib/draftService'
 
 interface LocalHighlight {
   id: string;
@@ -44,6 +45,16 @@ import { parseRamRomFromText } from '@/lib/utils'
 
 export function ProductWizard({ productId }: { productId?: string }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const paramDraftId = searchParams?.get('draftId')
+
+  const [activeDraftId, setActiveDraftId] = useState<string>(() => 
+    paramDraftId || `draft_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+  )
+  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true)
+  const [draftSaveStatus, setDraftSaveStatus] = useState<'saved' | 'saving' | 'offline' | 'error'>('saved')
+  const [isDraftRestored, setIsDraftRestored] = useState<boolean>(false)
+
   const [currentStep, setCurrentStep] = useState(1)
   const [highestStepReached, setHighestStepReached] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -282,6 +293,72 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const [categories, setCategories] = useState<CategoryResponseDTO[]>([])
   const [brands, setBrands] = useState<BrandResponseDTO[]>([])
 
+  // Comprehensive centralized Draft Restorer
+  const restoreDraftToProductForm = (draft: ProductDraft): boolean => {
+    if (!draft) return false
+    try {
+      // 1. Restore Base Info (with fallback mapping)
+      const bInfo = draft.baseInfo || (draft as any)
+      setBaseInfo({
+        name: bInfo.name || draft.productName || '',
+        brandId: bInfo.brandId || draft.brandId || '',
+        categoryId: bInfo.categoryId || draft.categoryId || '',
+        description: bInfo.description || (draft as any).description || '',
+        warrantyMonths: bInfo.warrantyMonths ?? (draft as any).warrantyMonths ?? 12,
+        returnPolicyDays: bInfo.returnPolicyDays ?? (draft as any).returnPolicyDays ?? 7,
+        isReturnable: bInfo.isReturnable ?? (draft as any).isReturnable ?? true,
+        slug: bInfo.slug || (draft as any).slug || '',
+        metaTitle: bInfo.metaTitle || (draft as any).metaTitle || '',
+        metaDescription: bInfo.metaDescription || (draft as any).metaDescription || '',
+        metaKeywords: bInfo.metaKeywords || (draft as any).metaKeywords || ''
+      })
+
+      // 2. Restore Highlights
+      const rawHighlights = draft.highlights || (draft as any).productHighlights || []
+      setHighlights(rawHighlights.map((h: any, idx: number) => ({
+        id: h.id || `h_restored_${idx}_${Date.now()}`,
+        iconName: (h.iconName || 'Star') as IconName,
+        text: h.text || '',
+        displayOrder: h.displayOrder || idx + 1
+      })))
+
+      // 3. Restore Variants (Complete field & image array restoration)
+      const rawVariants = draft.variants || (draft as any).productVariants || []
+      setVariants(rawVariants.map((v: any, idx: number) => ({
+        id: v.id || `v_restored_${idx}_${Date.now()}`,
+        variantName: v.variantName || '',
+        sku: v.sku || '',
+        color: v.color || '',
+        mrp: Number(v.mrp) || 0,
+        sellingPrice: Number(v.sellingPrice) || 0,
+        gstPercent: Number(v.gstPercent) || 0,
+        stockQty: Number(v.stockQty) || 0,
+        codAvailable: v.codAvailable ?? true,
+        images: Array.isArray(v.images) ? v.images : Array.isArray(v.imageUrls) ? v.imageUrls : []
+      })))
+
+      // 4. Restore Specifications
+      const rawSpecs = draft.globalSpecs || draft.specifications || (draft as any).productSpecs || []
+      setGlobalSpecs(rawSpecs.map((s: any) => ({
+        specGroup: s.specGroup || 'General',
+        specKey: s.specKey || '',
+        specValue: s.specValue || ''
+      })))
+
+      // 5. Restore Navigation state and lock activeDraftId
+      if (draft.currentStep) setCurrentStep(draft.currentStep)
+      if (draft.highestStepReached) setHighestStepReached(draft.highestStepReached)
+      if (draft.draftId) setActiveDraftId(draft.draftId)
+
+      setIsDraftRestored(true)
+      return true
+    } catch (e) {
+      console.error('Failed to restore draft', e)
+      toast.error('Unable to restore this draft. Your saved draft has not been deleted.')
+      return false
+    }
+  }
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -357,16 +434,85 @@ export function ProductWizard({ productId }: { productId?: string }) {
             specValue: s.specValue
           })))
         }
+
+        // Automatic Draft Restoration
+        const targetDraftId = paramDraftId
+        let draftToRestore: ProductDraft | null = null
+
+        if (targetDraftId) {
+          draftToRestore = getProductDraft(targetDraftId)
+        } else {
+          const allDrafts = getAllProductDrafts()
+          draftToRestore = allDrafts.find(d => 
+            productId ? d.productId === productId : !d.productId
+          ) || null
+        }
+
+        if (draftToRestore) {
+          const restoredOk = restoreDraftToProductForm(draftToRestore)
+          if (restoredOk) {
+            toast.success(`Draft restored automatically! Resuming "${draftToRestore.baseInfo?.name || draftToRestore.productName || 'Product'}"`, {
+              duration: 3000
+            })
+          }
+        }
       } catch (err) {
         console.error('Failed to load initial data', err)
       } finally {
-        const draftStr = localStorage.getItem(`product-draft-${productId || 'new'}`)
-        if (draftStr) setDraftAvailable(true)
         setInitialLoading(false)
       }
     }
     fetchData()
-  }, [productId])
+  }, [productId, paramDraftId])
+
+  // Online / Offline status listener
+  useEffect(() => {
+    const handleOnline = () => { setIsOnline(true); setDraftSaveStatus('saved') }
+    const handleOffline = () => { setIsOnline(false); setDraftSaveStatus('offline') }
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  // Auto-Save Draft Effect (debounced 600ms + offline awareness)
+  useEffect(() => {
+    if (initialLoading) return
+    if (!isOnline) {
+      setDraftSaveStatus('offline')
+    } else {
+      setDraftSaveStatus('saving')
+    }
+
+    const timer = setTimeout(() => {
+      try {
+        const brandName = brands.find(b => b.id === baseInfo.brandId)?.name || ''
+        saveProductDraft({
+          draftId: activeDraftId,
+          productId: productId || null,
+          productName: baseInfo.name,
+          brandName,
+          brandId: baseInfo.brandId,
+          categoryId: baseInfo.categoryId,
+          variantCount: variants.length,
+          currentStep,
+          highestStepReached,
+          baseInfo,
+          highlights,
+          variants,
+          globalSpecs
+        })
+        setDraftSaveStatus(isOnline ? 'saved' : 'offline')
+      } catch (e) {
+        console.warn('Auto save draft failed', e)
+        setDraftSaveStatus('error')
+      }
+    }, 600)
+
+    return () => clearTimeout(timer)
+  }, [baseInfo, highlights, variants, globalSpecs, currentStep, highestStepReached, initialLoading, isOnline, activeDraftId, productId, brands])
 
   // Auto-generate RAM/ROM Highlight from globalSpecs or variants
   const handleAutoGenerateRamRomHighlight = () => {
@@ -643,6 +789,31 @@ export function ProductWizard({ productId }: { productId?: string }) {
       errs['variants'] = 'At least 1 product variant is required before publishing.'
     }
 
+    variants.forEach((v, index) => {
+      if (!v.variantName || !v.variantName.trim()) {
+        errs[`variant_name_${v.id}`] = `Variant #${index + 1}: Name is required.`
+      }
+      if (!v.color || !v.color.trim()) {
+        errs[`variant_color_${v.id}`] = `Variant #${index + 1}: Color is required.`
+      }
+      if (!v.sku || !v.sku.trim()) {
+        errs[`variant_sku_${v.id}`] = `Variant #${index + 1}: SKU is required.`
+      } else if (isSkuTaken(v.sku, v.id)) {
+        errs[`variant_sku_${v.id}`] = `Variant #${index + 1}: SKU '${v.sku}' is already taken.`
+      }
+      if (!v.mrp || Number(v.mrp) <= 0) {
+        errs[`variant_mrp_${v.id}`] = `Variant #${index + 1}: MRP must be greater than 0.`
+      }
+      if (!v.sellingPrice || Number(v.sellingPrice) <= 0) {
+        errs[`variant_price_${v.id}`] = `Variant #${index + 1}: Selling Price must be greater than 0.`
+      } else if (Number(v.sellingPrice) > Number(v.mrp)) {
+        errs[`variant_price_${v.id}`] = `Variant #${index + 1}: Selling Price cannot exceed MRP.`
+      }
+      if (v.stockQty === undefined || v.stockQty === null || Number(v.stockQty) < 0) {
+        errs[`variant_stock_${v.id}`] = `Variant #${index + 1}: Stock quantity cannot be negative.`
+      }
+    })
+
     setFormErrors(errs)
 
     if (errs['baseInfo_name'] || errs['baseInfo_brandId'] || errs['baseInfo_categoryId']) {
@@ -651,32 +822,26 @@ export function ProductWizard({ productId }: { productId?: string }) {
       return false
     }
 
-    if (errs['variants']) {
+    if (errs['variants'] || Object.keys(errs).some(k => k.startsWith('variant_'))) {
       setCurrentStep(3)
-      toast.error(errs['variants'])
+      toast.error('Please fix validation errors in Step 3 (Variants).')
       return false
     }
 
     return Object.keys(errs).length === 0
   }
 
-  const handleRestoreDraft = () => {
-    const draftStr = localStorage.getItem(`product-draft-${productId || 'new'}`)
-    if (draftStr) {
-      try {
-        const draft = JSON.parse(draftStr)
-        if (draft.baseInfo) setBaseInfo(draft.baseInfo)
-        if (draft.highlights) setHighlights(draft.highlights)
-        if (draft.variants) setVariants(draft.variants)
-        if (draft.globalSpecs) setGlobalSpecs(draft.globalSpecs)
-        if (draft.currentStep) setCurrentStep(draft.currentStep)
-        if (draft.highestStepReached) setHighestStepReached(draft.highestStepReached)
-        setDraftAvailable(false)
-        toast.success('Draft restored!')
-      } catch (e) {
-        console.error('Failed to parse draft', e)
-      }
-    }
+  const handleRestoreDraftData = (draftObj: ProductDraft) => {
+    if (draftObj.baseInfo) setBaseInfo(draftObj.baseInfo)
+    if (draftObj.highlights) setHighlights(draftObj.highlights)
+    if (draftObj.variants) setVariants(draftObj.variants)
+    if (draftObj.globalSpecs) setGlobalSpecs(draftObj.globalSpecs)
+    if (draftObj.currentStep) setCurrentStep(draftObj.currentStep)
+    if (draftObj.highestStepReached) setHighestStepReached(draftObj.highestStepReached)
+    if (draftObj.draftId) setActiveDraftId(draftObj.draftId)
+    setPendingDraftToRestore(null)
+    setDraftAvailable(false)
+    toast.success('Product draft restored successfully!')
   }
 
   const handleStepClick = (step: number) => {
@@ -929,11 +1094,13 @@ export function ProductWizard({ productId }: { productId?: string }) {
     }));
   }
 
-  // Publish Product
+  // Publish Product with Atomic Rollback & Draft Cleanup Protection
   const handlePublish = async () => {
     if (!validateAllForPublish()) return
     
     setLoading(true)
+    let createdProductId: string | null = null
+
     try {
       // 1. Create or Update Product
       let finalProductId = productId
@@ -942,6 +1109,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
       } else {
         const prodRes = await apiClient.createProduct(baseInfo)
         finalProductId = prodRes.data.data.id
+        createdProductId = finalProductId // Saved to delete if subsequent steps fail
       }
 
       // 2. Highlights
@@ -1000,7 +1168,6 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
         // 4. Specs (Applied globally to all variants)
         const validSpecs = globalSpecs.filter(s => s.specKey?.trim() && s.specValue?.trim());
-        // Always send specs if there were some originally or currently to sync DB state
         await apiClient.addVariantSpecifications(finalVariantId, validSpecs.map(s => ({
           specGroup: s.specGroup || 'General',
           specKey: s.specKey.trim(),
@@ -1012,21 +1179,30 @@ export function ProductWizard({ productId }: { productId?: string }) {
           await apiClient.addVariantImages(finalVariantId, v.images)
         }
       }
-      setLoading(false)
-      localStorage.removeItem(`product-draft-${productId || 'new'}`)
-      toast.success(productId ? 'Product updated successfully!' : 'Product created successfully!')
+
+      // On successful publish, remove draft so admin doesn't get duplicate draft prompts
+      clearDraftForProduct(productId, activeDraftId)
+      toast.success(productId ? 'Product updated successfully!' : 'Product published successfully!')
       router.push('/admin/products')
     } catch (err: unknown) {
+      // ROLLBACK CLEANUP: If a NEW product was created in DB but variant/spec steps failed, delete created product record!
+      if (createdProductId && !productId) {
+        try {
+          await apiClient.deleteProduct(createdProductId)
+        } catch {
+          // ignore rollback failure
+        }
+      }
+
       const axiosErr = err as { response?: { data?: { message?: string } } }
-      let errorMessage = axiosErr?.response?.data?.message || 'Failed to save product'
+      let errorMessage = axiosErr?.response?.data?.message || 'Failed to publish product'
       
-      // Mask raw database errors
       if (errorMessage.includes('Unexpected row count') || errorMessage.includes('OptimisticLock') || errorMessage.includes('StaleStateException')) {
-        errorMessage = 'We encountered a sync issue. Your changes were mostly saved, but please refresh to confirm.'
+        errorMessage = 'Database sync issue occurred. Your progress is safely saved as a draft — please try clicking Publish again.'
       } else if (errorMessage.includes('Data truncation') || errorMessage.includes('value too long') || errorMessage.includes('SQL')) {
-        errorMessage = 'One of the fields contains too much text. Please shorten it and try again.'
-      } else if (errorMessage.includes('ConstraintViolation')) {
-        errorMessage = 'There is a validation error. Please check your inputs.'
+        errorMessage = 'One of the specification fields is too long. Please shorten text and try again.'
+      } else if (errorMessage.includes('ConstraintViolation') || errorMessage.includes('Duplicate entry')) {
+        errorMessage = 'SKU or product validation error detected. Please verify your variant SKUs.'
       }
       
       toast.error(errorMessage)
@@ -1040,7 +1216,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
       <div className="flex h-[400px] items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <span className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent" />
-          <p className="font-semibold">{productId ? 'Loading Product Details...' : 'Preparing Wizard...'}</p>
+          <p className="font-semibold text-sm">
+            {paramDraftId ? 'Restoring saved product draft...' : productId ? 'Loading Product Details...' : 'Preparing Wizard...'}
+          </p>
         </div>
       </div>
     )
@@ -1048,34 +1226,46 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   return (
     <div className="mx-auto max-w-4xl pb-16">
-      <div className="mb-6 flex items-center gap-2 font-bold text-xl">
-        <Link href="/admin/products" className="text-muted-foreground hover:text-foreground">
-          <FaChevronLeft />
-        </Link>
-        <FaCircleQuestion className="text-primary" /> {productId ? 'Edit Product' : 'Create New Product'}
-      </div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3 font-bold text-xl">
+          <Link href="/admin/products" className="text-muted-foreground hover:text-foreground">
+            <FaChevronLeft />
+          </Link>
+          <FaCircleQuestion className="text-primary" /> {productId ? 'Edit Product' : 'Create New Product'}
 
-      {draftAvailable && (
-        <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-            You have an unsaved draft. Would you like to restore your previous progress?
-          </p>
-          <div className="flex gap-3 w-full sm:w-auto">
-            <button 
-              onClick={() => { localStorage.removeItem(`product-draft-${productId || 'new'}`); setDraftAvailable(false); }} 
-              className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-yellow-800 dark:text-yellow-200 border border-yellow-800/30 rounded-xl hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition-colors"
-            >
-              Discard
-            </button>
-            <button 
-              onClick={handleRestoreDraft} 
-              className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl transition-colors shadow-sm"
-            >
-              Restore Draft
-            </button>
-          </div>
+          {isDraftRestored && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+              <FaFileLines size={12} className="text-amber-500" />
+              Editing Saved Draft
+            </span>
+          )}
         </div>
-      )}
+
+        {/* Real-time Draft & Connection Status Badge */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border border-border bg-card shadow-xs">
+          {!isOnline ? (
+            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
+              <FaWifi size={13} className="animate-pulse text-amber-500" />
+              Offline — Saved locally
+            </span>
+          ) : draftSaveStatus === 'saving' ? (
+            <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+              <FaSpinner size={12} className="animate-spin text-blue-500" />
+              Saving draft...
+            </span>
+          ) : draftSaveStatus === 'saved' ? (
+            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+              <FaCheck size={12} className="text-emerald-500" />
+              Draft saved ✓
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-rose-500 font-bold">
+              <FaTriangleExclamation size={12} />
+              Save error — retrying...
+            </span>
+          )}
+        </div>
+      </div>
 
       <div className="flex justify-between border-b border-border mb-8 overflow-x-auto pb-4">
         {[
