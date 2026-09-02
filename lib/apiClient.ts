@@ -540,6 +540,25 @@ export const apiClient = {
 
   updateBulkEnquiryStatus: (id: string, status: string) =>
     axiosInstance.put<ApiResponse<void>>(`/api/admin/bulk-enquiry/${id}/status`, { status }),
+
+  // --- Admin Locations ---
+  getAdminCities: () =>
+    axiosInstance.get<ApiResponse<import('./types').CityResponseDTO[]>>('/api/admin/cities'),
+  createAdminCity: (dto: import('./types').CreateCityRequestDTO) =>
+    axiosInstance.post<ApiResponse<import('./types').CityResponseDTO>>('/api/admin/cities', dto),
+  updateAdminCity: (id: string, dto: import('./types').UpdateCityRequestDTO) =>
+    axiosInstance.put<ApiResponse<import('./types').CityResponseDTO>>(`/api/admin/cities/${id}`, dto),
+  deleteAdminCity: (id: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/admin/cities/${id}`),
+
+  getAdminPincodes: (cityId?: string) =>
+    axiosInstance.get<ApiResponse<import('./types').PincodeResponseDTO[]>>(`/api/admin/pincodes${cityId ? `?cityId=${cityId}` : ''}`),
+  createAdminPincode: (dto: import('./types').CreatePincodeRequestDTO) =>
+    axiosInstance.post<ApiResponse<import('./types').PincodeResponseDTO>>('/api/admin/pincodes', dto),
+  updateAdminPincode: (id: string, dto: import('./types').UpdatePincodeRequestDTO) =>
+    axiosInstance.put<ApiResponse<import('./types').PincodeResponseDTO>>(`/api/admin/pincodes/${id}`, dto),
+  deleteAdminPincode: (id: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/admin/pincodes/${id}`),
 }
 
 // ===========================

@@ -659,3 +659,52 @@ export interface BulkEnquiryResponseDTO {
   updatedAt: string
 }
 
+
+// --- City ---
+export interface CityResponseDTO {
+  id: string
+  name: string
+  state: string
+  isActive: boolean
+  totalPincodesCount?: number
+}
+
+export interface CreateCityRequestDTO {
+  name: string
+  state: string
+  isActive?: boolean
+}
+
+export interface UpdateCityRequestDTO {
+  name: string
+  state: string
+  isActive?: boolean
+}
+
+// --- Pincode ---
+export interface PincodeResponseDTO {
+  id: string
+  pincode: string
+  cityId: string
+  cityName: string
+  state: string
+  estimatedDeliveryDays: number
+  codAvailable: boolean
+  isActive: boolean
+}
+
+export interface CreatePincodeRequestDTO {
+  pincode: string
+  cityId: string
+  estimatedDeliveryDays: number
+  codAvailable?: boolean
+  isActive?: boolean
+}
+
+export interface UpdatePincodeRequestDTO {
+  pincode: string
+  cityId: string
+  estimatedDeliveryDays: number
+  codAvailable?: boolean
+  isActive?: boolean
+}

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useStore } from '@/components/store-provider'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient, formatINR } from '@/lib/apiClient'
-import { FaArrowLeft, FaTrashCan, FaBox, FaHeart, FaLock, FaPhone, FaCalendar, FaEnvelope, FaRightFromBracket, FaBagShopping, FaUser, FaLocationDot, FaChevronRight, FaPlus } from 'react-icons/fa6'
+import { FaArrowLeft, FaTrashCan, FaBox, FaHeart, FaLock, FaPhone, FaCalendar, FaEnvelope, FaRightFromBracket, FaBagShopping, FaUser, FaLocationDot, FaChevronRight, FaPlus, FaPen } from 'react-icons/fa6'
 import { ProductCard } from '@/components/product-card'
 import type { OrderResponseDTO, AddressResponseDTO, UserProfileResponseDTO } from '@/lib/types'
 
@@ -43,14 +43,41 @@ export default function AccountPage() {
   const [phoneInput, setPhoneInput] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
 
-  // Add address state
+  // Add/Edit address state
   const [showAddAddress, setShowAddAddress] = useState(false)
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
   const [addrLabel, setAddrLabel] = useState('Home')
   const [addrLine, setAddrLine] = useState('')
   const [addrCity, setAddrCity] = useState('')
   const [addrState, setAddrState] = useState('')
   const [addrPincode, setAddrPincode] = useState('')
+  const [pincodeError, setPincodeError] = useState('')
+  const [checkingPincode, setCheckingPincode] = useState(false)
   const [savingAddress, setSavingAddress] = useState(false)
+
+  // Real-time Pincode Validation
+  useEffect(() => {
+    if (addrPincode.length === 6) {
+      setCheckingPincode(true)
+      setPincodeError('')
+      apiClient.checkPincode(addrPincode)
+        .then(res => {
+          const data = res.data.data
+          if (data.cityName && data.state) {
+            setAddrCity(data.cityName)
+            setAddrState(data.state)
+          } else {
+            setPincodeError('Pincode details not found, please enter manually.')
+          }
+        })
+        .catch(() => {
+          setPincodeError('Could not verify pincode.')
+        })
+        .finally(() => setCheckingPincode(false))
+    } else {
+      setPincodeError('')
+    }
+  }, [addrPincode])
 
   const fetchData = async () => {
     if (!isAuthenticated) return
@@ -103,31 +130,66 @@ export default function AccountPage() {
     }
   }
 
-  const handleCreateAddress = async (e: React.FormEvent) => {
+  const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!addrLine || !addrCity || !addrState || !addrPincode) return
     setSavingAddress(true)
     try {
-      const res = await apiClient.createAddress({
-        label: addrLabel,
-        addressLine: addrLine,
-        city: addrCity,
-        state: addrState,
-        pincode: addrPincode,
-        isDefault: addresses.length === 0,
-      })
-      setAddresses(prev => [...prev, res.data.data])
+      if (editingAddressId) {
+        const res = await apiClient.updateAddress(editingAddressId, {
+          label: addrLabel,
+          addressLine: addrLine,
+          city: addrCity,
+          state: addrState,
+          pincode: addrPincode,
+          isDefault: addresses.find(a => a.id === editingAddressId)?.isDefault || false,
+        })
+        setAddresses(prev => prev.map(a => a.id === editingAddressId ? res.data.data : a))
+        showToast({ message: 'Address updated successfully', type: 'success' })
+      } else {
+        const res = await apiClient.createAddress({
+          label: addrLabel,
+          addressLine: addrLine,
+          city: addrCity,
+          state: addrState,
+          pincode: addrPincode,
+          isDefault: addresses.length === 0,
+        })
+        setAddresses(prev => [...prev, res.data.data])
+        showToast({ message: 'Address added successfully', type: 'success' })
+      }
       setShowAddAddress(false)
+      setEditingAddressId(null)
+      setAddrLabel('Home')
       setAddrLine('')
       setAddrCity('')
       setAddrState('')
       setAddrPincode('')
-      showToast({ message: 'Address added successfully', type: 'success' })
     } catch (err: any) {
-      showToast({ message: err.response?.data?.message || 'Failed to add address', type: 'error' })
+      showToast({ message: err.response?.data?.message || 'Failed to save address', type: 'error' })
     } finally {
       setSavingAddress(false)
     }
+  }
+
+  const openNewAddress = () => {
+    setEditingAddressId(null)
+    setAddrLabel('Home')
+    setAddrLine('')
+    setAddrCity('')
+    setAddrState('')
+    setAddrPincode('')
+    setShowAddAddress(true)
+  }
+
+  const openEditAddress = (addr: AddressResponseDTO) => {
+    setEditingAddressId(addr.id)
+    setAddrLabel(addr.label)
+    setAddrLine(addr.addressLine)
+    setAddrCity(addr.city)
+    setAddrState(addr.state)
+    setAddrPincode(addr.pincode)
+    setShowAddAddress(true)
   }
 
   const handleDeleteAddress = async (id: string) => {
@@ -341,18 +403,24 @@ export default function AccountPage() {
             </div>
 
             {showAddAddress && (
-              <form onSubmit={handleCreateAddress} className="mb-6 p-5 rounded-2xl border border-border bg-muted/20 space-y-4">
-                <h3 className="font-bold text-sm">Add New Address</h3>
+              <form onSubmit={handleSaveAddress} className="mb-6 p-5 rounded-2xl border border-border bg-muted/20 space-y-4">
+                <h3 className="font-bold text-sm">{editingAddressId ? 'Edit Address' : 'Add New Address'}</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input type="text" placeholder="Label (e.g. Home)" value={addrLabel} onChange={e => setAddrLabel(e.target.value)} className="rounded-xl border border-border bg-background p-2.5 text-xs font-semibold" required />
                   <input type="text" placeholder="House/Street Address" value={addrLine} onChange={e => setAddrLine(e.target.value)} className="rounded-xl border border-border bg-background p-2.5 text-xs font-semibold sm:col-span-2" required />
+                  
+                  <div className="sm:col-span-2 relative">
+                    <input type="text" maxLength={6} placeholder="Pincode (e.g. 110001)" value={addrPincode} onChange={e => setAddrPincode(e.target.value.replace(/\D/g, ''))} className="w-full rounded-xl border border-border bg-background p-2.5 text-xs font-semibold" required />
+                    {checkingPincode && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-bold">Checking...</span>}
+                    {pincodeError && <p className="text-[10px] text-amber-500 font-bold mt-1">{pincodeError}</p>}
+                  </div>
+
                   <input type="text" placeholder="City" value={addrCity} onChange={e => setAddrCity(e.target.value)} className="rounded-xl border border-border bg-background p-2.5 text-xs font-semibold" required />
                   <input type="text" placeholder="State" value={addrState} onChange={e => setAddrState(e.target.value)} className="rounded-xl border border-border bg-background p-2.5 text-xs font-semibold" required />
-                  <input type="text" placeholder="Pincode" value={addrPincode} onChange={e => setAddrPincode(e.target.value)} className="rounded-xl border border-border bg-background p-2.5 text-xs font-semibold sm:col-span-2" required />
                 </div>
                 <div className="flex gap-2">
-                  <button type="submit" disabled={savingAddress} className="bg-primary text-primary-foreground text-xs font-bold px-4 py-2 rounded-xl">Save</button>
-                  <button type="button" onClick={() => setShowAddAddress(false)} className="border border-border text-xs font-bold px-4 py-2 rounded-xl">Cancel</button>
+                  <button type="submit" disabled={savingAddress} className="bg-primary text-primary-foreground text-xs font-bold px-4 py-2 rounded-xl">{savingAddress ? 'Saving...' : 'Save'}</button>
+                  <button type="button" onClick={() => { setShowAddAddress(false); setEditingAddressId(null) }} className="border border-border text-xs font-bold px-4 py-2 rounded-xl">Cancel</button>
                 </div>
               </form>
             )}
@@ -373,6 +441,7 @@ export default function AccountPage() {
                       {addr.addressLine}<br/>{addr.city}, {addr.state} - {addr.pincode}
                     </p>
                     <div className="flex gap-2">
+                      <button onClick={() => openEditAddress(addr)} className="text-xs font-bold text-primary hover:text-primary-foreground px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/10 hover:bg-primary transition-colors">Edit</button>
                       <button onClick={() => handleDeleteAddress(addr.id)} className="text-xs font-bold text-rose-500 hover:text-rose-600 px-3 py-1.5 rounded-lg border border-rose-100 bg-rose-50 hover:bg-rose-100 transition-colors dark:border-rose-500/20 dark:bg-rose-500/10">Delete</button>
                     </div>
                   </div>

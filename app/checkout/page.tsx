@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FaCircleCheck, FaCreditCard, FaMobileScreen, FaMoneyBill, FaWallet, FaPlus, FaHouse, FaBuilding, FaShieldHalved, FaLock } from 'react-icons/fa6'
+import { FaCircleCheck, FaCreditCard, FaMobileScreen, FaMoneyBill, FaWallet, FaPlus, FaHouse, FaBuilding, FaShieldHalved, FaLock, FaPen, FaTrashCan } from 'react-icons/fa6'
 import { useStore } from '@/components/store-provider'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient, formatINR } from '@/lib/apiClient'
@@ -18,6 +18,7 @@ export default function CheckoutPage() {
   const [addresses, setAddresses] = useState<AddressResponseDTO[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string>('')
   const [showAddressModal, setShowAddressModal] = useState(false)
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'CARD' | 'UPI' | 'WALLET'>('COD')
   
   // Checkout flow state
@@ -29,6 +30,8 @@ export default function CheckoutPage() {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [pincode, setPincode] = useState('')
+  const [pincodeError, setPincodeError] = useState('')
+  const [checkingPincode, setCheckingPincode] = useState(false)
   const [placingOrder, setPlacingOrder] = useState(false)
   const [creatingAddress, setCreatingAddress] = useState(false)
 
@@ -40,6 +43,31 @@ export default function CheckoutPage() {
       return () => clearTimeout(timer)
     }
   }, [authLoading, isAuthenticated, router])
+
+  useEffect(() => {
+    if (pincode.length === 6) {
+      setCheckingPincode(true)
+      setPincodeError('')
+      apiClient.checkPincode(pincode)
+        .then(res => {
+          const data = res.data.data
+          if (data.cityName && data.state) {
+            setCity(data.cityName)
+            setState(data.state)
+          } else {
+            // Unserviceable pincode but still allow saving (per new business logic)
+            // Just warn them if we can't autofill
+            setPincodeError('Pincode details not found, please enter manually.')
+          }
+        })
+        .catch(() => {
+          setPincodeError('Could not verify pincode.')
+        })
+        .finally(() => setCheckingPincode(false))
+    } else {
+      setPincodeError('')
+    }
+  }, [pincode])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -57,35 +85,83 @@ export default function CheckoutPage() {
 
   const subtotal = cart?.cartTotal || cart?.items.reduce((acc, item) => acc + (item.subtotal || item.currentPrice * item.qty), 0) || 0
 
-  const handleCreateAddress = async (e: React.FormEvent) => {
+  const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!addressLine || !city || !state || !pincode) return
     setCreatingAddress(true)
     try {
-      const res = await apiClient.createAddress({
-        label,
-        addressLine,
-        city,
-        state,
-        pincode,
-        isDefault: addresses.length === 0,
-      })
-      const newAddr = res.data.data
-      setAddresses(prev => [...prev, newAddr])
-      setSelectedAddressId(newAddr.id)
+      if (editingAddressId) {
+        const res = await apiClient.updateAddress(editingAddressId, {
+          label,
+          addressLine,
+          city,
+          state,
+          pincode,
+          isDefault: addresses.find(a => a.id === editingAddressId)?.isDefault || false,
+        })
+        setAddresses(prev => prev.map(a => a.id === editingAddressId ? res.data.data : a))
+        showToast({ message: 'Address updated', type: 'success' })
+      } else {
+        const res = await apiClient.createAddress({
+          label,
+          addressLine,
+          city,
+          state,
+          pincode,
+          isDefault: addresses.length === 0,
+        })
+        const newAddr = res.data.data
+        setAddresses(prev => [...prev, newAddr])
+        setSelectedAddressId(newAddr.id)
+        showToast({ message: 'Address saved', type: 'success' })
+        if (currentStep === 1) setCurrentStep(2)
+      }
       setShowAddressModal(false)
       // reset form
+      setEditingAddressId(null)
       setLabel('Home')
       setAddressLine('')
       setCity('')
       setState('')
       setPincode('')
-      showToast({ message: 'Address saved', type: 'success' })
-      if (currentStep === 1) setCurrentStep(2)
     } catch (err: any) {
       showToast({ message: err.response?.data?.message || 'Failed to save address', type: 'error' })
     } finally {
       setCreatingAddress(false)
+    }
+  }
+
+  const openNewAddress = () => {
+    setEditingAddressId(null)
+    setLabel('Home')
+    setAddressLine('')
+    setCity('')
+    setState('')
+    setPincode('')
+    setShowAddressModal(true)
+  }
+
+  const openEditAddress = (addr: AddressResponseDTO, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingAddressId(addr.id)
+    setLabel(addr.label)
+    setAddressLine(addr.addressLine)
+    setCity(addr.city)
+    setState(addr.state)
+    setPincode(addr.pincode)
+    setShowAddressModal(true)
+  }
+
+  const handleDeleteAddress = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm('Are you sure you want to delete this address?')) return
+    try {
+      await apiClient.deleteAddress(id)
+      setAddresses(prev => prev.filter(a => a.id !== id))
+      if (selectedAddressId === id) setSelectedAddressId('')
+      showToast({ message: 'Address deleted', type: 'success' })
+    } catch (err: any) {
+      showToast({ message: err.response?.data?.message || 'Failed to delete address', type: 'error' })
     }
   }
 
@@ -210,7 +286,11 @@ export default function CheckoutPage() {
                                     {addr.label}
                                   </span>
                                 </div>
-                                {addr.isDefault && <span className="text-[10px] font-bold bg-muted px-2 py-1 rounded-md text-muted-foreground">DEFAULT</span>}
+                                <div className="flex items-center gap-2">
+                                  {addr.isDefault && <span className="text-[10px] font-bold bg-muted px-2 py-1 rounded-md text-muted-foreground">DEFAULT</span>}
+                                  <button onClick={(e) => openEditAddress(addr, e)} className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"><FaPen size={12} /></button>
+                                  <button onClick={(e) => handleDeleteAddress(addr.id, e)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"><FaTrashCan size={12} /></button>
+                                </div>
                               </div>
                               <p className="text-sm font-bold text-foreground leading-snug">{addr.addressLine}</p>
                               <p className="text-xs text-muted-foreground mt-1.5 font-medium">{addr.city}, {addr.state} - {addr.pincode}</p>
@@ -220,7 +300,7 @@ export default function CheckoutPage() {
                         
                         {/* Add New Button Card */}
                         <div 
-                          onClick={() => setShowAddressModal(true)}
+                          onClick={openNewAddress}
                           className="cursor-pointer rounded-2xl border-2 border-dashed border-border bg-muted/20 flex flex-col items-center justify-center p-5 min-h-[120px] transition-all hover:bg-muted/40 hover:border-primary/50 text-muted-foreground hover:text-primary group"
                         >
                           <div className="size-10 rounded-full bg-background border border-border flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -383,12 +463,12 @@ export default function CheckoutPage() {
 
       {/* Add Address Modal */}
       <Dialog open={showAddressModal} onOpenChange={setShowAddressModal}>
-        <DialogContent className="sm:max-w-[500px] p-6 rounded-3xl">
+        <DialogContent className="sm:max-w-md p-6 rounded-3xl">
           <DialogHeader className="mb-4">
-            <DialogTitle className="text-xl font-black">Add New Address</DialogTitle>
-            <DialogDescription>Enter your delivery details below.</DialogDescription>
+            <DialogTitle className="text-2xl font-black">{editingAddressId ? 'Edit Address' : 'Add New Address'}</DialogTitle>
+            <DialogDescription className="text-sm font-semibold">Enter your shipping details below.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCreateAddress} className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={handleSaveAddress} className="space-y-4">
             <div className="space-y-1.5 sm:col-span-2">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Address Label</label>
               <div className="flex gap-2">
@@ -437,24 +517,29 @@ export default function CheckoutPage() {
                 required 
               />
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className="sm:col-span-2">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pincode</label>
-              <input 
-                type="text" 
-                value={pincode} 
-                onChange={e => setPincode(e.target.value)} 
-                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary font-semibold transition-all" 
-                placeholder="560038" 
-                required 
-              />
+              <div className="relative">
+                <input 
+                  type="text" 
+                  maxLength={6}
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                  required 
+                  className="w-full mt-1.5 px-4 py-3 bg-background border-2 border-border rounded-xl text-sm font-semibold outline-none focus:border-primary transition-colors" 
+                  placeholder="e.g. 110001" 
+                />
+                {checkingPincode && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-bold">Checking...</span>}
+              </div>
+              {pincodeError && <p className="text-xs text-amber-500 font-bold mt-1.5">{pincodeError}</p>}
             </div>
             <div className="sm:col-span-2 mt-4">
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={creatingAddress}
-                className="w-full rounded-xl bg-primary px-5 py-3.5 text-sm font-black text-primary-foreground hover:bg-primary/90 transition-transform active:scale-95 disabled:opacity-50"
+                className="w-full mt-4 bg-primary text-primary-foreground font-black py-3.5 rounded-xl shadow-lg hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {creatingAddress ? 'Saving Address...' : 'Save & Continue'}
+                {creatingAddress ? 'Saving...' : (editingAddressId ? 'Save Changes' : 'Save Address')}
               </button>
             </div>
           </form>

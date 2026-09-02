@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { FaAward, FaXmark, FaImage, FaBox, FaUsers, FaUserPlus, FaCircleQuestion, FaGear, FaTableColumns, FaTag, FaBagShopping, FaBars, FaRightFromBracket, FaChartSimple, FaInstagram, FaListCheck, FaBoxesPacking } from 'react-icons/fa6'
+import { FaAward, FaXmark, FaImage, FaBox, FaUsers, FaUserPlus, FaCircleQuestion, FaGear, FaTableColumns, FaTag, FaBagShopping, FaBars, FaRightFromBracket, FaChartSimple, FaInstagram, FaListCheck, FaBoxesPacking, FaMapLocationDot } from 'react-icons/fa6'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { bulkInquiryService } from '@/lib/bulkInquiryService'
 
@@ -110,6 +110,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
               { label: 'Spec Templates', icon: FaListCheck, href: '/admin/spec-templates', exact: false },
               { label: 'Brands', icon: FaAward, href: '/admin/brands', exact: false },
               { label: 'Orders', icon: FaBagShopping, href: '/admin/orders', exact: false }, 
+              { label: 'Delivery Zones', icon: FaMapLocationDot, href: '/admin/locations', exact: false }, 
               { label: 'Banners', icon: FaImage, href: '/admin/banners', exact: false },
               { label: 'Instagram Reels', icon: FaInstagram, href: '/admin/reels', exact: false },
               { label: 'Store Settings', icon: FaGear, href: '/admin/settings', exact: false },
