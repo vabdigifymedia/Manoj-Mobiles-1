@@ -177,7 +177,7 @@ export default function CheckoutPage() {
       const res = await apiClient.placeOrder({
         addressId: selectedAddressId,
         paymentMethod: isOnline ? 'ONLINE' : 'COD',
-        returnUrl: isOnline ? window.location.origin + "/payment/success" : undefined
+        returnUrl: isOnline ? window.location.origin + "/api/payment/callback" : undefined
       })
       const order = res.data.data
 
