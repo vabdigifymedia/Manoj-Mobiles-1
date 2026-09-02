@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient'
+import type { BulkEnquiryResponseDTO } from './types'
 
 export interface BulkInquiryFormData {
   mobileCompany: string
@@ -14,11 +15,7 @@ export interface BulkInquiryFormData {
   productId?: string
 }
 
-export interface BulkInquiryItem extends BulkInquiryFormData {
-  id: string
-  createdAt: string
-  status: 'PENDING' | 'CONTACTED' | 'CLOSED'
-}
+export type BulkInquiryItem = BulkEnquiryResponseDTO
 
 /**
  * Reusable helper to extract actual product colors dynamically from a product object.
@@ -60,63 +57,73 @@ export function extractActualProductColors(product: any): string[] {
 
 /**
  * Bulk Inquiry Service Layer
- * 
- * FUTURE BACKEND DEVELOPER INSTRUCTIONS:
- * ------------------------------------
- * Currently this service operates with mock/dummy implementations for frontend testing.
- * When backend API endpoints are available, replace dummy functions with actual Axios/apiClient calls:
- * 1. `submitBulkInquiry` -> POST /api/public/bulk-inquiries
- * 2. `getBulkInquiries`    -> GET /api/admin/bulk-inquiries
  */
 export const bulkInquiryService = {
   /**
    * Submit a new bulk inquiry from customer
    */
   submitBulkInquiry: async (data: BulkInquiryFormData): Promise<{ success: boolean; message: string }> => {
-    // Simulate network latency for realistic UI state
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    console.log('[MOCK API SERVICE] Submitting Bulk Inquiry:', data)
-
-    // Store in localStorage so submitted inquiries can be tested in Admin Panel
     try {
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('manoj-mobiles-bulk-inquiries')
-        const existing: BulkInquiryItem[] = stored ? JSON.parse(stored) : []
-        const newInquiry: BulkInquiryItem = {
-          ...data,
-          id: `INQ-${Date.now().toString().slice(-6)}`,
-          createdAt: new Date().toISOString(),
-          status: 'PENDING',
-        }
-        localStorage.setItem('manoj-mobiles-bulk-inquiries', JSON.stringify([newInquiry, ...existing]))
+      if (!data.productId) {
+        throw new Error('Product is required')
       }
-    } catch (e) {
-      console.warn('Could not save mock inquiry to localStorage', e)
-    }
+      
+      const payload = {
+        productId: data.productId,
+        name: data.name,
+        email: data.email,
+        mobileNumber: data.mobile,
+        companyName: data.companyName,
+        gstin: data.gstin,
+        estimatedQuantity: data.estimatedQuantity,
+        requirements: data.requirements,
+        // Since we don't track variantId in the frontend form (only color string),
+        // we'll leave it undefined, per the optional variantId requirement.
+        // If color was selected and we need to pass it, we can append it to requirements for the backend/admin to see.
+      }
+      
+      if (data.selectedColor && data.selectedColor !== 'All Colours') {
+        payload.requirements = `Requested Color: ${data.selectedColor}\n\n${payload.requirements || ''}`.trim()
+      }
 
-    return {
-      success: true,
-      message: 'Your bulk inquiry has been received. Our team will get in touch with you soon.',
+      const res = await apiClient.submitBulkEnquiry(payload)
+      return {
+        success: true,
+        message: res.data.message || 'Your bulk inquiry has been received. Our team will get in touch with you soon.',
+      }
+    } catch (e: any) {
+      console.error('API Error submitting bulk inquiry:', e)
+      throw e
     }
   },
 
   /**
    * Fetch all submitted bulk inquiries for the Admin Panel
    */
-  getBulkInquiries: async (): Promise<BulkInquiryItem[]> => {
-    // Simulate network latency
-    await new Promise((resolve) => setTimeout(resolve, 300))
-
+  getBulkInquiries: async (page = 0, size = 20, status?: string): Promise<{ content: BulkInquiryItem[], totalPages: number, totalElements: number }> => {
     try {
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('manoj-mobiles-bulk-inquiries')
-        return stored ? JSON.parse(stored) : []
+      const res = await apiClient.getBulkEnquiries(page, size, status)
+      return {
+        content: res.data.data.content,
+        totalPages: res.data.data.totalPages,
+        totalElements: res.data.data.totalElements
       }
-    } catch (e) {
-      console.warn('Could not read mock inquiries from localStorage', e)
+    } catch (e: any) {
+      console.error('API Error fetching bulk inquiries:', e)
+      return { content: [], totalPages: 0, totalElements: 0 }
     }
-
-    return []
   },
+  
+  /**
+   * Update Bulk Inquiry Status
+   */
+  updateBulkInquiryStatus: async (id: string, status: string): Promise<boolean> => {
+    try {
+      await apiClient.updateBulkEnquiryStatus(id, status)
+      return true
+    } catch (e: any) {
+      console.error('API Error updating bulk inquiry status:', e)
+      throw e
+    }
+  }
 }

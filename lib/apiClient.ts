@@ -528,6 +528,18 @@ export const apiClient = {
       data?: { specGroup: string; specKey: string; specValue: string }[]
     }>
   },
+
+  // --- Bulk Enquiry ---
+  submitBulkEnquiry: (dto: import('./types').SubmitBulkEnquiryRequestDTO) =>
+    axiosInstance.post<ApiResponse<void>>('/api/public/bulk-enquiry', dto),
+
+  getBulkEnquiries: (page = 0, size = 20, status?: string) =>
+    axiosInstance.get<ApiResponse<PageResponse<import('./types').BulkEnquiryResponseDTO>>>(
+      `/api/admin/bulk-enquiry?page=${page}&size=${size}${status ? `&status=${status}` : ''}`
+    ),
+
+  updateBulkEnquiryStatus: (id: string, status: string) =>
+    axiosInstance.put<ApiResponse<void>>(`/api/admin/bulk-enquiry/${id}/status`, { status }),
 }
 
 // ===========================

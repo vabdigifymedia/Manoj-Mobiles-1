@@ -5,12 +5,36 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { FaAward, FaXmark, FaImage, FaBox, FaUsers, FaUserPlus, FaCircleQuestion, FaGear, FaTableColumns, FaTag, FaBagShopping, FaBars, FaRightFromBracket, FaChartSimple, FaInstagram, FaListCheck, FaBoxesPacking } from 'react-icons/fa6'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
+import { bulkInquiryService } from '@/lib/bulkInquiryService'
 
 function AdminSidebar({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [pendingInquiryCount, setPendingInquiryCount] = useState(0)
   const { isAuthenticated, user, logout, loading } = useAuth()
+
+  useEffect(() => {
+    const fetchBadgeCount = () => {
+      if (isAuthenticated) {
+        bulkInquiryService.getBulkInquiries(0, 1, 'PENDING')
+          .then(res => setPendingInquiryCount(res.totalElements))
+          .catch(console.error)
+      }
+    }
+
+    fetchBadgeCount()
+
+    const handleStatusChange = (e: any) => {
+      if (e.detail?.oldStatus === 'PENDING' && e.detail?.newStatus !== 'PENDING') {
+        setPendingInquiryCount(prev => Math.max(0, prev - 1))
+      }
+      fetchBadgeCount()
+    }
+
+    window.addEventListener('bulkInquiryStatusChanged', handleStatusChange)
+    return () => window.removeEventListener('bulkInquiryStatusChanged', handleStatusChange)
+  }, [isAuthenticated])
 
   // Close menu on route change
   useEffect(() => {
@@ -81,7 +105,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
             {[
               { label: 'Overview', icon: FaChartSimple, href: '/admin', exact: true }, 
               { label: 'Products', icon: FaBox, href: '/admin/products', exact: false }, 
-              { label: 'Bulk Inquiry', icon: FaBoxesPacking, href: '/admin/bulk-inquiries', exact: false },
+              { label: 'Bulk Inquiry', icon: FaBoxesPacking, href: '/admin/bulk-inquiries', exact: false, badge: pendingInquiryCount },
               { label: 'Categories', icon: FaTag, href: '/admin/categories', exact: false },
               { label: 'Spec Templates', icon: FaListCheck, href: '/admin/spec-templates', exact: false },
               { label: 'Brands', icon: FaAward, href: '/admin/brands', exact: false },
@@ -104,7 +128,14 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
                     isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                   }`}
                 >
-                  <Icon size={18} /> {item.label}
+                  <div className="flex items-center gap-3">
+                    <Icon size={18} /> {item.label}
+                  </div>
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="ml-auto inline-flex items-center justify-center rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               )
             })}

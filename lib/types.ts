@@ -626,3 +626,34 @@ export interface PincodeCheckResponseDTO {
   serviceable: boolean
 }
 
+// --- Bulk Enquiry ---
+export interface SubmitBulkEnquiryRequestDTO {
+  productId: string
+  variantId?: string | null
+  name: string
+  email: string
+  mobileNumber: string
+  companyName: string
+  gstin?: string
+  estimatedQuantity: number
+  requirements?: string
+}
+
+export interface BulkEnquiryResponseDTO {
+  id: string
+  productId: string
+  productName: string
+  variantId?: string
+  variantName?: string
+  name: string
+  email: string
+  mobileNumber: string
+  companyName: string
+  gstin?: string
+  estimatedQuantity: number
+  requirements?: string
+  status: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED'
+  createdAt: string
+  updatedAt: string
+}
+
