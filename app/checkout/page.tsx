@@ -19,7 +19,7 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>('')
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'CARD' | 'UPI' | 'WALLET'>('COD')
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'ONLINE'>('COD')
   
   // Checkout flow state
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
@@ -350,9 +350,7 @@ export default function CheckoutPage() {
                   <div className="px-6 pb-6 pt-2">
                     <div className="grid gap-4 sm:grid-cols-2">
                       {[
-                        { id: 'UPI', label: 'UPI / QR Code', desc: 'Google Pay, PhonePe, Paytm', icon: FaMobileScreen },
-                        { id: 'CARD', label: 'Credit / Debit Card', desc: 'Visa, Mastercard, RuPay', icon: FaCreditCard },
-                        { id: 'WALLET', label: 'Wallets', desc: 'Mobikwik, Freecharge, etc.', icon: FaWallet },
+                        { id: 'ONLINE', label: 'Pay Online', desc: 'Cards, UPI, Wallets', icon: FaCreditCard },
                         { id: 'COD', label: 'Cash on Delivery', desc: 'Pay at your doorstep', icon: FaMoneyBill },
                       ].map(method => {
                         const isSelected = paymentMethod === method.id
