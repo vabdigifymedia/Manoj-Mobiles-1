@@ -15,6 +15,25 @@ const nextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      {
+        source: '/orders',
+        destination: '/account/orders',
+        permanent: true,
+      },
+      {
+        source: '/wishlist',
+        destination: '/account/wishlist',
+        permanent: true,
+      },
+      {
+        source: '/track',
+        destination: '/account/orders',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default nextConfig

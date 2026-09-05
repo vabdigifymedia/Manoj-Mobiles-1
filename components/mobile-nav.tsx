@@ -42,10 +42,10 @@ export function MobileNav() {
   const accountHref = mounted && isAuthenticated ? '/account' : '/auth'
 
   const isHomeActive = pathname === '/'
-  const isWishlistActive = pathname === '/wishlist'
+  const isWishlistActive = pathname?.startsWith('/account/wishlist')
   const isCartActive = pathname === '/cart'
-  const isOrdersActive = pathname === '/orders'
-  const isAccountActive = pathname === '/account' || pathname === '/auth'
+  const isOrdersActive = pathname?.startsWith('/account/orders')
+  const isAccountActive = pathname === '/account' || pathname?.startsWith('/account/profile') || pathname === '/auth'
 
   const isHidden = isFooterVisible || isMenuOpen
 
@@ -62,7 +62,7 @@ export function MobileNav() {
         
         {/* 1. Wishlist */}
         <Link
-          href="/wishlist"
+          href="/account/wishlist"
           className={`flex-1 flex flex-col items-center gap-0.5 py-1 text-center transition-all duration-150 active:scale-95 ${
             isWishlistActive ? 'text-primary' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
           }`}
@@ -104,7 +104,7 @@ export function MobileNav() {
 
         {/* 4. My Orders */}
         <Link
-          href="/orders"
+          href="/account/orders"
           className={`flex-1 flex flex-col items-center gap-0.5 py-1 text-center transition-all duration-150 active:scale-95 ${
             isOrdersActive ? 'text-primary' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
           }`}

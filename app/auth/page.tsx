@@ -52,7 +52,7 @@ export default function AuthPage() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (otp.length < 4) return
+    if (otp.length < 6) return
     setLoading(true)
     setError('')
     try {
@@ -153,13 +153,13 @@ export default function AuthPage() {
                   value={otp}
                   onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   className="w-full rounded-xl border border-border bg-background py-3 px-4 text-center text-xl font-black tracking-[0.5em] outline-none focus:border-primary" 
-                  placeholder="••••"
+                  placeholder="••••••"
                   autoFocus
                 />
               </div>
               <button 
                 type="submit" 
-                disabled={otp.length < 4 || loading}
+                disabled={otp.length < 6 || loading}
                 className="w-full rounded-xl bg-primary py-3.5 font-bold text-primary-foreground disabled:opacity-50 transition-opacity"
               >
                 {loading ? 'Verifying...' : 'Verify & Continue'}

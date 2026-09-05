@@ -12,11 +12,19 @@ import { apiClient } from '@/lib/apiClient'
 import type { ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO, StoreSettingResponseDTO } from '@/lib/types'
 import { SearchOverlay } from './search-overlay'
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
+
 const nav = [
   { key: '/', label: 'Home' },
-  { key: '/shop', label: 'Shop' },
-  { key: '/orders', label: 'My orders' },
-  { key: '/track', label: 'Track order' }
+  { key: '/shop', label: 'Shop' }
 ]
 
 export function Header() {
@@ -359,17 +367,43 @@ export function Header() {
             </button>
 
             <Link href="/wishlist" className="relative hidden md:flex items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Wishlist">
-              <FaHeart size={22} />
-            </Link>
-
-            <Link href={mounted && isAuthenticated ? "/account" : "/auth"} className="hidden md:flex relative items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Account">
-              <FaUser size={22}  />
+              <FaHeart size={18} />
             </Link>
 
             <Link href="/cart" className="hidden md:flex relative items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors" aria-label="Cart">
-              <FaBagShopping size={22}  />
+              <FaBagShopping size={18} />
               {cartCount > 0 && <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#F97316] text-[10px] font-black text-white">{cartCount}</span>}
             </Link>
+
+            {mounted && isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="hidden md:flex relative items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors outline-none">
+                  <FaUser size={18} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 font-medium">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Link href="/account" className="cursor-pointer w-full h-full flex items-center">Overview</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/account/orders" className="cursor-pointer w-full h-full flex items-center">My Orders</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/account/wishlist" className="cursor-pointer w-full h-full flex items-center">Wishlist</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Link href="/auth/logout" className="cursor-pointer text-red-600 dark:text-red-400 w-full h-full flex items-center">Logout</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link href="/auth" className="hidden md:flex items-center gap-2 rounded-full border border-slate-200 dark:border-zinc-800 px-4 py-1.5 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors">
+                <FaUser size={14} />
+                <span>Login</span>
+              </Link>
+            )}
 
           </div>
         </div>
