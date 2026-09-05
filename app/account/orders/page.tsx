@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react'
 import { apiClient, formatINR } from '@/lib/apiClient'
 import type { OrderResponseDTO } from '@/lib/types'
 import { FaBoxOpen, FaTruckFast, FaChevronRight } from 'react-icons/fa6'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import Link from 'next/link'
 
 const StatusBadge = ({ status }: { status: string }) => {
   const colors: Record<string, string> = {
@@ -23,7 +22,6 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderResponseDTO[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedOrder, setSelectedOrder] = useState<OrderResponseDTO | null>(null)
 
   useEffect(() => {
     apiClient.getUserOrders(0, 50).then(res => {
@@ -55,10 +53,10 @@ export default function OrdersPage() {
       ) : (
         <div className="grid gap-4">
           {orders.map(order => (
-            <div 
+            <Link 
+              href={`/account/orders/${order.id}`}
               key={order.id} 
-              onClick={() => setSelectedOrder(order)}
-              className="cursor-pointer group flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-3xl border border-border bg-white dark:bg-zinc-900 hover:border-primary/50 transition-all shadow-sm"
+              className="group flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-3xl border border-border bg-white dark:bg-zinc-900 hover:border-primary/50 transition-all shadow-sm"
             >
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-3">
@@ -80,91 +78,11 @@ export default function OrdersPage() {
               <div className="flex items-center justify-end sm:justify-start gap-2 text-primary font-semibold text-sm opacity-0 group-hover:opacity-100 transition-opacity">
                 View Details <FaChevronRight size={12} />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
 
-      {/* Order Details Drawer */}
-      <Sheet open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader className="mb-6">
-            <SheetTitle className="text-2xl font-black tracking-tight">Order Details</SheetTitle>
-          </SheetHeader>
-          
-          {selectedOrder && (
-            <div className="space-y-8">
-              {/* Status Section */}
-              <div className="rounded-2xl bg-slate-50 dark:bg-zinc-900 p-5 border border-border">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-bold">{selectedOrder.orderNumber}</span>
-                  <StatusBadge status={selectedOrder.orderStatus} />
-                </div>
-                
-                {/* Live Tracking Timeline */}
-                <div className="relative pl-6 space-y-6 mt-6 before:absolute before:inset-y-2 before:left-2 before:w-[2px] before:bg-slate-200 dark:before:bg-zinc-800">
-                  <div className="relative">
-                    <div className="absolute -left-[27px] top-1 size-3.5 rounded-full bg-primary ring-4 ring-background" />
-                    <h4 className="font-bold text-sm">Order Placed</h4>
-                    <p className="text-xs text-muted-foreground">{new Date(selectedOrder.placedAt).toLocaleString()}</p>
-                  </div>
-                  {(selectedOrder.orderStatus === 'SHIPPED' || selectedOrder.orderStatus === 'OUT_FOR_DELIVERY' || selectedOrder.orderStatus === 'DELIVERED') && (
-                    <div className="relative animate-in slide-in-from-bottom-2 fade-in">
-                      <div className="absolute -left-[27px] top-1 size-3.5 rounded-full bg-primary ring-4 ring-background" />
-                      <h4 className="font-bold text-sm">Order Shipped</h4>
-                    </div>
-                  )}
-                  {selectedOrder.orderStatus === 'OUT_FOR_DELIVERY' && (
-                    <div className="relative animate-in slide-in-from-bottom-2 fade-in">
-                      <div className="absolute -left-[27px] top-1 size-3.5 rounded-full bg-orange-500 ring-4 ring-background flex items-center justify-center text-white">
-                        <div className="absolute size-8 rounded-full bg-orange-500/30 animate-ping" />
-                      </div>
-                      <h4 className="font-bold text-sm text-orange-600 dark:text-orange-400 flex items-center gap-2">
-                        <FaTruckFast /> Out for Delivery (Live Tracking Active)
-                      </h4>
-                    </div>
-                  )}
-                  {selectedOrder.orderStatus === 'DELIVERED' && (
-                    <div className="relative animate-in slide-in-from-bottom-2 fade-in">
-                      <div className="absolute -left-[27px] top-1 size-3.5 rounded-full bg-emerald-500 ring-4 ring-background" />
-                      <h4 className="font-bold text-sm text-emerald-600 dark:text-emerald-400">Delivered</h4>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Items Section */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">Items ({selectedOrder.orderItems.length})</h3>
-                <div className="space-y-4">
-                  {selectedOrder.orderItems.map(item => (
-                    <div key={item.id} className="flex items-center gap-4 bg-slate-50 dark:bg-zinc-900/50 p-3 rounded-2xl border border-border">
-                      <div className="size-16 bg-white dark:bg-zinc-800 rounded-xl flex items-center justify-center p-2">
-                         {item.primaryImageUrl && <img src={item.primaryImageUrl} alt={item.productName} className="object-contain" />}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-sm line-clamp-1">{item.productName}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">Qty: {item.qty}</p>
-                      </div>
-                      <div className="font-bold text-sm">
-                        {formatINR(item.price)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Summary */}
-              <div className="rounded-2xl border border-border p-5 space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Payment Method</span><span className="font-bold">{selectedOrder.paymentMethod}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Payment Status</span><span className="font-bold">{selectedOrder.paymentStatus}</span></div>
-                <hr className="my-2 border-border" />
-                <div className="flex justify-between text-base"><span className="font-black">Total</span><span className="font-black text-primary">{formatINR(selectedOrder.totalAmount)}</span></div>
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
     </div>
   )
 }

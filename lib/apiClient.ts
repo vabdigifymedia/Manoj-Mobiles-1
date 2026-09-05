@@ -357,6 +357,9 @@ export const apiClient = {
   getOrderById: (orderId: string) =>
     axiosInstance.get<ApiResponse<import('./types').OrderResponseDTO>>(`/api/user/orders/${orderId}`),
 
+  getOrderLiveLocation: (orderId: string) =>
+    axiosInstance.get<ApiResponse<import('./types').LiveLocationDTO>>(`/api/user/orders/${orderId}/live-location`),
+
   placeOrder: (dto: import('./types').PlaceOrderRequestDTO) =>
     axiosInstance.post<ApiResponse<import('./types').OrderResponseDTO>>('/api/user/orders', dto),
 

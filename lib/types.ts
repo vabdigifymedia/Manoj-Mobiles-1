@@ -270,11 +270,28 @@ export interface UserResponseDTO {
   updatedAt: string
 }
 
+// --- Delivery & Tracking ---
+export interface DeliveryPartnerDTO {
+  id: string
+  name: string
+  phone: string
+  vehicleNo: string
+}
+
+export interface LiveLocationDTO {
+  lat: number
+  lng: number
+}
+
 // --- Order ---
 export interface OrderResponseDTO {
   id: string
   orderNumber: string
   orderStatus: 'PLACED' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'RETURNED'
+  deliveryType?: 'HYPERLOCAL' | 'STANDARD'
+  trackingId?: string | null
+  courierPartner?: string | null
+  deliveryPartnerInfo?: DeliveryPartnerDTO | null
   totalAmount: number
   discountAmount?: number
   deliveryCharge?: number
@@ -288,6 +305,7 @@ export interface OrderResponseDTO {
   placedAt: string
   expectedDeliveryDate?: string
   orderItems: OrderItemResponseDTO[]
+  address?: AddressResponseDTO
 }
 
 export interface OrderItemResponseDTO {
