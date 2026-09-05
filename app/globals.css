@@ -50,6 +50,15 @@
 :root {
   color-scheme: light;
   font-family: var(--font-inter), 'Inter', Arial, sans-serif;
+  --login-color-bg: #f8fafc;
+  --login-color-surface: #ffffff;
+  --login-color-muted-surface: #f1f5f9;
+  --login-color-border: #e2e8f0;
+  --login-color-text-secondary: #64748b;
+  --login-color-text-primary: #0f172a;
+  --login-color-heading: #020617;
+  --login-color-text-primary-rgb: 15, 23, 42;
+  --login-color-bg-2: #e2e8f0;
   --background: #F4F8FC;
   --foreground: oklch(0.18 0.025 255);
   --card: #FFFFFF;
@@ -87,6 +96,15 @@
 .dark {
   color-scheme: dark;
   font-family: var(--font-inter), 'Inter', Arial, sans-serif;
+  --login-color-bg: #101214;
+  --login-color-surface: #161A1D;
+  --login-color-muted-surface: #1D2125;
+  --login-color-border: #2C333A;
+  --login-color-text-secondary: #596773;
+  --login-color-text-primary: #C7D1DB;
+  --login-color-heading: #DEE4EA;
+  --login-color-bg-2: #C7D1DB;
+  --login-color-text-primary-rgb: 199, 209, 219;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

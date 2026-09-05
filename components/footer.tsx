@@ -53,7 +53,7 @@ export function Footer() {
     }
   }, [])
 
-  if (pathname?.startsWith('/admin')) {
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/auth') || pathname?.startsWith('/staff-login') || pathname?.startsWith('/account')) {
     return null
   }
 

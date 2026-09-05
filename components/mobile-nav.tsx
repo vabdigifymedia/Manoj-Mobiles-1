@@ -37,7 +37,7 @@ export function MobileNav() {
   }, [])
 
   // Hide on admin pages and product pages (which have their own fixed bar)
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/product/')) return null
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/product/') || pathname?.startsWith('/auth') || pathname?.startsWith('/staff-login') || pathname?.startsWith('/account')) return null
 
   const accountHref = mounted && isAuthenticated ? '/account' : '/auth'
 

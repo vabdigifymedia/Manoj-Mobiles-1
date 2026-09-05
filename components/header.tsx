@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FaXmark, FaMoon, FaMobileScreen, FaUser, FaBagShopping, FaBars, FaMagnifyingGlass, FaMicrophone, FaLocationDot, FaSun, FaHeart, FaArrowLeft } from 'react-icons/fa6'
+import { FaXmark, FaMoon, FaMobileScreen, FaUser, FaBagShopping, FaBars, FaMagnifyingGlass, FaMicrophone, FaLocationDot, FaSun, FaHeart, FaArrowLeft, FaBoxOpen, FaArrowRightFromBracket } from 'react-icons/fa6'
 import { useTheme } from 'next-themes'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -19,6 +19,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 
 
@@ -48,6 +49,7 @@ export function Header() {
   const [storeSettings, setStoreSettings] = useState<StoreSettingResponseDTO | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [pincode, setPincode] = useState('Select your location')
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
 
   useEffect(() => {
     const savedPincode = localStorage.getItem('user_pincode')
@@ -182,7 +184,7 @@ export function Header() {
     ? categories.filter(c => c.name.toLowerCase().includes(debouncedQuery.toLowerCase())).slice(0, 3) 
     : []
 
-  if (pathname?.startsWith('/admin')) {
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/auth') || pathname?.startsWith('/staff-login') || pathname?.startsWith('/account')) {
     return null
   }
 
@@ -376,28 +378,47 @@ export function Header() {
             </Link>
 
             {mounted && isAuthenticated ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger className="hidden md:flex relative items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors outline-none">
-                  <FaUser size={18} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 font-medium">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link href="/account" className="cursor-pointer w-full h-full flex items-center">Overview</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link href="/account/orders" className="cursor-pointer w-full h-full flex items-center">My Orders</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link href="/account/wishlist" className="cursor-pointer w-full h-full flex items-center">Wishlist</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link href="/auth/logout" className="cursor-pointer text-red-600 dark:text-red-400 w-full h-full flex items-center">Logout</Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div
+                onMouseEnter={() => setIsAccountMenuOpen(true)}
+                onMouseLeave={() => setIsAccountMenuOpen(false)}
+              >
+                <DropdownMenu open={isAccountMenuOpen} onOpenChange={setIsAccountMenuOpen}>
+                  <DropdownMenuTrigger className="hidden md:flex relative items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors outline-none cursor-pointer">
+                    <FaUser size={18} />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="w-56 font-medium p-2 border-slate-200 dark:border-zinc-800 shadow-xl rounded-xl">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="text-slate-500 dark:text-zinc-400 font-semibold px-2 py-1.5 text-xs uppercase tracking-wider">My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator className="my-1 bg-slate-200 dark:bg-zinc-800" />
+                      <Link href="/account" className="w-full">
+                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-lg cursor-pointer flex items-center gap-3 px-2 py-2">
+                          <FaUser className="text-slate-400" size={16} />
+                          Overview
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href="/account/orders" className="w-full">
+                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-lg cursor-pointer flex items-center gap-3 px-2 py-2">
+                          <FaBoxOpen className="text-slate-400" size={16} />
+                          My Orders
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href="/account/wishlist" className="w-full">
+                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-lg cursor-pointer flex items-center gap-3 px-2 py-2">
+                          <FaHeart className="text-slate-400" size={16} />
+                          Wishlist
+                        </DropdownMenuItem>
+                      </Link>
+                      <DropdownMenuSeparator className="my-1 bg-slate-200 dark:bg-zinc-800" />
+                      <Link href="/auth/logout" className="w-full">
+                        <DropdownMenuItem className="focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-600 dark:focus:text-red-400 text-red-600 dark:text-red-400 rounded-lg cursor-pointer flex items-center gap-3 px-2 py-2">
+                          <FaArrowRightFromBracket size={16} />
+                          Logout
+                        </DropdownMenuItem>
+                      </Link>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ) : (
               <Link href="/auth" className="hidden md:flex items-center gap-2 rounded-full border border-slate-200 dark:border-zinc-800 px-4 py-1.5 text-sm font-semibold text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors">
                 <FaUser size={14} />
