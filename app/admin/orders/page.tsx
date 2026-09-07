@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { FaFilter, FaCircleCheck, FaArrowLeft, FaArrowRotateLeft, FaBox, FaClock, FaMagnifyingGlass, FaTruckFast, FaCircleXmark, FaMotorcycle, FaChevronRight } from 'react-icons/fa6'
+import { FaFilter, FaCircleCheck, FaArrowLeft, FaArrowRotateLeft, FaBox, FaClock, FaMagnifyingGlass, FaTruckFast, FaCircleXmark, FaMotorcycle, FaChevronRight, FaWallet, FaTruck, FaFileInvoice, FaTriangleExclamation, FaMapPin } from 'react-icons/fa6'
 import { apiClient, formatINR } from '@/lib/apiClient'
 import { OrderResponseDTO, DeliveryPartnerResponseDTO } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -357,18 +357,36 @@ export default function AdminOrdersPage() {
 
       {/* Center Order Details Modal (Dialog) */}
       <Dialog open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <DialogContent className="w-screen h-[100dvh] max-w-none rounded-none border-0 !p-4 overflow-y-auto sm:w-[95vw] sm:h-auto sm:max-h-[90vh] sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl sm:rounded-xl sm:border sm:!p-8">
-          <DialogHeader className="mb-6">
-            <DialogTitle className="text-2xl font-black">Order {selectedOrder?.orderNumber}</DialogTitle>
-            <DialogDescription>
-              Placed on {selectedOrder && new Date(selectedOrder.placedAt).toLocaleString()}
-            </DialogDescription>
+        <DialogContent className="w-screen h-[100dvh] max-w-none rounded-none border-0 !p-4 overflow-y-auto sm:w-[95vw] sm:h-auto sm:max-h-[90vh] sm:max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl sm:rounded-xl sm:border sm:!p-8">
+          <DialogHeader className="mb-6 flex flex-row items-start justify-between sm:items-center">
+            <div>
+              <DialogTitle className="text-2xl font-black">Order {selectedOrder?.orderNumber}</DialogTitle>
+              <DialogDescription>
+                Placed on {selectedOrder && new Date(selectedOrder.placedAt).toLocaleString()}
+              </DialogDescription>
+            </div>
+            {selectedOrder && selectedOrder.orderStatus !== 'CANCELLED' && selectedOrder.orderStatus !== 'DELIVERED' && (
+              <button 
+                onClick={() => {
+                  if (confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+                    handleUpdateStatus(selectedOrder.id, 'CANCELLED')
+                  }
+                }}
+                className="text-xs font-bold bg-destructive/10 text-destructive hover:bg-destructive/20 px-4 py-2 rounded-xl transition-colors shadow-sm ml-4 shrink-0"
+              >
+                Cancel Order
+              </button>
+            )}
           </DialogHeader>
 
           {selectedOrder && (
             <div className="space-y-8 pb-10">
               
-              {/* Interactive Status Stepper */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                {/* Column 1 - Order Items */}
+                <div className="lg:col-span-1 space-y-8">
+                  {/* Interactive Status Stepper */}
               <div className="bg-white dark:bg-zinc-900/50 p-4 sm:p-6 rounded-2xl border border-border shadow-sm overflow-hidden">
                 <div className="flex items-center justify-between mb-8">
                   <h4 className="font-bold text-xs sm:text-sm uppercase tracking-wider text-muted-foreground">Order Progress</h4>
@@ -425,7 +443,35 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              {/* Delivery Assignment Panel */}
+                  {/* Order Items */}
+                  <div>
+                    <h4 className="font-bold mb-4 flex items-center gap-2"><FaBox className="text-muted-foreground" /> Order Items</h4>
+                    <div className="space-y-3">
+                      {selectedOrder.orderItems?.map(item => (
+                        <div key={item.id} className="flex gap-4 p-3 rounded-xl border border-border bg-card shadow-sm">
+                          <div className="size-16 bg-muted rounded-lg overflow-hidden shrink-0">
+                            {item.primaryImageUrl ? (
+                              <img src={item.primaryImageUrl} alt={item.productName} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground"><FaBox /></div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-sm line-clamp-2">{item.productName}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Qty: {item.qty} × {formatINR(item.price)}</p>
+                          </div>
+                          <div className="text-right font-black text-sm">
+                            {formatINR(item.subtotal || (item.price * item.qty))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 2 - Financial & Invoice */}
+                <div className="lg:col-span-1 space-y-6">
+                  {/* Delivery Assignment Panel */}
               {selectedOrder.orderStatus !== 'DELIVERED' && selectedOrder.orderStatus !== 'CANCELLED' && (
                 <div className="bg-emerald-50 dark:bg-emerald-950/20 p-5 rounded-2xl border border-emerald-200 dark:border-emerald-900/50">
                   <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-400 mb-4 flex items-center gap-2">
@@ -442,6 +488,11 @@ export default function AdminOrdersPage() {
                       <div className="size-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
                         <FaCircleCheck size={20} />
                       </div>
+                    </div>
+                  ) : selectedOrder.deliveryType !== 'HYPERLOCAL' ? (
+                    <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-border shadow-sm text-center">
+                      <p className="font-bold text-slate-700 dark:text-slate-300">Handled by Courier 🚚</p>
+                      <p className="text-sm text-muted-foreground mt-1">This is a Standard Delivery order. It will be fulfilled via third-party courier services instead of local delivery boys.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -474,40 +525,118 @@ export default function AdminOrdersPage() {
                 </div>
               )}
 
-              {/* Order Items */}
-              <div>
-                <h4 className="font-bold mb-4 flex items-center gap-2"><FaBox className="text-muted-foreground" /> Order Items</h4>
-                <div className="space-y-3">
-                  {selectedOrder.orderItems?.map(item => (
-                    <div key={item.id} className="flex gap-4 p-3 rounded-xl border border-border bg-card">
-                      <div className="size-16 bg-muted rounded-lg overflow-hidden shrink-0">
-                        {item.primaryImageUrl ? (
-                          <img src={item.primaryImageUrl} alt={item.productName} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground"><FaBox /></div>
-                        )}
+                  {/* Financial Breakdown */}
+                  <div className="bg-card border border-border p-5 rounded-2xl shadow-sm">
+                    <h4 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-4">Payment Summary</h4>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span className="font-semibold">{formatINR(selectedOrder.orderItems?.reduce((acc, item) => acc + (item.subtotal || (item.price * item.qty)), 0) || 0)}</span>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-bold text-sm line-clamp-2">{item.productName}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Qty: {item.qty}</p>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Delivery Charge</span>
+                        <span className="font-semibold">{formatINR(selectedOrder.deliveryCharge || 0)}</span>
                       </div>
-                      <div className="text-right font-bold text-sm">
-                        {formatINR(item.price * item.qty)}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Taxes (GST)</span>
+                        <span className="font-semibold">{formatINR(selectedOrder.gstAmount || 0)}</span>
+                      </div>
+                      {(selectedOrder.discountAmount ?? 0) > 0 && (
+                        <div className="flex justify-between text-emerald-600 font-bold">
+                          <span>Discount Applied</span>
+                          <span>-{formatINR(selectedOrder.discountAmount || 0)}</span>
+                        </div>
+                      )}
+                      <div className="pt-3 border-t border-dashed border-border flex justify-between items-center">
+                        <span className="font-black text-lg">Grand Total</span>
+                        <span className="font-black text-2xl text-primary">{formatINR(selectedOrder.totalAmount)}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* Customer Details */}
-              <div>
-                <h4 className="font-bold mb-4 text-sm uppercase tracking-wider text-muted-foreground">Customer & Address</h4>
-                <div className="bg-muted/30 p-5 rounded-2xl border border-border">
-                  <p className="font-black text-lg mb-2">{selectedOrder.address?.label}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedOrder.address?.addressLine}<br />
-                    {selectedOrder.address?.city}, {selectedOrder.address?.state} - <span className="font-mono">{selectedOrder.address?.pincode}</span>
-                  </p>
+                  {/* Invoice */}
+                  <div className="bg-card border border-border p-5 rounded-2xl shadow-sm">
+                    <h4 className="font-bold text-sm flex items-center gap-2 mb-4"><FaFileInvoice className="text-indigo-500" /> Invoice</h4>
+                    {selectedOrder.invoiceNumber ? (
+                      <div className="space-y-3">
+                        <p className="text-sm font-mono text-muted-foreground">{selectedOrder.invoiceNumber}</p>
+                        <button className="w-full py-2 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 font-bold rounded-lg text-xs hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+                          Download Invoice PDF
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Invoice will be generated upon confirmation.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Column 3 - Right Sidebar */}
+                <div className="lg:col-span-1 space-y-6">
+                  {/* Payment Info */}
+                  <div className="bg-card border border-border p-5 rounded-2xl shadow-sm">
+                    <h4 className="font-bold text-sm flex items-center gap-2 mb-4"><FaWallet className="text-primary" /> Payment Info</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Method</p>
+                        <p className="font-bold text-sm mt-1">{selectedOrder.paymentMethod === 'COD' ? 'Cash on Delivery' : 'Online Payment'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Status</p>
+                        <div className="mt-1">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${
+                            selectedOrder.paymentStatus === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                            selectedOrder.paymentStatus === 'FAILED' ? 'bg-destructive/10 text-destructive' :
+                            'bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
+                          }`}>
+                            {selectedOrder.paymentStatus === 'SUCCESS' ? <FaCircleCheck /> : selectedOrder.paymentStatus === 'FAILED' ? <FaTriangleExclamation /> : <FaClock />}
+                            {selectedOrder.paymentStatus}
+                          </span>
+                        </div>
+                      </div>
+                      {selectedOrder.txnId && (
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Transaction ID</p>
+                          <p className="font-mono text-sm mt-1 break-all bg-muted/50 p-1.5 rounded">{selectedOrder.txnId}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tracking Logistics */}
+                  {selectedOrder.deliveryType === 'STANDARD' && (
+                    <div className="bg-card border border-border p-5 rounded-2xl shadow-sm">
+                      <h4 className="font-bold text-sm flex items-center gap-2 mb-4"><FaTruck className="text-blue-500" /> Tracking</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Courier</p>
+                          <p className="font-bold text-sm mt-1">{selectedOrder.courierPartner || 'Not assigned yet'}</p>
+                        </div>
+                        {selectedOrder.trackingId && (
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Tracking ID</p>
+                            <a 
+                              href={`https://www.google.com/search?q=track+${selectedOrder.trackingId}+${selectedOrder.courierPartner || ''}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="inline-block font-mono text-sm text-blue-600 hover:underline bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded font-bold"
+                            >
+                              {selectedOrder.trackingId}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Customer Info */}
+                  <div className="bg-card border border-border p-5 rounded-2xl shadow-sm">
+                    <h4 className="font-bold text-sm flex items-center gap-2 mb-4"><FaMapPin className="text-rose-500" /> Delivery Address</h4>
+                    <p className="font-black text-sm mb-1">{selectedOrder.address?.label}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {selectedOrder.address?.addressLine}<br />
+                      {selectedOrder.address?.city}, {selectedOrder.address?.state} - <span className="font-mono font-semibold text-foreground">{selectedOrder.address?.pincode}</span>
+                    </p>
+                  </div>
                 </div>
               </div>
 
