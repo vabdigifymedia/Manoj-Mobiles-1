@@ -85,7 +85,7 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
             mapContainerStyle={containerStyle}
             center={center}
             zoom={14}
-            options={{ disableDefaultUI: true, zoomControl: true }}
+            options={{ disableDefaultUI: true, zoomControl: true, clickableIcons: false }}
           >
             {/* Delivery Boy Marker */}
             {liveLocation && (
