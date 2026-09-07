@@ -293,7 +293,7 @@ export default function AdminOrdersPage() {
                     <td className="px-6 py-4 text-muted-foreground">{new Date(order.placedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-2 py-1 rounded text-xs font-bold border ${order.deliveryType === 'HYPERLOCAL' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20' : 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
-                        {order.deliveryType}
+                        {order.deliveryType || 'N/A'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -447,7 +447,7 @@ export default function AdminOrdersPage() {
                     <div className="space-y-4">
                       <p className="text-sm text-muted-foreground">Select a delivery boy to assign this order. This will instantly start live tracking.</p>
                       
-                      <Select value={selectedPartnerId} onValueChange={setSelectedPartnerId}>
+                      <Select value={selectedPartnerId} onValueChange={(val) => setSelectedPartnerId(val || '')}>
                         <SelectTrigger className="w-full !bg-white dark:!bg-zinc-900 border-border rounded-xl px-4 h-12 text-sm font-semibold shadow-sm focus:ring-emerald-500">
                           {selectedPartnerId ? (
                             <span>{activePartners.find(p => p.id === selectedPartnerId)?.name} ({activePartners.find(p => p.id === selectedPartnerId)?.vehicleNo})</span>

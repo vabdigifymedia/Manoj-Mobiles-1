@@ -697,23 +697,28 @@ export interface BulkEnquiryResponseDTO {
 
 
 // --- City ---
+export type CityCoverageRule = 'ALL' | 'INCLUDE' | 'EXCLUDE'
+
 export interface CityResponseDTO {
   id: string
   name: string
   state: string
   isActive: boolean
+  coverageRule?: CityCoverageRule
   totalPincodesCount?: number
 }
 
 export interface CreateCityRequestDTO {
   name: string
   state: string
+  coverageRule?: CityCoverageRule
   isActive?: boolean
 }
 
 export interface UpdateCityRequestDTO {
   name: string
   state: string
+  coverageRule?: CityCoverageRule
   isActive?: boolean
 }
 
