@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import type { OrderResponseDTO, LiveLocationDTO } from '@/lib/types'
 import { apiClient } from '@/lib/apiClient'
 import { FaPhone, FaMotorcycle } from 'react-icons/fa6'
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api'
+import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from '@react-google-maps/api'
 
 const containerStyle = {
   width: '100%',
@@ -36,13 +36,34 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
     }
 
     fetchLocation()
-    const interval = setInterval(fetchLocation, 10000) // Poll every 10 seconds
+    const interval = setInterval(fetchLocation, 5000) // Poll every 5 seconds
 
     return () => clearInterval(interval)
   }, [order.id, order.deliveryType, order.orderStatus])
 
+  const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null)
+
+  // Draw Route using Directions API
+  useEffect(() => {
+    if (!isLoaded || !liveLocation || !order.address?.lat || !order.address?.lng || !window.google) return;
+    
+    const directionsService = new window.google.maps.DirectionsService();
+    directionsService.route(
+      {
+        origin: liveLocation,
+        destination: { lat: order.address.lat, lng: order.address.lng },
+        travelMode: (window.google.maps.TravelMode as any).TWO_WHEELER || window.google.maps.TravelMode.DRIVING
+      },
+      (result, status) => {
+        if (status === window.google.maps.DirectionsStatus.OK) {
+          setDirectionsResponse(result);
+        }
+      }
+    );
+  }, [liveLocation, order.address, isLoaded])
+
   // Center logic
-  const center = liveLocation || order.address?.coordinates || { lat: 28.5355, lng: 77.3910 }
+  const center = liveLocation || (order.address?.lat && order.address?.lng ? { lat: order.address.lat, lng: order.address.lng as number } : { lat: 28.5355, lng: 77.3910 })
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-border rounded-3xl overflow-hidden shadow-sm">
@@ -71,8 +92,19 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
               <Marker position={liveLocation} icon={{ url: '/bike-marker.png', scaledSize: new window.google.maps.Size(32, 32) }} />
             )}
             {/* Destination Marker */}
-            {order.address?.coordinates && (
-              <Marker position={order.address.coordinates} />
+            {order.address?.lat && order.address?.lng && (
+              <Marker position={{ lat: order.address.lat, lng: order.address.lng }} />
+            )}
+            
+            {/* Drawn Route */}
+            {directionsResponse && (
+              <DirectionsRenderer 
+                directions={directionsResponse}
+                options={{ 
+                  suppressMarkers: true, 
+                  polylineOptions: { strokeColor: '#10b981', strokeWeight: 5 } 
+                }} 
+              />
             )}
           </GoogleMap>
         ) : (
