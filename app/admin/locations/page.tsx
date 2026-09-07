@@ -37,8 +37,8 @@ export default function AdminLocationsPage() {
         apiClient.getAdminCities(),
         apiClient.getAdminPincodes()
       ])
-      setCities(citiesRes.data.data)
-      setPincodes(pincodesRes.data.data)
+      setCities(citiesRes.data.data.content || [])
+      setPincodes(pincodesRes.data.data.content || [])
     } catch (error) {
       console.error('Failed to fetch delivery zones:', error)
     } finally {

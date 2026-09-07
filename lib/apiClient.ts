@@ -545,8 +545,8 @@ export const apiClient = {
     axiosInstance.put<ApiResponse<void>>(`/api/admin/bulk-enquiry/${id}/status`, { status }),
 
   // --- Admin Locations ---
-  getAdminCities: () =>
-    axiosInstance.get<ApiResponse<import('./types').CityResponseDTO[]>>('/api/admin/cities'),
+  getAdminCities: (page = 0, size = 100) =>
+    axiosInstance.get<ApiResponse<PageResponse<import('./types').CityResponseDTO>>>(`/api/admin/cities?page=${page}&size=${size}`),
   createAdminCity: (dto: import('./types').CreateCityRequestDTO) =>
     axiosInstance.post<ApiResponse<import('./types').CityResponseDTO>>('/api/admin/cities', dto),
   updateAdminCity: (id: string, dto: import('./types').UpdateCityRequestDTO) =>
@@ -554,8 +554,8 @@ export const apiClient = {
   deleteAdminCity: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/api/admin/cities/${id}`),
 
-  getAdminPincodes: (cityId?: string) =>
-    axiosInstance.get<ApiResponse<import('./types').PincodeResponseDTO[]>>(`/api/admin/pincodes${cityId ? `?cityId=${cityId}` : ''}`),
+  getAdminPincodes: (cityId?: string, page = 0, size = 100) =>
+    axiosInstance.get<ApiResponse<PageResponse<import('./types').PincodeResponseDTO>>>(`/api/admin/pincodes?page=${page}&size=${size}${cityId ? `&cityId=${cityId}` : ''}`),
   createAdminPincode: (dto: import('./types').CreatePincodeRequestDTO) =>
     axiosInstance.post<ApiResponse<import('./types').PincodeResponseDTO>>('/api/admin/pincodes', dto),
   updateAdminPincode: (id: string, dto: import('./types').UpdatePincodeRequestDTO) =>
