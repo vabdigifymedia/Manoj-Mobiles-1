@@ -290,12 +290,15 @@ export const apiClient = {
   deleteUser: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/api/admin/users/${id}`),
 
-  // --- Orders (Admin) ---
-  getAdminOrders: (page = 0, size = 20) =>
-    axiosInstance.get<ApiResponse<PageResponse<OrderResponseDTO>>>(`/api/admin/orders?page=${page}&size=${size}`),
 
-  updateOrderStatus: (orderId: string, dto: { status: string }) =>
+
+  // --- Orders (Admin) ---
+  getAdminOrders: (page = 0, size = 10) =>
+    axiosInstance.get<ApiResponse<PageResponse<OrderResponseDTO>>>(`/api/admin/orders?page=${page}&size=${size}`),
+  updateAdminOrderStatus: (orderId: string, dto: { status: string; remarks?: string }) =>
     axiosInstance.put<ApiResponse<OrderResponseDTO>>(`/api/admin/orders/${orderId}/status`, dto),
+  assignAdminOrderPartner: (orderId: string, deliveryPartnerId: string) =>
+    axiosInstance.post<ApiResponse<OrderResponseDTO>>(`/api/admin/orders/${orderId}/assign-partner`, { deliveryPartnerId }),
 
   // --- Dashboard ---
   getDashboardStats: () =>
@@ -562,6 +565,22 @@ export const apiClient = {
     axiosInstance.put<ApiResponse<import('./types').PincodeResponseDTO>>(`/api/admin/pincodes/${id}`, dto),
   deleteAdminPincode: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/api/admin/pincodes/${id}`),
+
+  // --- Admin Delivery Partners ---
+  getAdminDeliveryPartners: (search = '', page = 0, size = 100) =>
+    axiosInstance.get<ApiResponse<PageResponse<import('./types').DeliveryPartnerResponseDTO>>>(
+      `/api/admin/delivery-partners?page=${page}&size=${size}${search ? `&search=${search}` : ''}`
+    ),
+  getActiveDeliveryPartners: () =>
+    axiosInstance.get<ApiResponse<import('./types').DeliveryPartnerResponseDTO[]>>('/api/admin/delivery-partners/active'),
+  createAdminDeliveryPartner: (dto: import('./types').CreateDeliveryPartnerRequestDTO) =>
+    axiosInstance.post<ApiResponse<import('./types').DeliveryPartnerResponseDTO>>('/api/admin/delivery-partners', dto),
+  updateAdminDeliveryPartner: (id: string, dto: import('./types').UpdateDeliveryPartnerRequestDTO) =>
+    axiosInstance.put<ApiResponse<import('./types').DeliveryPartnerResponseDTO>>(`/api/admin/delivery-partners/${id}`, dto),
+  toggleAdminDeliveryPartnerStatus: (id: string) =>
+    axiosInstance.patch<ApiResponse<import('./types').DeliveryPartnerResponseDTO>>(`/api/admin/delivery-partners/${id}/toggle-status`),
+  deleteAdminDeliveryPartner: (id: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/api/admin/delivery-partners/${id}`),
 }
 
 // ===========================

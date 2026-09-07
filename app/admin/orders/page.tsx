@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { FaFilter, FaCircleCheck, FaArrowLeft, FaArrowRotateLeft, FaBox, FaClock, FaMagnifyingGlass, FaTruckFast, FaCircleXmark } from 'react-icons/fa6'
+import { FaFilter, FaCircleCheck, FaArrowLeft, FaArrowRotateLeft, FaBox, FaClock, FaMagnifyingGlass, FaTruckFast, FaCircleXmark, FaMotorcycle } from 'react-icons/fa6'
 import { apiClient, formatINR } from '@/lib/apiClient'
-import { OrderResponseDTO } from '@/lib/types'
+import { OrderResponseDTO, DeliveryPartnerResponseDTO } from '@/lib/types'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 const statusConfig: Record<string, { color: string; icon: React.ElementType }> = {
   PLACED: { color: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400', icon: FaClock },
@@ -23,6 +24,13 @@ export default function AdminOrdersPage() {
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [totalElements, setTotalElements] = useState(0)
+  
+  // Order Details & Assignment States
+  const [selectedOrder, setSelectedOrder] = useState<OrderResponseDTO | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [activePartners, setActivePartners] = useState<DeliveryPartnerResponseDTO[]>([])
+  const [selectedPartnerId, setSelectedPartnerId] = useState('')
+  const [assigning, setAssigning] = useState(false)
 
   const loadOrders = async (p: number) => {
     try {
@@ -38,7 +46,39 @@ export default function AdminOrdersPage() {
     }
   }
 
-  useEffect(() => { loadOrders(page) }, [page])
+  const loadPartners = async () => {
+    try {
+      const res = await apiClient.getActiveDeliveryPartners()
+      setActivePartners(res.data.data || [])
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  useEffect(() => { 
+    loadOrders(page) 
+    loadPartners()
+  }, [page])
+
+  const handleRowClick = (order: OrderResponseDTO) => {
+    setSelectedOrder(order)
+    setSelectedPartnerId(order.deliveryPartnerInfo?.id || '')
+    setIsDialogOpen(true)
+  }
+
+  const handleAssignPartner = async () => {
+    if (!selectedOrder || !selectedPartnerId) return
+    try {
+      setAssigning(true)
+      await apiClient.assignAdminOrderPartner(selectedOrder.id, selectedPartnerId)
+      setIsDialogOpen(false)
+      loadOrders(page)
+    } catch (error) {
+      console.error('Failed to assign partner', error)
+    } finally {
+      setAssigning(false)
+    }
+  }
 
   return (
     <>
@@ -93,8 +133,8 @@ export default function AdminOrdersPage() {
                 const config = statusConfig[order.orderStatus] || statusConfig.PLACED
                 const StatusIcon = config.icon
                 return (
-                  <tr key={order.id} className="hover:bg-muted/50 transition-colors">
-                    <td className="px-6 py-4 font-bold">{order.orderNumber}</td>
+                  <tr key={order.id} onClick={() => handleRowClick(order)} className="hover:bg-muted/50 transition-colors cursor-pointer">
+                    <td className="px-6 py-4 font-bold text-primary">{order.orderNumber}</td>
                     <td className="px-6 py-4 text-muted-foreground">{new Date(order.placedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -133,6 +173,66 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       </div>
+
+      {/* Order Details & Assignment Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+            <DialogDescription>
+              {selectedOrder?.orderNumber} - {selectedOrder?.deliveryType} Delivery
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedOrder && (
+            <div className="space-y-6 mt-4">
+              <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                <h4 className="text-sm font-bold text-muted-foreground mb-2">Delivery Address</h4>
+                <p className="text-sm font-semibold">{selectedOrder.address?.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{selectedOrder.address?.addressLine}, {selectedOrder.address?.city}, {selectedOrder.address?.state} - {selectedOrder.address?.pincode}</p>
+              </div>
+
+              {selectedOrder.deliveryType === 'HYPERLOCAL' && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50">
+                  <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-400 mb-3 flex items-center gap-2">
+                    <FaMotorcycle /> Hyperlocal Assignment
+                  </h4>
+                  
+                  {selectedOrder.deliveryPartnerInfo ? (
+                    <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-border shadow-sm">
+                      <p className="text-xs text-muted-foreground mb-1">Currently Assigned To</p>
+                      <p className="font-bold text-sm">{selectedOrder.deliveryPartnerInfo.name}</p>
+                      <p className="text-xs text-muted-foreground">{selectedOrder.deliveryPartnerInfo.phone} • {selectedOrder.deliveryPartnerInfo.vehicleNo}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground">Select a delivery boy to assign this order and start live tracking.</p>
+                      <select 
+                        className="w-full bg-white dark:bg-zinc-900 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                        value={selectedPartnerId}
+                        onChange={(e) => setSelectedPartnerId(e.target.value)}
+                      >
+                        <option value="">Select a Delivery Partner...</option>
+                        {activePartners.map(p => (
+                          <option key={p.id} value={p.id}>{p.name} ({p.vehicleNo})</option>
+                        ))}
+                      </select>
+                      
+                      <button 
+                        onClick={handleAssignPartner}
+                        disabled={!selectedPartnerId || assigning}
+                        className="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                      >
+                        {assigning ? 'Assigning...' : 'Assign Partner'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

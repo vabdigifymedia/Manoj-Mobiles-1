@@ -278,6 +278,24 @@ export interface DeliveryPartnerDTO {
   vehicleNo: string
 }
 
+export interface DeliveryPartnerResponseDTO extends DeliveryPartnerDTO {
+  isActive: boolean
+  createdAt: string
+}
+
+export interface CreateDeliveryPartnerRequestDTO {
+  name: string
+  phone: string
+  vehicleNo: string
+  isActive?: boolean
+}
+
+export interface UpdateDeliveryPartnerRequestDTO {
+  name: string
+  phone: string
+  vehicleNo: string
+}
+
 export interface LiveLocationDTO {
   lat: number
   lng: number
