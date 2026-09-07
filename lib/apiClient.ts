@@ -295,6 +295,8 @@ export const apiClient = {
   // --- Orders (Admin) ---
   getAdminOrders: (page = 0, size = 10) =>
     axiosInstance.get<ApiResponse<PageResponse<OrderResponseDTO>>>(`/api/admin/orders?page=${page}&size=${size}`),
+  getAdminOrderById: (orderId: string) =>
+    axiosInstance.get<ApiResponse<OrderResponseDTO>>(`/api/admin/orders/${orderId}`),
   updateAdminOrderStatus: (orderId: string, dto: { status: string; remarks?: string }) =>
     axiosInstance.put<ApiResponse<OrderResponseDTO>>(`/api/admin/orders/${orderId}/status`, dto),
   assignAdminOrderPartner: (orderId: string, deliveryPartnerId: string) =>

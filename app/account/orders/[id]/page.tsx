@@ -8,6 +8,8 @@ import { FaChevronLeft, FaDownload } from 'react-icons/fa6'
 import Link from 'next/link'
 import { HyperlocalTracker } from '@/components/order/HyperlocalTracker'
 import { StandardTracker } from '@/components/order/StandardTracker'
+import TrackingTimeline from '@/components/ui/order-history'
+import { ClipboardCheck, Package, Ship, Bike, Home } from 'lucide-react'
 
 export default function OrderDetailsPage() {
   const { id } = useParams() as { id: string }
@@ -68,6 +70,53 @@ export default function OrderDetailsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-8">
+          
+          {/* Order Progress Timeline */}
+          {order.orderStatus !== 'CANCELLED' && (
+            <div className="bg-white dark:bg-zinc-900 border border-border rounded-3xl p-6 shadow-sm">
+              <h3 className="text-lg font-black tracking-tight mb-6">Order Progress</h3>
+              <TrackingTimeline 
+                items={['PLACED', 'PACKED', order.deliveryType === 'HYPERLOCAL' ? 'OUT_FOR_DELIVERY' : 'SHIPPED', 'DELIVERED'].map((step, idx) => {
+                  const statusOrder = ['PLACED', 'CONFIRMED', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'];
+                  const currentStatusIdx = statusOrder.indexOf(order.orderStatus);
+                  const thisStepIdx = statusOrder.indexOf(step);
+                  const isCompleted = currentStatusIdx >= thisStepIdx;
+                  const isCurrent = currentStatusIdx === thisStepIdx;
+                  const isNext = currentStatusIdx === thisStepIdx - 1;
+                  
+                  let status: 'completed' | 'in-progress' | 'pending' = 'pending';
+                  if (isCompleted) {
+                    if (isCurrent && step !== 'DELIVERED') {
+                      status = 'in-progress';
+                    } else {
+                      status = 'completed';
+                    }
+                  } else if (isNext && order.orderStatus !== 'CANCELLED') {
+                    status = 'in-progress';
+                  }
+                  
+                  let stepIcon;
+                  const iconClass = "h-4 w-4";
+                  switch (step) {
+                    case 'PLACED': stepIcon = <ClipboardCheck className={iconClass} />; break;
+                    case 'PACKED': stepIcon = <Package className={iconClass} />; break;
+                    case 'SHIPPED': stepIcon = <Ship className={iconClass} />; break;
+                    case 'OUT_FOR_DELIVERY': stepIcon = <Bike className={iconClass} />; break;
+                    case 'DELIVERED': stepIcon = <Home className={iconClass} />; break;
+                  }
+
+                  return {
+                    id: step,
+                    title: step.replace(/_/g, ' '),
+                    date: isCompleted ? (idx === 0 ? new Date(order.placedAt).toLocaleString() : 'Done') : 'Pending',
+                    status,
+                    icon: stepIcon,
+                  }
+                })} 
+              />
+            </div>
+          )}
+
           {/* Items */}
           <div className="bg-white dark:bg-zinc-900 border border-border rounded-3xl overflow-hidden shadow-sm">
             <div className="p-6 border-b border-border">
@@ -141,11 +190,9 @@ export default function OrderDetailsPage() {
             <h3 className="text-lg font-black tracking-tight mb-4">Delivery Address</h3>
             {order.address ? (
               <div className="text-sm text-muted-foreground leading-relaxed">
-                <p className="font-bold text-foreground mb-1">{order.address.fullName || 'User'}</p>
-                <p>{order.address.addressLine1}</p>
-                {order.address.addressLine2 && <p>{order.address.addressLine2}</p>}
-                <p>{order.address.city}, {order.address.state} {order.address.pincode}</p>
-                <p className="mt-2 font-semibold">Phone: {order.address.phoneNumber}</p>
+                <p className="font-bold text-foreground mb-1">{order.address.label || 'Delivery Address'}</p>
+                <p>{order.address.addressLine}</p>
+                <p>{order.address.city}, {order.address.state} - <span className="font-mono">{order.address.pincode}</span></p>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Address details not available.</p>
