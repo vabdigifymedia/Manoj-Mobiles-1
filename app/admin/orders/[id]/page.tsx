@@ -6,18 +6,20 @@ import Link from 'next/link'
 import { apiClient, formatINR } from '@/lib/apiClient'
 import type { OrderResponseDTO, DeliveryPartnerDTO } from '@/lib/types'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { 
-  FaChevronLeft, FaClock, FaTruck, 
-  FaMotorcycle, FaWallet, FaMapPin, FaFileInvoice, 
-  FaCircleCheck, FaTriangleExclamation, FaBox 
+import TrackingTimeline from '@/components/ui/order-history'
+import { ClipboardCheck, Package, Ship, Bike, Home } from 'lucide-react'
+import {
+  FaChevronLeft, FaClock, FaTruck,
+  FaMotorcycle, FaWallet, FaMapPin, FaFileInvoice,
+  FaCircleCheck, FaTriangleExclamation, FaBox
 } from 'react-icons/fa6'
 
-const statusOrder = ['PLACED', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'];
+const statusOrder = ['PLACED', 'CONFIRMED', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'];
 
 export default function AdminOrderDetailsPage() {
   const { id } = useParams() as { id: string }
   const router = useRouter()
-  
+
   const [order, setOrder] = useState<OrderResponseDTO | null>(null)
   const [loading, setLoading] = useState(true)
   const [activePartners, setActivePartners] = useState<DeliveryPartnerDTO[]>([])
@@ -110,7 +112,7 @@ export default function AdminOrderDetailsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12">
-      
+
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 bg-white dark:bg-zinc-900 border border-border p-6 sm:p-8 rounded-3xl shadow-sm">
         <div>
@@ -125,10 +127,10 @@ export default function AdminOrderDetailsPage() {
           </div>
           <p className="text-sm text-muted-foreground font-medium">Placed on {new Date(order.placedAt).toLocaleString()}</p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-3">
           {order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'DELIVERED' && (
-            <button 
+            <button
               onClick={() => {
                 if (confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
                   handleUpdateStatus('CANCELLED')
@@ -147,7 +149,7 @@ export default function AdminOrderDetailsPage() {
                 Assign Delivery Partner to Dispatch
               </div>
             ) : (
-              <button 
+              <button
                 onClick={() => handleUpdateStatus(nextStep!)}
                 disabled={updatingStatus}
                 className="text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
@@ -160,48 +162,103 @@ export default function AdminOrderDetailsPage() {
       </div>
 
       {/* HORIZONTAL PROGRESS TRACKER */}
-      <div className="bg-white dark:bg-zinc-900 border border-border p-6 sm:p-10 rounded-3xl shadow-sm overflow-x-auto hide-scrollbar">
-        <h4 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-8">Order Status</h4>
-        <div className="flex items-center min-w-[600px]">
-          {['PLACED', 'PACKED', order.deliveryType === 'HYPERLOCAL' ? 'OUT_FOR_DELIVERY' : 'SHIPPED', 'DELIVERED'].map((step, idx, arr) => {
-            const currentIdx = statusOrder.indexOf(order.orderStatus);
-            const stepIdx = statusOrder.indexOf(step);
-            const isCompleted = currentIdx >= stepIdx || (order.orderStatus === 'DELIVERED');
-            const isCurrent = currentIdx === stepIdx && order.orderStatus !== 'DELIVERED';
+      <div className="bg-white dark:bg-zinc-900 border border-border p-6 sm:p-10 rounded-3xl shadow-sm">
+        <h4 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-4">Order Status</h4>
+        <div className="overflow-x-auto hide-scrollbar w-full pt-4">
+          <div className="min-w-[500px]">
+            <TrackingTimeline
+              direction="horizontal"
+              items={(order.deliveryType === 'HYPERLOCAL'
+                ? ['PLACED', 'CONFIRMED', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED']
+                : ['PLACED', 'CONFIRMED', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED']
+              ).map((step, idx) => {
+                const currentIdx = statusOrder.indexOf(order.orderStatus);
+                const stepIdx = statusOrder.indexOf(step);
+                const isCompleted = currentIdx >= stepIdx || (order.orderStatus === 'DELIVERED');
+                const isCurrent = currentIdx === stepIdx && order.orderStatus !== 'DELIVERED';
+                const isNext = currentIdx === stepIdx - 1;
 
-            return (
-              <React.Fragment key={step}>
-                <div className="flex flex-col items-center relative z-10 w-24 shrink-0">
-                  <div className={`size-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ring-4 ring-background ${
-                    isCompleted ? 'bg-primary text-primary-foreground scale-110 shadow-md' : 'bg-muted text-muted-foreground border-2 border-transparent'
-                  }`}>
-                    {isCompleted ? <FaCircleCheck size={18} /> : idx + 1}
-                  </div>
-                  <span className={`text-xs font-bold text-center mt-4 transition-colors px-1 w-full break-words ${isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
-                    {step.replace(/_/g, ' ')}
-                  </span>
-                </div>
-                {/* Connecting Line */}
-                {idx < arr.length - 1 && (
-                  <div className="flex-1 h-1.5 mx-2 rounded-full overflow-hidden bg-muted">
-                    <div 
-                      className={`h-full bg-primary transition-all duration-500`} 
-                      style={{ width: (currentIdx > statusOrder.indexOf(arr[idx]) || order.orderStatus === 'DELIVERED') ? '100%' : '0%' }}
-                    />
-                  </div>
-                )}
-              </React.Fragment>
-            )
-          })}
+                let status: 'completed' | 'in-progress' | 'pending' = 'pending';
+                if (isCompleted) {
+                  status = 'completed';
+                } else if (isNext && order.orderStatus !== 'CANCELLED') {
+                  status = 'in-progress';
+                }
+
+                let stepIcon;
+                const iconClass = "h-4 w-4";
+                switch (step) {
+                  case 'PLACED': stepIcon = <ClipboardCheck className={iconClass} />; break;
+                  case 'CONFIRMED': stepIcon = <FaCircleCheck className={iconClass} />; break;
+                  case 'PACKED': stepIcon = <Package className={iconClass} />; break;
+                  case 'SHIPPED': stepIcon = <Ship className={iconClass} />; break;
+                  case 'OUT_FOR_DELIVERY': stepIcon = <Bike className={iconClass} />; break;
+                  case 'DELIVERED': stepIcon = <Home className={iconClass} />; break;
+                }
+
+                let actionNode = undefined;
+                if (order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'DELIVERED') {
+                  if (isNext && order.deliveryType !== 'HYPERLOCAL' && step !== 'OUT_FOR_DELIVERY') {
+                    actionNode = (
+                      <button
+                        onClick={() => handleUpdateStatus(step)}
+                        disabled={updatingStatus}
+                        className="text-[10px] font-bold bg-primary text-primary-foreground px-3 py-1.5 rounded-full hover:bg-primary/90 hover:scale-105 transition-all shadow-sm whitespace-nowrap"
+                      >
+                        {updatingStatus ? '...' : `Mark ${step.split('_')[0]}`}
+                      </button>
+                    );
+                  }
+
+                  if (isNext && order.deliveryType === 'HYPERLOCAL' && step === 'OUT_FOR_DELIVERY' && !order.deliveryPartnerInfo) {
+                    actionNode = (
+                      <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full border border-amber-200 dark:border-amber-900/50 whitespace-nowrap">
+                        Assign boy
+                      </div>
+                    );
+                  } else if (isNext && order.deliveryType === 'HYPERLOCAL' && step === 'OUT_FOR_DELIVERY' && order.deliveryPartnerInfo) {
+                    actionNode = (
+                      <button
+                        onClick={() => handleUpdateStatus(step)}
+                        disabled={updatingStatus}
+                        className="text-[10px] font-bold bg-primary text-primary-foreground px-3 py-1.5 rounded-full hover:bg-primary/90 hover:scale-105 transition-all shadow-sm whitespace-nowrap"
+                      >
+                        {updatingStatus ? '...' : 'Dispatch'}
+                      </button>
+                    );
+                  } else if (isNext && step === 'DELIVERED') {
+                    actionNode = (
+                      <button
+                        onClick={() => handleUpdateStatus(step)}
+                        disabled={updatingStatus}
+                        className="text-[10px] font-bold bg-primary text-primary-foreground px-3 py-1.5 rounded-full hover:bg-primary/90 hover:scale-105 transition-all shadow-sm whitespace-nowrap"
+                      >
+                        {updatingStatus ? '...' : 'Mark Delivered'}
+                      </button>
+                    );
+                  }
+                }
+
+                return {
+                  id: step,
+                  title: step.replace(/_/g, ' '),
+                  date: isCompleted ? (idx === 0 ? new Date(order.placedAt).toLocaleString('en-IN', { month: 'short', day: 'numeric' }) : 'Done') : 'Pending',
+                  status,
+                  icon: stepIcon,
+                  actionNode
+                }
+              })}
+            />
+          </div>
         </div>
       </div>
 
       {/* TWO COLUMN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* MAIN COLUMN (65-70%) */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           {/* Order Items */}
           <div className="bg-white dark:bg-zinc-900 border border-border rounded-3xl overflow-hidden shadow-sm">
             <div className="p-6 border-b border-border">
@@ -287,7 +344,7 @@ export default function AdminOrderDetailsPage() {
 
         {/* SIDEBAR (30-35%) */}
         <div className="lg:col-span-1 space-y-6">
-          
+
           {/* Delivery Assignment Panel */}
           {order.orderStatus !== 'DELIVERED' && order.orderStatus !== 'CANCELLED' && order.deliveryType === 'HYPERLOCAL' && !order.deliveryPartnerInfo && (
             <div className="bg-emerald-50 dark:bg-emerald-950/20 p-6 rounded-3xl border border-emerald-200 dark:border-emerald-900/50 shadow-sm">
@@ -296,7 +353,7 @@ export default function AdminOrderDetailsPage() {
               </h4>
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground font-medium">Select a delivery boy to assign this order and start live tracking.</p>
-                
+
                 <Select value={selectedPartnerId} onValueChange={(val) => setSelectedPartnerId(val || '')}>
                   <SelectTrigger className="w-full !bg-white dark:!bg-zinc-900 border-emerald-200 dark:border-emerald-800 rounded-xl px-4 h-12 text-sm font-bold shadow-sm focus:ring-emerald-500">
                     {selectedPartnerId ? (
@@ -311,8 +368,8 @@ export default function AdminOrderDetailsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                
-                <button 
+
+                <button
                   onClick={handleAssignPartner}
                   disabled={!selectedPartnerId || assigning}
                   className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm"
@@ -333,11 +390,10 @@ export default function AdminOrderDetailsPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Status</p>
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold ${
-                  order.paymentStatus === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
-                  order.paymentStatus === 'FAILED' ? 'bg-destructive/10 text-destructive' :
-                  'bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
-                }`}>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold ${order.paymentStatus === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                    order.paymentStatus === 'FAILED' ? 'bg-destructive/10 text-destructive' :
+                      'bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
+                  }`}>
                   {order.paymentStatus === 'SUCCESS' ? <FaCircleCheck /> : order.paymentStatus === 'FAILED' ? <FaTriangleExclamation /> : <FaClock />}
                   {order.paymentStatus}
                 </span>
@@ -354,10 +410,10 @@ export default function AdminOrderDetailsPage() {
           {/* Delivery Details */}
           <div className="bg-white dark:bg-zinc-900 border border-border p-6 rounded-3xl shadow-sm">
             <h4 className="font-black text-base tracking-tight flex items-center gap-2 mb-6">
-              {order.deliveryType === 'STANDARD' ? <FaTruck className="text-blue-500" /> : <FaMotorcycle className="text-emerald-500" />} 
+              {order.deliveryType === 'STANDARD' ? <FaTruck className="text-blue-500" /> : <FaMotorcycle className="text-emerald-500" />}
               Delivery Details
             </h4>
-            
+
             {order.deliveryType === 'STANDARD' ? (
               <div className="space-y-5">
                 <div>
@@ -367,9 +423,9 @@ export default function AdminOrderDetailsPage() {
                 {order.trackingId && (
                   <div>
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Tracking ID</p>
-                    <a 
-                      href={`https://www.google.com/search?q=track+${order.trackingId}+${order.courierPartner || ''}`} 
-                      target="_blank" 
+                    <a
+                      href={`https://www.google.com/search?q=track+${order.trackingId}+${order.courierPartner || ''}`}
+                      target="_blank"
                       rel="noreferrer"
                       className="inline-block font-mono text-sm text-blue-600 hover:underline bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg font-bold"
                     >

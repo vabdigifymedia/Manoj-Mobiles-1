@@ -17,6 +17,7 @@ export interface TimelineItem {
 interface TrackingTimelineProps {
   items: TimelineItem[];
   className?: string;
+  direction?: "vertical" | "horizontal";
 }
 
 // Status-specific components for icons to keep the main component clean
@@ -35,7 +36,7 @@ const StatusIcon = ({ status, customIcon }: { status: TimelineItem["status"]; cu
   }
 };
 
-const TrackingTimeline = ({ items, className }: TrackingTimelineProps) => {
+const TrackingTimeline = ({ items, className, direction = "vertical" }: TrackingTimelineProps) => {
   // Animation variants for the container and list items
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -48,31 +49,40 @@ const TrackingTimeline = ({ items, className }: TrackingTimelineProps) => {
   };
 
   const itemVariants = {
-    hidden: { x: -20, opacity: 0 },
+    hidden: direction === "vertical" ? { x: -20, opacity: 0 } : { y: -20, opacity: 0 },
     visible: {
       x: 0,
+      y: 0,
       opacity: 1,
     },
   };
 
   return (
     <motion.ol
-      className={cn("relative border-l-2 border-border/50 ml-4 mt-4", className)}
+      className={cn(
+        "relative", 
+        direction === "vertical" ? "border-l-2 border-border/50 ml-4 mt-4" : "flex w-full justify-between mt-4",
+        className
+      )}
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
+
       {items.map((item, index) => (
         <motion.li
           key={item.id}
-          className="mb-8 ml-8 last:mb-0"
+          className={cn(
+            direction === "vertical" ? "mb-8 ml-8 last:mb-0" : "flex flex-col items-center relative w-full text-center"
+          )}
           variants={itemVariants}
           aria-current={item.status === "in-progress" ? "step" : undefined}
         >
           {/* The icon circle */}
           <span
             className={cn(
-              "absolute -left-4 flex h-8 w-8 items-center justify-center rounded-full ring-8 ring-background",
+              "flex h-8 w-8 items-center justify-center rounded-full ring-8 ring-background",
+              direction === "vertical" ? "absolute -left-4" : "relative z-10",
               {
                 "bg-primary text-primary-foreground": item.status === "completed",
                 "bg-primary/20 text-primary": item.status === "in-progress",
@@ -87,19 +97,30 @@ const TrackingTimeline = ({ items, className }: TrackingTimelineProps) => {
             <StatusIcon status={item.status} customIcon={item.icon} />
           </span>
 
+          {/* Horizontal Connecting Line */}
+          {direction === "horizontal" && index < items.length - 1 && (
+            <div className={cn(
+              "absolute top-4 left-[50%] w-full h-[3px] -z-10 transition-colors duration-500",
+              item.status === "completed" ? "bg-primary" : "bg-muted"
+            )} />
+          )}
+
           {/* Content: Title and Date */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-col">
+          <div className={cn(
+            "flex gap-4",
+            direction === "vertical" ? "flex-col md:flex-row md:items-center justify-between" : "flex-col items-center mt-3 px-2"
+          )}>
+            <div className={cn("flex flex-col", direction === "horizontal" && "items-center")}>
               <h3
                 className={cn("font-bold", {
                   "text-foreground": item.status !== "pending",
                   "text-muted-foreground": item.status === "pending",
-                })}
+                }, direction === "horizontal" ? "text-sm sm:text-base" : "")}
               >
                 {item.title}
               </h3>
               <time
-                className={cn("text-sm text-muted-foreground mt-0.5", {
+                className={cn("text-xs sm:text-sm text-muted-foreground mt-0.5", {
                   "font-semibold text-primary/80": item.status === "in-progress",
                 })}
               >

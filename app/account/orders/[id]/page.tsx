@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { HyperlocalTracker } from '@/components/order/HyperlocalTracker'
 import { StandardTracker } from '@/components/order/StandardTracker'
 import TrackingTimeline from '@/components/ui/order-history'
-import { ClipboardCheck, Package, Ship, Bike, Home } from 'lucide-react'
+import { ClipboardCheck, Package, Ship, Bike, Home, CheckCircle2 } from 'lucide-react'
 
 export default function OrderDetailsPage() {
   const { id } = useParams() as { id: string }
@@ -62,10 +62,12 @@ export default function OrderDetailsPage() {
       </div>
 
       {/* Dynamic Tracker */}
-      {order.deliveryType === 'HYPERLOCAL' ? (
-        <HyperlocalTracker order={order} />
-      ) : (
-        <StandardTracker order={order} />
+      {(order.orderStatus === 'OUT_FOR_DELIVERY' || order.orderStatus === 'SHIPPED') && (
+        order.deliveryType === 'HYPERLOCAL' ? (
+          <HyperlocalTracker order={order} />
+        ) : (
+          <StandardTracker order={order} />
+        )
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -76,7 +78,10 @@ export default function OrderDetailsPage() {
             <div className="bg-white dark:bg-zinc-900 border border-border rounded-3xl p-6 shadow-sm">
               <h3 className="text-lg font-black tracking-tight mb-6">Order Progress</h3>
               <TrackingTimeline 
-                items={['PLACED', 'PACKED', order.deliveryType === 'HYPERLOCAL' ? 'OUT_FOR_DELIVERY' : 'SHIPPED', 'DELIVERED'].map((step, idx) => {
+                items={(order.deliveryType === 'HYPERLOCAL' 
+                  ? ['PLACED', 'CONFIRMED', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED'] 
+                  : ['PLACED', 'CONFIRMED', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED']
+                ).map((step, idx) => {
                   const statusOrder = ['PLACED', 'CONFIRMED', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'];
                   const currentStatusIdx = statusOrder.indexOf(order.orderStatus);
                   const thisStepIdx = statusOrder.indexOf(step);
@@ -86,11 +91,7 @@ export default function OrderDetailsPage() {
                   
                   let status: 'completed' | 'in-progress' | 'pending' = 'pending';
                   if (isCompleted) {
-                    if (isCurrent && step !== 'DELIVERED') {
-                      status = 'in-progress';
-                    } else {
-                      status = 'completed';
-                    }
+                    status = 'completed';
                   } else if (isNext && order.orderStatus !== 'CANCELLED') {
                     status = 'in-progress';
                   }
@@ -99,6 +100,7 @@ export default function OrderDetailsPage() {
                   const iconClass = "h-4 w-4";
                   switch (step) {
                     case 'PLACED': stepIcon = <ClipboardCheck className={iconClass} />; break;
+                    case 'CONFIRMED': stepIcon = <CheckCircle2 className={iconClass} />; break;
                     case 'PACKED': stepIcon = <Package className={iconClass} />; break;
                     case 'SHIPPED': stepIcon = <Ship className={iconClass} />; break;
                     case 'OUT_FOR_DELIVERY': stepIcon = <Bike className={iconClass} />; break;
