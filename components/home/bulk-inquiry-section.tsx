@@ -94,6 +94,18 @@ export function BulkInquirySection() {
                   </span>
                   <span>Retail / Reseller Orders</span>
                 </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="grid size-5 place-items-center rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                    <FaCheck size={10} />
+                  </span>
+                  <span>Wholesale</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <span className="grid size-5 place-items-center rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                    <FaCheck size={10} />
+                  </span>
+                  <span>Export</span>
+                </li>
               </ul>
 
             </div>
