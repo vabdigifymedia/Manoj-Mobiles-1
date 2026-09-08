@@ -5,6 +5,7 @@ import { FaFloppyDisk, FaStore, FaMessage, FaLocationDot, FaBullhorn, FaImage } 
 import { apiClient } from '@/lib/apiClient'
 import type { StoreSettingResponseDTO, StoreSettingRequestDTO } from '@/lib/types'
 import { BannerImageUploader } from '@/components/admin/banner-image-uploader'
+import { StoreLocationPicker } from '@/components/admin/StoreLocationPicker'
 
 const DEFAULT_SETTINGS: StoreSettingResponseDTO = {
   id: '1',
@@ -92,6 +93,8 @@ export default function AdminSettingsPage() {
         storeAddress: settings.storeAddress || '',
         storeTimings: settings.storeTimings || '',
         googleMapsUrl: settings.googleMapsUrl || '',
+        storeLat: settings.storeLat,
+        storeLng: settings.storeLng,
         freeDeliveryThreshold: Number(settings.freeDeliveryThreshold) || 0,
         expressDeliveryText: settings.expressDeliveryText || '',
       }
@@ -268,7 +271,17 @@ export default function AdminSettingsPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Store Address</label>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Store Location on Map</label>
+              <StoreLocationPicker 
+                lat={settings.storeLat} 
+                lng={settings.storeLng} 
+                onChange={(lat, lng) => {
+                  setSettings(prev => prev ? { ...prev, storeLat: lat, storeLng: lng } : null)
+                }} 
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5 mt-4">Store Address</label>
               <textarea value={settings.storeAddress || ''} onChange={e => update('storeAddress', e.target.value)} rows={2} className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none transition-all" />
             </div>
             <div>

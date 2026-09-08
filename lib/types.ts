@@ -471,6 +471,8 @@ export interface StoreSettingRequestDTO {
   storeAddress?: string
   storeTimings?: string
   googleMapsUrl?: string
+  storeLat?: number
+  storeLng?: number
   freeDeliveryThreshold?: number
   expressDeliveryText?: string
 }
@@ -492,6 +494,8 @@ export interface StoreSettingResponseDTO {
   storeAddress?: string
   storeTimings?: string
   googleMapsUrl?: string
+  storeLat?: number
+  storeLng?: number
   freeDeliveryThreshold?: number
   expressDeliveryText?: string
   updatedAt: string

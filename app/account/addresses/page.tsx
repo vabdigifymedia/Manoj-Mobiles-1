@@ -6,6 +6,7 @@ import type { AddressResponseDTO } from '@/lib/types'
 import { FaMapLocationDot, FaPlus, FaPen, FaTrashCan } from 'react-icons/fa6'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useStore } from '@/components/store-provider'
+import { StoreLocationPicker } from '@/components/admin/StoreLocationPicker'
 
 export default function AddressesPage() {
   const { showToast } = useStore()
@@ -24,6 +25,8 @@ export default function AddressesPage() {
   const [state, setState] = useState('')
   const [checkingPincode, setCheckingPincode] = useState(false)
   const [pincodeError, setPincodeError] = useState('')
+  const [lat, setLat] = useState<number | undefined>(undefined)
+  const [lng, setLng] = useState<number | undefined>(undefined)
 
   useEffect(() => {
     fetchAddresses()
@@ -62,13 +65,13 @@ export default function AddressesPage() {
     try {
       if (editingId) {
         await apiClient.updateAddress(editingId, {
-          label, addressLine, city, state, pincode,
+          label, addressLine, city, state, pincode, lat, lng,
           isDefault: addresses.find(a => a.id === editingId)?.isDefault || false
         })
         showToast({ message: 'Address updated successfully', type: 'success' })
       } else {
         await apiClient.createAddress({
-          label, addressLine, city, state, pincode,
+          label, addressLine, city, state, pincode, lat, lng,
           isDefault: addresses.length === 0
         })
         showToast({ message: 'Address added successfully', type: 'success' })
@@ -89,6 +92,8 @@ export default function AddressesPage() {
     setCity(addr.city)
     setState(addr.state)
     setPincode(addr.pincode)
+    setLat(addr.lat)
+    setLng(addr.lng)
     setShowForm(true)
   }
 
@@ -99,6 +104,8 @@ export default function AddressesPage() {
     setCity('')
     setState('')
     setPincode('')
+    setLat(undefined)
+    setLng(undefined)
     setShowForm(true)
   }
 
@@ -167,7 +174,7 @@ export default function AddressesPage() {
 
       {/* Address Form Modal */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-md p-6 rounded-3xl">
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-6 rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black">{editingId ? 'Edit Address' : 'Add New Address'}</DialogTitle>
           </DialogHeader>
@@ -186,7 +193,19 @@ export default function AddressesPage() {
               <input type="text" placeholder="State" value={state} onChange={e => setState(e.target.value)} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 border-t border-border mt-4">
+              <h3 className="text-sm font-bold text-foreground mb-3">Map Location</h3>
+              <StoreLocationPicker 
+                lat={lat} 
+                lng={lng} 
+                onChange={(newLat, newLng) => {
+                  setLat(newLat)
+                  setLng(newLng)
+                }} 
+              />
+            </div>
+
+            <div className="pt-4">
               <button type="submit" disabled={saving} className="w-full bg-primary text-primary-foreground font-bold py-3.5 rounded-full hover:bg-primary/90 transition-colors">
                 {saving ? 'Saving...' : 'Save Address'}
               </button>

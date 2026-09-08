@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
-import type { OrderResponseDTO, LiveLocationDTO } from '@/lib/types'
+import type { OrderResponseDTO, LiveLocationDTO, StoreSettingResponseDTO } from '@/lib/types'
 import { apiClient } from '@/lib/apiClient'
 import { FaPhone, FaMotorcycle } from 'react-icons/fa6'
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from '@react-google-maps/api'
@@ -19,6 +19,18 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
   })
+
+  const [storeSettings, setStoreSettings] = useState<StoreSettingResponseDTO | null>(null)
+
+  useEffect(() => {
+    apiClient.getPublicStoreSettings()
+      .then(res => {
+        if (res.data?.data) {
+          setStoreSettings(res.data.data)
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   // Poll for live location
   useEffect(() => {
@@ -47,10 +59,20 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
   useEffect(() => {
     if (!isLoaded || !liveLocation || !order.address?.lat || !order.address?.lng || !window.google) return;
     
+    // To prevent API spam and flickering, only calculate the route once.
+    // The rider's marker will independently move along this path as liveLocation updates.
+    if (directionsResponse) return;
+    
+    const storeLocation = storeSettings?.storeLat && storeSettings?.storeLng 
+      ? { lat: storeSettings.storeLat, lng: storeSettings.storeLng } 
+      : liveLocation;
+      
+    if (!storeLocation) return;
+
     const directionsService = new window.google.maps.DirectionsService();
     directionsService.route(
       {
-        origin: liveLocation,
+        origin: storeLocation,
         destination: { lat: order.address.lat, lng: order.address.lng },
         travelMode: (window.google.maps.TravelMode as any).TWO_WHEELER || window.google.maps.TravelMode.DRIVING
       },
@@ -60,10 +82,13 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
         }
       }
     );
-  }, [liveLocation, order.address, isLoaded])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveLocation, order.address, isLoaded, storeSettings])
 
   // Center logic
-  const center = liveLocation || (order.address?.lat && order.address?.lng ? { lat: order.address.lat, lng: order.address.lng as number } : { lat: 28.5355, lng: 77.3910 })
+  const center = (storeSettings?.storeLat && storeSettings?.storeLng) 
+    ? { lat: storeSettings.storeLat, lng: storeSettings.storeLng } 
+    : (liveLocation || (order.address?.lat && order.address?.lng ? { lat: order.address.lat, lng: order.address.lng as number } : { lat: 28.5355, lng: 77.3910 }))
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-border rounded-3xl overflow-hidden shadow-sm">
@@ -89,7 +114,11 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
           >
             {/* Delivery Boy Marker */}
             {liveLocation && (
-              <Marker position={liveLocation} icon={{ url: '/bike-marker.png', scaledSize: new window.google.maps.Size(32, 32) }} />
+              <Marker position={liveLocation} icon={{ url: '/bike-marker.png', scaledSize: new window.google.maps.Size(48, 48) }} zIndex={50} />
+            )}
+            {/* Store Marker */}
+            {storeSettings?.storeLat && storeSettings?.storeLng && (
+              <Marker position={{ lat: storeSettings.storeLat, lng: storeSettings.storeLng }} icon={{ url: '/store-marker.png', scaledSize: new window.google.maps.Size(36, 36) }} zIndex={40} />
             )}
             {/* Destination Marker */}
             {order.address?.lat && order.address?.lng && (
