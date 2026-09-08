@@ -67,7 +67,8 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
   useEffect(() => {
     if (!isLoaded || !window.google) return;
     
-    if (osrmPath) return;
+    // Don't fetch again if we already have the path or if it previously failed (prevent rate limit loop)
+    if (osrmPath || routeError) return;
     
     // Fallbacks for origin and destination in case of legacy orders or loading states
     const originLat = storeSettings?.storeLat || 28.5355;
@@ -100,7 +101,7 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
 
     fetchOSRMRoute()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, storeSettings, order.address])
+  }, [isLoaded, storeSettings, order.address?.lat, order.address?.lng, osrmPath, routeError])
 
   // Stable Center logic to prevent map jumping during live tracking
   const defaultCenter = useMemo(() => {
@@ -136,7 +137,7 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
   }
 
   // Calculate the remaining path (behind the bike disappears)
-  const getRemainingPath = () => {
+  const currentPath = useMemo(() => {
     if (!osrmPath) return null;
     if (isSimulating) return osrmPath.slice(simulationIndex);
     
@@ -153,7 +154,7 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
       }
     }
     return osrmPath.slice(closestIdx);
-  }
+  }, [osrmPath, isSimulating, simulationIndex, liveLocation]);
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-border rounded-3xl overflow-hidden shadow-sm">
@@ -222,9 +223,9 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
             />
             
             {/* Snapped Road Route using OSRM */}
-            {osrmPath && !routeError && getRemainingPath() && (
+            {osrmPath && !routeError && currentPath && (
               <Polyline 
-                path={getRemainingPath()!}
+                path={currentPath}
                 options={{ 
                   strokeColor: '#3b82f6', 
                   strokeWeight: 6,
