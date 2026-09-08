@@ -12,12 +12,16 @@ const containerStyle = {
   borderRadius: '0.75rem'
 }
 
+const libraries: ("places")[] = ["places"]
+
 export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
   const [liveLocation, setLiveLocation] = useState<LiveLocationDTO | null>(null)
   
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries,
+    version: 'weekly'
   })
 
   const [storeSettings, setStoreSettings] = useState<StoreSettingResponseDTO | null>(null)

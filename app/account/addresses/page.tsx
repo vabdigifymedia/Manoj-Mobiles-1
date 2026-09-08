@@ -174,27 +174,40 @@ export default function AddressesPage() {
 
       {/* Address Form Modal */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-6 rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-black">{editingId ? 'Edit Address' : 'Add New Address'}</DialogTitle>
+        <DialogContent className="md:max-w-4xl max-h-[90vh] overflow-y-auto p-6 lg:p-8 rounded-3xl">
+          <DialogHeader className="mb-2">
+            <DialogTitle className="text-xl lg:text-2xl font-black">{editingId ? 'Edit Address' : 'Add New Address'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSave} className="space-y-4 mt-4">
-            <input type="text" placeholder="Label (e.g. Home, Work)" value={label} onChange={e => setLabel(e.target.value)} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
-            <input type="text" placeholder="House/Street Address" value={addressLine} onChange={e => setAddressLine(e.target.value)} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
+          <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
-            <div className="relative">
-              <input type="text" maxLength={6} placeholder="Pincode (e.g. 110001)" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, ''))} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
-              {checkingPincode && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-primary font-bold uppercase tracking-wider">Checking...</span>}
-            </div>
-            {pincodeError && <p className="text-xs text-rose-500 font-bold px-1">{pincodeError}</p>}
-            
-            <div className="grid grid-cols-2 gap-3">
-              <input type="text" placeholder="City" value={city} onChange={e => setCity(e.target.value)} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
-              <input type="text" placeholder="State" value={state} onChange={e => setState(e.target.value)} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
+            {/* Left Column: Details */}
+            <div className="space-y-4 flex flex-col h-full">
+              <input type="text" placeholder="Label (e.g. Home, Work)" value={label} onChange={e => setLabel(e.target.value)} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
+              <input type="text" placeholder="House/Street Address" value={addressLine} onChange={e => setAddressLine(e.target.value)} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
+              
+              <div className="relative">
+                <input type="text" maxLength={6} placeholder="Pincode (e.g. 110001)" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, ''))} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
+                {checkingPincode && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-primary font-bold uppercase tracking-wider">Checking...</span>}
+              </div>
+              {pincodeError && <p className="text-xs text-rose-500 font-bold px-1 -mt-2">{pincodeError}</p>}
+              
+              <div className="grid grid-cols-2 gap-3">
+                <input type="text" placeholder="City" value={city} onChange={e => setCity(e.target.value)} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
+                <input type="text" placeholder="State" value={state} onChange={e => setState(e.target.value)} className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary outline-none" required />
+              </div>
+
+              <div className="pt-4 mt-auto">
+                <button type="submit" disabled={saving} className="w-full bg-primary text-primary-foreground font-bold py-3.5 rounded-full hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">
+                  {saving ? 'Saving...' : 'Save Address'}
+                </button>
+              </div>
             </div>
 
-            <div className="pt-2 border-t border-border mt-4">
-              <h3 className="text-sm font-bold text-foreground mb-3">Map Location</h3>
+            {/* Right Column: Map Picker */}
+            <div className="border-t md:border-t-0 md:border-l border-border pt-6 md:pt-0 md:pl-8 flex flex-col h-full">
+              <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                <FaMapLocationDot className="text-primary" /> Pin Exact Location
+              </h3>
               <StoreLocationPicker 
                 lat={lat} 
                 lng={lng} 
@@ -205,11 +218,6 @@ export default function AddressesPage() {
               />
             </div>
 
-            <div className="pt-4">
-              <button type="submit" disabled={saving} className="w-full bg-primary text-primary-foreground font-bold py-3.5 rounded-full hover:bg-primary/90 transition-colors">
-                {saving ? 'Saving...' : 'Save Address'}
-              </button>
-            </div>
           </form>
         </DialogContent>
       </Dialog>
