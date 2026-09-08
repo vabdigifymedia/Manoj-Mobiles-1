@@ -25,7 +25,8 @@ import {
 
 const nav = [
   { key: '/', label: 'Home' },
-  { key: '/shop', label: 'Shop' }
+  { key: '/shop', label: 'Shop' },
+  { key: '/global-buy', label: 'Global Buy' }
 ]
 
 export function Header() {

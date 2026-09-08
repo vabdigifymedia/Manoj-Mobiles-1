@@ -108,6 +108,7 @@ export function Footer() {
           <div>
             <h3 className="font-bold mb-6 tracking-wide">Quick Links</h3>
             <ul className="space-y-4 text-sm text-muted-foreground">
+              <li><Link href="/global-buy" className="hover:text-primary transition-colors">Global Buy</Link></li>
               <li><Link href="/shop" className="hover:text-primary transition-colors">Shop All Phones</Link></li>
               <li><Link href="/shop" className="hover:text-primary transition-colors">Apple iPhones</Link></li>
               <li><Link href="/shop" className="hover:text-primary transition-colors">Samsung Galaxy</Link></li>
