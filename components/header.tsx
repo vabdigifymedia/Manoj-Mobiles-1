@@ -31,7 +31,7 @@ const nav = [
 export function Header() {
   const pathname = usePathname()
   const { cartCount } = useStore()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, logout } = useAuth()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
@@ -409,12 +409,16 @@ export function Header() {
                         </DropdownMenuItem>
                       </Link>
                       <DropdownMenuSeparator className="my-1 bg-slate-200 dark:bg-zinc-800" />
-                      <Link href="/auth/logout" className="w-full">
-                        <DropdownMenuItem className="focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-600 dark:focus:text-red-400 text-red-600 dark:text-red-400 rounded-lg cursor-pointer flex items-center gap-3 px-2 py-2">
-                          <FaArrowRightFromBracket size={16} />
-                          Logout
-                        </DropdownMenuItem>
-                      </Link>
+                      <DropdownMenuItem 
+                        onClick={() => {
+                          logout()
+                          router.push('/auth')
+                        }}
+                        className="focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-600 dark:focus:text-red-400 text-red-600 dark:text-red-400 rounded-lg cursor-pointer flex items-center gap-3 px-2 py-2"
+                      >
+                        <FaArrowRightFromBracket size={16} />
+                        Logout
+                      </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
