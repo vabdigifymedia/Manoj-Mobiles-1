@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
 import type { OrderResponseDTO, LiveLocationDTO, StoreSettingResponseDTO } from '@/lib/types'
 import { apiClient } from '@/lib/apiClient'
 import { FaPhone, FaMotorcycle } from 'react-icons/fa6'
@@ -59,6 +59,9 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
 
   const [osrmPath, setOsrmPath] = useState<{lat: number, lng: number}[] | null>(null)
   const [routeError, setRouteError] = useState(false)
+  const [isSimulating, setIsSimulating] = useState(false)
+  const [simulationIndex, setSimulationIndex] = useState(0)
+  const simulationInterval = useRef<NodeJS.Timeout | null>(null)
 
   // Draw Route using OSRM API (Bypasses Google Directions Billing)
   useEffect(() => {
@@ -99,22 +102,91 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, storeSettings, order.address])
 
-  // Center logic
-  const center = (storeSettings?.storeLat && storeSettings?.storeLng) 
-    ? { lat: storeSettings.storeLat, lng: storeSettings.storeLng } 
-    : (liveLocation || (order.address?.lat && order.address?.lng ? { lat: order.address.lat, lng: order.address.lng as number } : { lat: 28.5355, lng: 77.3910 }))
+  // Stable Center logic to prevent map jumping during live tracking
+  const defaultCenter = useMemo(() => {
+    if (storeSettings?.storeLat && storeSettings?.storeLng) {
+      return { lat: storeSettings.storeLat, lng: storeSettings.storeLng }
+    }
+    if (order.address?.lat && order.address?.lng) {
+      return { lat: order.address.lat, lng: order.address.lng as number }
+    }
+    return { lat: 28.5355, lng: 77.3910 }
+  }, [storeSettings?.storeLat, storeSettings?.storeLng, order.address?.lat, order.address?.lng])
+
+  const startSimulation = () => {
+    if (!osrmPath || osrmPath.length === 0) return;
+    setIsSimulating(true);
+    let index = simulationIndex; // resume if paused
+    simulationInterval.current = setInterval(() => {
+      if (index < osrmPath.length) {
+        setLiveLocation(osrmPath[index]);
+        setSimulationIndex(index);
+        index += 2; // Skip points to make it move faster
+      } else {
+        stopSimulation();
+      }
+    }, 500); // Move every 500ms
+  }
+
+  const stopSimulation = () => {
+    if (simulationInterval.current) {
+      clearInterval(simulationInterval.current);
+    }
+    setIsSimulating(false);
+  }
+
+  // Calculate the remaining path (behind the bike disappears)
+  const getRemainingPath = () => {
+    if (!osrmPath) return null;
+    if (isSimulating) return osrmPath.slice(simulationIndex);
+    
+    // For real live tracking, find the closest coordinate to current liveLocation
+    if (!liveLocation) return osrmPath;
+    
+    let closestIdx = 0;
+    let minDistance = Infinity;
+    for (let i = 0; i < osrmPath.length; i++) {
+      const dist = Math.pow(osrmPath[i].lat - liveLocation.lat, 2) + Math.pow(osrmPath[i].lng - liveLocation.lng, 2);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIdx = i;
+      }
+    }
+    return osrmPath.slice(closestIdx);
+  }
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-border rounded-3xl overflow-hidden shadow-sm">
-      <div className="p-6 border-b border-border">
-        <h3 className="text-lg font-black tracking-tight">Live Tracking</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          {order.expectedDeliveryDate ? (
-            <span>Arriving by <span className="font-bold text-foreground">{new Date(order.expectedDeliveryDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></span>
-          ) : (
-            'Preparing your order'
-          )}
-        </p>
+      <div className="p-6 border-b border-border flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-black tracking-tight">Live Tracking</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {order.expectedDeliveryDate ? (
+              <span>Arriving by <span className="font-bold text-foreground">{new Date(order.expectedDeliveryDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></span>
+            ) : (
+              'Preparing your order'
+            )}
+          </p>
+        </div>
+        {osrmPath && (
+          <div className="flex items-center gap-2">
+            {!isSimulating ? (
+              <button 
+                onClick={startSimulation}
+                className="text-xs font-bold bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+              >
+                {simulationIndex > 0 ? 'Resume' : 'Test Simulate'}
+              </button>
+            ) : (
+              <button 
+                onClick={stopSimulation}
+                className="text-xs font-bold bg-rose-500/10 text-rose-500 px-3 py-1.5 rounded-lg hover:bg-rose-500/20 transition-colors"
+              >
+                Pause
+              </button>
+            )}
+          </div>
+        )}
       </div>
       
       {/* Map Section */}
@@ -122,7 +194,7 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
         {isLoaded ? (
           <GoogleMap
             mapContainerStyle={containerStyle}
-            center={center}
+            center={defaultCenter}
             zoom={14}
             options={{ disableDefaultUI: true, zoomControl: true, clickableIcons: false }}
           >
@@ -150,31 +222,15 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
             />
             
             {/* Snapped Road Route using OSRM */}
-            {osrmPath && !routeError && (
+            {osrmPath && !routeError && getRemainingPath() && (
               <Polyline 
-                path={osrmPath}
+                path={getRemainingPath()!}
                 options={{ 
                   strokeColor: '#3b82f6', 
                   strokeWeight: 6,
                   strokeOpacity: 0.9,
                   geodesic: true
                 }} 
-              />
-            )}
-            
-            {/* Fallback Direct Line if Directions API fails */}
-            {routeError && (
-              <Polyline 
-                path={[
-                  { lat: storeSettings?.storeLat || 28.5355, lng: storeSettings?.storeLng || 77.3910 },
-                  { lat: order.address?.lat || 28.6219, lng: order.address?.lng || 77.3776 }
-                ]}
-                options={{
-                  strokeColor: '#10b981',
-                  strokeWeight: 4,
-                  strokeOpacity: 0.8,
-                  geodesic: true
-                }}
               />
             )}
           </GoogleMap>
