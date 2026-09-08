@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import type { OrderResponseDTO, LiveLocationDTO, StoreSettingResponseDTO } from '@/lib/types'
 import { apiClient } from '@/lib/apiClient'
 import { FaPhone, FaMotorcycle } from 'react-icons/fa6'
-import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from '@react-google-maps/api'
+import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, Polyline } from '@react-google-maps/api'
 
 const containerStyle = {
   width: '100%',
@@ -57,37 +57,47 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
     return () => clearInterval(interval)
   }, [order.id, order.deliveryType, order.orderStatus])
 
-  const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null)
+  const [osrmPath, setOsrmPath] = useState<{lat: number, lng: number}[] | null>(null)
+  const [routeError, setRouteError] = useState(false)
 
-  // Draw Route using Directions API
+  // Draw Route using OSRM API (Bypasses Google Directions Billing)
   useEffect(() => {
-    if (!isLoaded || !liveLocation || !order.address?.lat || !order.address?.lng || !window.google) return;
+    if (!isLoaded || !window.google) return;
     
-    // To prevent API spam and flickering, only calculate the route once.
-    // The rider's marker will independently move along this path as liveLocation updates.
-    if (directionsResponse) return;
+    if (osrmPath) return;
     
-    const storeLocation = storeSettings?.storeLat && storeSettings?.storeLng 
-      ? { lat: storeSettings.storeLat, lng: storeSettings.storeLng } 
-      : liveLocation;
-      
-    if (!storeLocation) return;
+    // Fallbacks for origin and destination in case of legacy orders or loading states
+    const originLat = storeSettings?.storeLat || 28.5355;
+    const originLng = storeSettings?.storeLng || 77.3910;
+    
+    const destinationLat = order.address?.lat || 28.6219; // Fallback to a random near point if missing
+    const destinationLng = order.address?.lng || 77.3776;
 
-    const directionsService = new window.google.maps.DirectionsService();
-    directionsService.route(
-      {
-        origin: storeLocation,
-        destination: { lat: order.address.lat, lng: order.address.lng },
-        travelMode: (window.google.maps.TravelMode as any).TWO_WHEELER || window.google.maps.TravelMode.DRIVING
-      },
-      (result, status) => {
-        if (status === window.google.maps.DirectionsStatus.OK) {
-          setDirectionsResponse(result);
+    const fetchOSRMRoute = async () => {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${destinationLng},${destinationLat}?overview=full&geometries=geojson`
+        const res = await fetch(url)
+        const data = await res.json()
+        
+        if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
+          const coords = data.routes[0].geometry.coordinates.map((p: [number, number]) => ({
+            lat: p[1],
+            lng: p[0]
+          }))
+          setOsrmPath(coords)
+          setRouteError(false)
+        } else {
+          setRouteError(true)
         }
+      } catch (err) {
+        console.error("OSRM failed, falling back to direct line:", err)
+        setRouteError(true)
       }
-    );
+    }
+
+    fetchOSRMRoute()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveLocation, order.address, isLoaded, storeSettings])
+  }, [isLoaded, storeSettings, order.address])
 
   // Center logic
   const center = (storeSettings?.storeLat && storeSettings?.storeLng) 
@@ -117,26 +127,54 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
             options={{ disableDefaultUI: true, zoomControl: true, clickableIcons: false }}
           >
             {/* Delivery Boy Marker */}
-            {liveLocation && (
+            {liveLocation ? (
               <Marker position={liveLocation} icon={{ url: '/bike-marker.png', scaledSize: new window.google.maps.Size(48, 48) }} zIndex={50} />
-            )}
-            {/* Store Marker */}
-            {storeSettings?.storeLat && storeSettings?.storeLng && (
-              <Marker position={{ lat: storeSettings.storeLat, lng: storeSettings.storeLng }} icon={{ url: '/store-marker.png', scaledSize: new window.google.maps.Size(36, 36) }} zIndex={40} />
-            )}
-            {/* Destination Marker */}
-            {order.address?.lat && order.address?.lng && (
-              <Marker position={{ lat: order.address.lat, lng: order.address.lng }} />
+            ) : (
+              storeSettings?.storeLat && storeSettings?.storeLng && (
+                // Park the bike at the store if not out for delivery yet
+                <Marker position={{ lat: storeSettings.storeLat, lng: storeSettings.storeLng }} icon={{ url: '/bike-marker.png', scaledSize: new window.google.maps.Size(48, 48) }} zIndex={50} />
+              )
             )}
             
-            {/* Drawn Route */}
-            {directionsResponse && (
-              <DirectionsRenderer 
-                directions={directionsResponse}
+            {/* Store Marker */}
+            {storeSettings?.storeLat && storeSettings?.storeLng && (
+              <Marker position={{ lat: storeSettings.storeLat, lng: storeSettings.storeLng }} icon={{ url: '/store-marker.png', scaledSize: new window.google.maps.Size(72, 72) }} zIndex={40} />
+            )}
+            
+            {/* Destination Marker */}
+            <Marker 
+              position={{ 
+                lat: order.address?.lat || 28.6219, 
+                lng: order.address?.lng || 77.3776 
+              }} 
+            />
+            
+            {/* Snapped Road Route using OSRM */}
+            {osrmPath && !routeError && (
+              <Polyline 
+                path={osrmPath}
                 options={{ 
-                  suppressMarkers: true, 
-                  polylineOptions: { strokeColor: '#10b981', strokeWeight: 5 } 
+                  strokeColor: '#3b82f6', 
+                  strokeWeight: 6,
+                  strokeOpacity: 0.9,
+                  geodesic: true
                 }} 
+              />
+            )}
+            
+            {/* Fallback Direct Line if Directions API fails */}
+            {routeError && (
+              <Polyline 
+                path={[
+                  { lat: storeSettings?.storeLat || 28.5355, lng: storeSettings?.storeLng || 77.3910 },
+                  { lat: order.address?.lat || 28.6219, lng: order.address?.lng || 77.3776 }
+                ]}
+                options={{
+                  strokeColor: '#10b981',
+                  strokeWeight: 4,
+                  strokeOpacity: 0.8,
+                  geodesic: true
+                }}
               />
             )}
           </GoogleMap>

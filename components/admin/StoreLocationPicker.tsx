@@ -182,6 +182,7 @@ export function StoreLocationPicker({ lat, lng, onChange }: StoreLocationPickerP
           <Marker 
             position={{ lat: lat ?? mapCenter.lat, lng: lng ?? mapCenter.lng }} 
             draggable={true}
+            icon={{ url: '/store-marker.png', scaledSize: new window.google.maps.Size(72, 72) }}
             onDragEnd={(e) => {
               if (e.latLng) {
                 onChange(e.latLng.lat(), e.latLng.lng())
