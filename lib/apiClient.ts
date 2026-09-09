@@ -472,6 +472,14 @@ export const apiClient = {
   updateAdminStoreSettings: (dto: import('./types').StoreSettingRequestDTO) =>
     axiosInstance.put<ApiResponse<import('./types').StoreSettingResponseDTO>>('/api/admin/settings', dto),
 
+  // --- Common Feature Images (reusable marketing images) ---
+  getPublicFeatureImages: () =>
+    axiosInstance.get<ApiResponse<import('./commonFeatureImages').CommonFeatureImage[]>>('/api/public/feature-images'),
+  getAdminCommonFeatureImages: () =>
+    axiosInstance.get<ApiResponse<import('./commonFeatureImages').CommonFeatureImage[]>>('/api/admin/common-images'),
+  saveAdminCommonFeatureImages: (items: import('./commonFeatureImages').CommonFeatureImage[]) =>
+    axiosInstance.put<ApiResponse<void>>('/api/admin/common-images', items),
+
   // --- FAQs ---
   getPublicFaqs: () =>
     axiosInstance.get<ApiResponse<import('./types').FaqResponseDTO[]>>('/api/public/faqs'),

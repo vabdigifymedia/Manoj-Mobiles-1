@@ -1,15 +1,19 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FaMicrochip, FaCircleCheck, FaArrowLeft, FaBolt, FaHardDrive, FaBatteryFull, FaCamera, FaShieldHalved, FaWifi, FaMobileScreen, FaComment, FaLocationDot, FaGear, FaBluetooth, FaMemory, FaTruckFast, FaStar, FaCartShopping, FaBoxesPacking } from 'react-icons/fa6'
+import { FaMicrochip, FaCircleCheck, FaArrowLeft, FaBolt, FaHardDrive, FaBatteryFull, FaCamera, FaShieldHalved, FaWifi, FaMobileScreen, FaComment, FaLocationDot, FaGear, FaBluetooth, FaMemory, FaTruckFast, FaStar, FaCartShopping, FaBoxesPacking, FaChevronDown, FaChevronUp } from 'react-icons/fa6'
 import { formatINR } from '@/lib/apiClient'
 import { useStore } from '@/components/store-provider'
 import { useBulkInquiry } from '@/components/bulk-inquiry-provider'
 import { useAuth } from '@/lib/auth-context'
-import type { ProductResponseDTO, ProductVariantResponseDTO } from '@/lib/types'
+import type { ProductResponseDTO, ProductVariantResponseDTO, ProductSpecificationResponseDTO } from '@/lib/types'
 import { ProductReviews } from '@/components/product-reviews'
+import { apiClient } from '@/lib/apiClient'
+import { ProductFeatureImages } from './product-detail-feature-images'
+import { ProductSuggestedPhones } from './product-detail-suggested-phones'
+import { motion, AnimatePresence } from 'framer-motion'
 import { parseRamRomFromText } from '@/lib/utils'
 
 export function ProductDetailClient({ product: initialProduct }: { product: ProductResponseDTO }) {
@@ -83,8 +87,94 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
     return variantsForSelectedName[0]
   }, [variantsForSelectedName, selectedColor, product])
 
+  const primaryImage = selectedVariant?.images?.find(img => img.isPrimary)?.url || selectedVariant?.imageUrls?.[0] || '/placeholder.png'
+  const allImages = selectedVariant?.images?.map(img => img.url) || selectedVariant?.imageUrls || []
+
+  // Specifications collapsible state (See More / Show Less)
+  const [specsExpanded, setSpecsExpanded] = useState(false)
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [mobileImageIndex, setMobileImageIndex] = useState(0)
+  const mobileSliderRef = useRef<HTMLDivElement>(null)
+  const touchStartXRef = useRef<number | null>(null)
+  const touchStartScrollRef = useRef<number | null>(null)
+  const isScrollingRef = useRef(false)
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isProgrammaticScrollRef = useRef(false)
+
+  // One-swipe-per-image mobile gallery fix
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX
+    touchStartScrollRef.current = mobileSliderRef.current?.scrollLeft || null
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+      scrollTimeoutRef.current = null
+    }
+    isScrollingRef.current = false
+    isProgrammaticScrollRef.current = false
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return
+    const currentX = e.touches[0].clientX
+    const diff = Math.abs(touchStartXRef.current - currentX)
+    if (diff > 10) {
+      isScrollingRef.current = true
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartScrollRef.current === null) return
+    const touchEndX = e.changedTouches[0].clientX
+    const diff = touchStartXRef.current - touchEndX
+    const slider = mobileSliderRef.current
+    if (!slider) return
+
+    const currentIndex = Math.round(slider.scrollLeft / slider.clientWidth)
+    const maxIndex = allImages.length - 1
+
+    let newIndex = currentIndex
+    if (Math.abs(diff) > 30) {
+      if (diff > 0 && currentIndex < maxIndex) {
+        newIndex = currentIndex + 1
+      } else if (diff < 0 && currentIndex > 0) {
+        newIndex = currentIndex - 1
+      }
+    }
+
+    if (newIndex !== currentIndex || Math.abs(diff) > 10) {
+      isProgrammaticScrollRef.current = true
+      slider.scrollTo({ left: newIndex * slider.clientWidth, behavior: 'smooth' })
+      setMobileImageIndex(newIndex)
+      setSelectedImage(allImages[newIndex] || primaryImage)
+      setTimeout(() => {
+        isProgrammaticScrollRef.current = false
+      }, 400)
+    }
+
+    touchStartXRef.current = null
+    touchStartScrollRef.current = null
+    isScrollingRef.current = false
+  }
+
+  const handleScroll = useCallback(() => {
+    if (isProgrammaticScrollRef.current) return
+    const slider = mobileSliderRef.current
+    if (!slider) return
+
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
+
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (isProgrammaticScrollRef.current) return
+      const width = slider.clientWidth
+      const newIndex = Math.round(slider.scrollLeft / width)
+      const clampedIndex = Math.max(0, Math.min(newIndex, allImages.length - 1))
+      setMobileImageIndex(clampedIndex)
+      setSelectedImage(allImages[clampedIndex] || primaryImage)
+    }, 100)
+  }, [allImages, primaryImage])
 
   useEffect(() => {
     if (selectedVariant) {
@@ -93,6 +183,20 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
       setMobileImageIndex(0)
     }
   }, [selectedVariant])
+
+  // Collapse specs back to compact state when switching variant/color
+  useEffect(() => {
+    setSpecsExpanded(false)
+  }, [selectedVariant])
+
+  // Cleanup scroll timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const [pincode, setPincode] = useState('')
   const [deliveryStatus, setDeliveryStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -141,8 +245,20 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
   if (!selectedVariant) return <div className="p-8 text-center">Loading product details...</div>
 
-  const primaryImage = selectedVariant.images?.find(img => img.isPrimary)?.url || selectedVariant.imageUrls?.[0] || '/placeholder.png'
-  const allImages = selectedVariant.images?.map(img => img.url) || selectedVariant.imageUrls || []
+  // Flatten specifications preserving their existing groups (all data kept - only the visual is collapsed)
+  const specFlatItems: { group: string; spec: ProductSpecificationResponseDTO }[] = []
+  Object.entries(
+    selectedVariant.specifications?.reduce((acc, spec) => {
+      const group = spec.specGroup || 'General';
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(spec);
+      return acc;
+    }, {} as Record<string, typeof selectedVariant.specifications>) || {}
+  ).forEach(([group, specs]) => {
+    specs!.forEach(spec => specFlatItems.push({ group, spec }))
+  })
+  const specTotal = specFlatItems.length
+  const MAX_VISIBLE_SPECS = 2
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-4 md:py-8 pb-28 lg:pb-8 lg:px-8">
@@ -173,12 +289,12 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
           {/* Mobile View Image Slider */}
           <div className="lg:hidden flex flex-col gap-3">
             <div
-              className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide rounded-3xl bg-[#F4F4F5] dark:bg-white"
-              onScroll={(e) => {
-                const scrollLeft = e.currentTarget.scrollLeft
-                const width = e.currentTarget.clientWidth
-                setMobileImageIndex(Math.round(scrollLeft / width))
-              }}
+              ref={mobileSliderRef}
+              className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide rounded-3xl bg-[#F4F4F5] dark:bg-white touch-pan-y overscroll-contain"
+              onScroll={handleScroll}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               {allImages.length > 0 ? allImages.map((url, idx) => (
                 <div key={idx} className="w-full shrink-0 snap-center p-4 md:p-6">
@@ -408,35 +524,61 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
           <div className="rounded-2xl border border-border bg-card p-5 mt-4">
             <h2 className="font-bold text-lg mb-4">Specifications</h2>
-            <div className="flex flex-col gap-6">
-              {Object.entries(
-                selectedVariant.specifications?.reduce((acc, spec) => {
-                  const group = spec.specGroup || 'General';
-                  if (!acc[group]) acc[group] = [];
-                  acc[group].push(spec);
-                  return acc;
-                }, {} as Record<string, typeof selectedVariant.specifications>) || {}
-              ).map(([group, specs]) => (
-                <div key={group}>
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-primary mb-3 bg-primary/5 p-2 rounded-lg">{group}</h3>
-                  <div className="grid gap-4 sm:grid-cols-2 px-2">
-                    {specs!.map(spec => (
-                      <div key={spec.specKey} className="border-b border-border pb-3 sm:border-b-0 sm:pb-0">
-                        <p className="text-xs font-semibold uppercase text-muted-foreground">{spec.specKey}</p>
-                        <p className="mt-1 text-sm font-medium">{spec.specValue}</p>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={specsExpanded ? 'specs-expanded' : 'specs-collapsed'}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="flex flex-col gap-6"
+              >
+                {(() => {
+                  // Default collapsed state shows only the first 1-2 rows;
+                  // all specification data remains intact in `specFlatItems`.
+                  const displayItems = specsExpanded ? specFlatItems : specFlatItems.slice(0, MAX_VISIBLE_SPECS)
+                  const byGroup: Record<string, typeof specFlatItems> = {}
+                  displayItems.forEach(item => {
+                    if (!byGroup[item.group]) byGroup[item.group] = []
+                    byGroup[item.group].push(item)
+                  })
+                  return Object.entries(byGroup).map(([group, items]) => (
+                    <div key={group}>
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-primary mb-3 bg-primary/5 p-2 rounded-lg">{group}</h3>
+                      <div className="grid gap-4 sm:grid-cols-2 px-2">
+                        {items.map(item => (
+                          <div key={item.spec.specKey} className="border-b border-border pb-3 sm:border-b-0 sm:pb-0">
+                            <p className="text-xs font-semibold uppercase text-muted-foreground">{item.spec.specKey}</p>
+                            <p className="mt-1 text-sm font-medium">{item.spec.specValue}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+                    </div>
+                  ))
+                })()}
+              </motion.div>
+            </AnimatePresence>
+            {specTotal > MAX_VISIBLE_SPECS && (
+              <button
+                type="button"
+                onClick={() => setSpecsExpanded(!specsExpanded)}
+                aria-expanded={specsExpanded}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/20 px-5 py-2.5 text-sm font-bold hover:bg-muted/50 transition-colors mt-2"
+              >
+                <FaChevronDown size={16} className={`transition-transform duration-300 ${specsExpanded ? 'rotate-180' : ''}`} />
+                {specsExpanded ? 'Show Less' : 'See More'}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       <hr className="my-12 border-border" />
 
+      <ProductFeatureImages />
+
       <ProductReviews productId={product.id} />
+
+      <ProductSuggestedPhones product={product} />
 
       {/* Mobile Fixed Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-2.5 border-t border-border bg-background p-3 lg:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>

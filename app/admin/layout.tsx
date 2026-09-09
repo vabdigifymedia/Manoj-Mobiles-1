@@ -113,6 +113,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
               { label: 'Delivery Zones', icon: FaMapLocationDot, href: '/admin/locations', exact: false }, 
               { label: 'Delivery Partners', icon: FaMotorcycle, href: '/admin/delivery-partners', exact: false }, 
               { label: 'Banners', icon: FaImage, href: '/admin/banners', exact: false },
+              { label: 'Feature Images', icon: FaImage, href: '/admin/common-images', exact: false },
               { label: 'Instagram Reels', icon: FaInstagram, href: '/admin/reels', exact: false },
               { label: 'Store Settings', icon: FaGear, href: '/admin/settings', exact: false },
               { label: 'FAQs', icon: FaCircleQuestion, href: '/admin/faqs', exact: false },
