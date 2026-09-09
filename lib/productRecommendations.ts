@@ -2,14 +2,11 @@
 // Suggested Phones — dynamic product recommendation engine.
 //
 // Pure, deterministic matching built from the EXISTING product
-// catalog (no hardcoded product names). Rankings follow the
-// required priority:
+// catalog (no hardcoded product names).
 //
-//   Same Brand + Similar Price + Similar Specs   (highest)
-//   Same Brand + Similar Price
-//   Same Brand + Similar Specs
-//   Similar Price + Similar Specs
-//   Other relevant phones (fallback)
+// TWO-ROW STRUCTURE:
+//   Row 1: "Find More in {Brand}" — same-brand products
+//   Row 2: "Related Smartphones" — price/spec-based matches
 //
 // The current product is always excluded, and multiple variants
 // of the same model are collapsed into a single card.
@@ -19,12 +16,16 @@ import type { ProductListResponseDTO, ProductResponseDTO } from '@/lib/types'
 
 export interface RecommendationOptions {
   maxResults?: number
-  priceBand?: number
+}
+
+export interface RecommendationResult {
+  sameBrand: ProductListResponseDTO[]
+  related: ProductListResponseDTO[]
 }
 
 interface DerivedSpecs {
-  ram: number       // GB
-  storage: number   // GB
+  ram: number
+  storage: number
   fiveG: boolean
   processor: boolean
   display: boolean
@@ -45,7 +46,6 @@ function modelKey(name: string): string {
     .trim()
 }
 
-/** Converts "8 GB" / "256GB" / "1 TB" into GB number (0 when absent). */
 function toGB(text: string): number {
   const match = (text || '').match(/(\d+(?:\.\d+)?)\s*(gb|tb)/i)
   if (!match) return 0
@@ -53,47 +53,32 @@ function toGB(text: string): number {
   return match[2].toLowerCase() === 'tb' ? value * 1024 : value
 }
 
-/**
- * Derives performance-relevant spec features from free text.
- * For the current product we pass its full specification rows;
- * for catalog items we pass the product name (which normally
- * carries RAM/storage/5G), keeping recommendation cheap.
- */
 function deriveSpecs(texts: string[]): DerivedSpecs {
   const lines = (texts || []).filter(Boolean)
   const joined = lines.join(' ')
   const lower = joined.toLowerCase()
-
   const gbValues = lines.map(toGB).filter(v => v > 0)
-
-  // RAM: any line that mentions RAM
   const ramLines = lines.filter(l => /ram/i.test(l))
   const ram = ramLines.length > 0 ? Math.max(...ramLines.map(toGB), 0) : 0
-
-  // Storage/ROM: lines that mention ROM, storage, internal memory, hard drive
   const storageLines = lines.filter(l =>
     /rom|storage|internal\s*(memory|storage)|hard\s*drive|hardware/i.test(l) && !/ram\b/i.test(l)
   )
   const fromStorageLines = storageLines.length > 0
     ? Math.max(...storageLines.map(toGB), 0)
     : 0
-
-  // Fallback: largest GB/TB value in the text that is NOT the RAM value
-  // (e.g. "Samsung Galaxy F15 5G 128 GB"). Handles name-only catalog items.
   let storage = fromStorageLines
   if (storage === 0) {
     const nonRamGbs = gbValues.filter(v => v !== ram)
     storage = nonRamGbs.length > 0 ? Math.max(...nonRamGbs) : 0
   }
-
   return {
     ram,
     storage,
     fiveG: /\b5\s*g\b|\b5g\b|dual sim/i.test(lower),
     processor: /processor|chipset|octa|quad|snapdragon|mediatek|dimensity|exynos|kiran|tensor/i.test(lower),
-    display: /display|amoled|oled|ips|lcd|refresh\s*rate|resolution|refresh/i.test(lower),
-    camera: /camera|megapixel|rear\s*camera|front\s*camera|sensor/i.test(lower),
-    battery: /battery|mah|charging|fast\s*charge/i.test(lower),
+    display: /display|amoled|oled|ips|lcd|refresh\s*rate|resolution|refresh|super\s*retina|dynamic\s*amoled/i.test(lower),
+    camera: /camera|mp|megapixel|wide\s*angle|telephoto|ultrawide|macro|lens/i.test(lower),
+    battery: /battery|mah|fast\s*charging|charging/i.test(lower),
   }
 }
 
@@ -102,20 +87,52 @@ function currentPriceOf(current: ProductResponseDTO): number {
   return Math.min(...current.variants.map(v => v.sellingPrice || 0))
 }
 
-// ====================== PART 2 ======================
-
-/**
- * Builds recommendations for `current` from the live `catalog`.
- * Results are scored and deduplicated (one card per model).
- */
+function calcSpecSimilarity(ctxSpecs: DerivedSpecs, cSpecs: DerivedSpecs, ctxTexts: string[]): number {
+  let score = 0
+  let maxScore = 0
+  if (ctxSpecs.ram > 0) {
+    maxScore += 20
+    if (cSpecs.ram === ctxSpecs.ram) score += 20
+    else if (cSpecs.ram > 0 && Math.abs(cSpecs.ram - ctxSpecs.ram) <= 4) score += 10
+  }
+  if (ctxSpecs.storage > 0) {
+    maxScore += 18
+    if (cSpecs.storage === ctxSpecs.storage) score += 18
+    else if (cSpecs.storage > 0 && Math.abs(cSpecs.storage - ctxSpecs.storage) <= 64) score += 9
+  }
+  if (ctxSpecs.processor) {
+    maxScore += 15
+    if (cSpecs.processor) score += 15
+  }
+  if (ctxSpecs.display) {
+    maxScore += 10
+    if (cSpecs.display) score += 10
+  }
+  if (ctxSpecs.camera) {
+    maxScore += 8
+    if (cSpecs.camera) score += 8
+  }
+  if (ctxSpecs.battery) {
+    maxScore += 8
+    if (cSpecs.battery) score += 8
+  }
+  if (ctxSpecs.fiveG) {
+    maxScore += 6
+    if (cSpecs.fiveG) score += 6
+  } else if (!ctxSpecs.fiveG && !cSpecs.fiveG && ctxTexts.length > 0) {
+    maxScore += 3
+    score += 3
+  }
+  return maxScore > 0 ? (score / maxScore) * 100 : 0
+}
 export function getProductRecommendations(
   current: ProductResponseDTO,
   catalog: ProductListResponseDTO[],
   options: RecommendationOptions = {}
-): ProductListResponseDTO[] {
-  const { maxResults = 8, priceBand = 0.15 } = options
-
-  if (!current?.id || !catalog?.length) return []
+): RecommendationResult {
+  const { maxResults = 8 } = options
+  const emptyResult: RecommendationResult = { sameBrand: [], related: [] }
+  if (!current?.id || !catalog?.length) return emptyResult
 
   const ctxTexts = (current.variants?.[0]?.specifications || []).map(
     s => `${s.specKey || ''} ${s.specValue || ''}`
@@ -125,16 +142,19 @@ export function getProductRecommendations(
   const ctxBrand = toLower(current.brandName)
   const ctxCategory = toLower(current.categoryName)
 
-  const wideBand = Math.max(priceBand, 0.25)
-  const band = ctxPrice > 0 ? priceBand : 0.4
-  const wide = ctxPrice > 0 ? wideBand : 0.6
-  const lower = ctxPrice > 0 ? Math.max(0, ctxPrice * (1 - band)) : 0
-  const upper = ctxPrice > 0 ? ctxPrice * (1 + band) : Number.MAX_SAFE_INTEGER
-  const wideLower = ctxPrice > 0 ? Math.max(0, ctxPrice * (1 - wide)) : 0
-  const wideUpper = ctxPrice > 0 ? ctxPrice * (1 + wide) : Number.MAX_SAFE_INTEGER
+  const band20 = ctxPrice > 0 ? 0.20 : 0.4
+  const band25 = ctxPrice > 0 ? 0.25 : 0.5
+  const band35 = ctxPrice > 0 ? 0.35 : 0.6
+  const lower20 = ctxPrice > 0 ? Math.max(0, ctxPrice * (1 - band20)) : 0
+  const upper20 = ctxPrice > 0 ? ctxPrice * (1 + band20) : Number.MAX_SAFE_INTEGER
+  const lower25 = ctxPrice > 0 ? Math.max(0, ctxPrice * (1 - band25)) : 0
+  const upper25 = ctxPrice > 0 ? ctxPrice * (1 + band25) : Number.MAX_SAFE_INTEGER
+  const lower35 = ctxPrice > 0 ? Math.max(0, ctxPrice * (1 - band35)) : 0
+  const upper35 = ctxPrice > 0 ? ctxPrice * (1 + band35) : Number.MAX_SAFE_INTEGER
 
   const seenModels = new Set<string>()
-  const scored: { product: ProductListResponseDTO; score: number; rating: number }[] = []
+  const sameBrandCandidates: { product: ProductListResponseDTO; score: number; rating: number }[] = []
+  const relatedCandidates: { product: ProductListResponseDTO; score: number; rating: number }[] = []
 
   for (const candidate of catalog) {
     if (!candidate || candidate.id === current.id) continue
@@ -146,43 +166,68 @@ export function getProductRecommendations(
 
     const cSpecs = deriveSpecs([candidate.name || ''])
     const cPrice = candidate.startingPrice || 0
-    const sameBrand = ctxBrand && toLower(candidate.brandName) === ctxBrand
+    const isSameBrand = ctxBrand && toLower(candidate.brandName) === ctxBrand
     const sameCategory = ctxCategory && toLower(candidate.categoryName) === ctxCategory
 
-    let score = 0
-    if (sameBrand) score += 100
-    if (sameCategory) score += 8
-
+    const specScore = calcSpecSimilarity(ctxSpecs, cSpecs, ctxTexts)
     const priceDistance = cPrice > 0 && ctxPrice > 0
       ? Math.abs(cPrice - ctxPrice) / Math.max(ctxPrice, 1)
       : 1
+    const priceScore = Math.max(0, 100 - priceDistance * 100)
 
-    if (cPrice > 0 && cPrice >= lower && cPrice <= upper) {
-      score += 40
-      if (sameBrand) score += 25 // Same brand + similar price boost
-    } else if (cPrice > 0 && cPrice >= wideLower && cPrice <= wideUpper) {
-      score += 15
+    if (isSameBrand) {
+      let brandScore = 50
+      brandScore += priceScore * 0.3
+      brandScore += specScore * 0.4
+      if (sameCategory) brandScore += 10
+      brandScore += (candidate.avgRating || 0) * 2
+      sameBrandCandidates.push({ product: candidate, score: brandScore, rating: candidate.avgRating || 0 })
     }
-    score += Math.max(0, 10 - priceDistance * 10)
 
-    // Spec similarity (only when the current product actually has a value)
-    if (ctxSpecs.ram > 0 && cSpecs.ram === ctxSpecs.ram) score += 14
-    if (ctxSpecs.storage > 0 && cSpecs.storage === ctxSpecs.storage) score += 12
-    if (ctxSpecs.processor && cSpecs.processor) score += 7
-    if (ctxSpecs.display && cSpecs.display) score += 6
-    if (ctxSpecs.camera && cSpecs.camera) score += 6
-    if (ctxSpecs.battery && cSpecs.battery) score += 6
-    if (ctxSpecs.fiveG && cSpecs.fiveG) score += 8
-    if (!ctxSpecs.fiveG && !cSpecs.fiveG && ctxTexts.length > 0) score += 2
+    if (!isSameBrand && sameCategory) {
+      let relatedScore = 0
+      const inPriceRange20 = cPrice > 0 && cPrice >= lower20 && cPrice <= upper20
+      const inPriceRange25 = cPrice > 0 && cPrice >= lower25 && cPrice <= upper25
+      const inPriceRange35 = cPrice > 0 && cPrice >= lower35 && cPrice <= upper35
 
-    scored.push({ product: candidate, score, rating: candidate.avgRating || 0 })
+      if (inPriceRange20) {
+        relatedScore += 40
+        relatedScore += priceScore * 0.25
+      } else if (inPriceRange25) {
+        relatedScore += 30
+        relatedScore += priceScore * 0.2
+      } else if (inPriceRange35) {
+        relatedScore += 15
+        relatedScore += priceScore * 0.1
+      } else {
+        if (specScore < 70) continue
+        relatedScore += priceScore * 0.05
+      }
+
+      relatedScore += specScore * 0.45
+      relatedScore += (candidate.avgRating || 0) * 1.5
+      relatedCandidates.push({ product: candidate, score: relatedScore, rating: candidate.avgRating || 0 })
+    }
   }
 
-  scored.sort((a, b) =>
-    b.score !== a.score
-      ? b.score - a.score
-      : b.rating - a.rating
+  sameBrandCandidates.sort((a, b) =>
+    b.score !== a.score ? b.score - a.score : b.rating - a.rating
+  )
+  relatedCandidates.sort((a, b) =>
+    b.score !== a.score ? b.score - a.score : b.rating - a.rating
   )
 
-  return scored.slice(0, maxResults).map(entry => entry.product)
+  return {
+    sameBrand: sameBrandCandidates.slice(0, maxResults).map(entry => entry.product),
+    related: relatedCandidates.slice(0, maxResults).map(entry => entry.product),
+  }
+}
+
+export function getProductRecommendationsLegacy(
+  current: ProductResponseDTO,
+  catalog: ProductListResponseDTO[],
+  options: RecommendationOptions = {}
+): ProductListResponseDTO[] {
+  const { sameBrand, related } = getProductRecommendations(current, catalog, options)
+  return [...sameBrand, ...related]
 }
