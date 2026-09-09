@@ -95,86 +95,78 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [mobileImageIndex, setMobileImageIndex] = useState(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const mobileSliderRef = useRef<HTMLDivElement>(null)
   const touchStartXRef = useRef<number | null>(null)
-  const touchStartScrollRef = useRef<number | null>(null)
-  const isScrollingRef = useRef(false)
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const isProgrammaticScrollRef = useRef(false)
+  const touchStartYRef = useRef<number | null>(null)
+  const touchMovedRef = useRef(false)
+  const isHorizontalSwipeRef = useRef(false)
 
-  // One-swipe-per-image mobile gallery fix
+  // Navigate to a specific image with smooth transition
+  const goToImage = useCallback((index: number) => {
+    if (isTransitioning) return
+    const clampedIndex = Math.max(0, Math.min(index, allImages.length - 1))
+    setIsTransitioning(true)
+    setMobileImageIndex(clampedIndex)
+    setSelectedImage(allImages[clampedIndex] || primaryImage)
+    setTimeout(() => setIsTransitioning(false), 350)
+  }, [allImages, primaryImage, isTransitioning])
+
+  // Handle touch start - record initial position
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartXRef.current = e.touches[0].clientX
-    touchStartScrollRef.current = mobileSliderRef.current?.scrollLeft || null
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current)
-      scrollTimeoutRef.current = null
-    }
-    isScrollingRef.current = false
-    isProgrammaticScrollRef.current = false
+    touchStartYRef.current = e.touches[0].clientY
+    touchMovedRef.current = false
+    isHorizontalSwipeRef.current = false
   }
 
+  // Handle touch move - determine swipe direction and prevent unwanted scrolling
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartXRef.current === null) return
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return
+
     const currentX = e.touches[0].clientX
-    const diff = Math.abs(touchStartXRef.current - currentX)
-    if (diff > 10) {
-      isScrollingRef.current = true
+    const currentY = e.touches[0].clientY
+    const diffX = touchStartXRef.current - currentX
+    const diffY = touchStartYRef.current - currentY
+
+    // Determine if this is a horizontal swipe (only once)
+    if (!touchMovedRef.current && Math.abs(diffX) > 10) {
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        isHorizontalSwipeRef.current = true
+      }
+      touchMovedRef.current = true
+    }
+
+    // If horizontal swipe detected, prevent default to stop page scroll
+    if (isHorizontalSwipeRef.current) {
+      e.preventDefault()
     }
   }
 
+  // Handle touch end - determine if we should change image
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartXRef.current === null || touchStartScrollRef.current === null) return
+    if (touchStartXRef.current === null) return
+
     const touchEndX = e.changedTouches[0].clientX
     const diff = touchStartXRef.current - touchEndX
-    const slider = mobileSliderRef.current
-    if (!slider) return
+    const threshold = 40 // Minimum swipe distance to trigger image change
 
-    const currentIndex = Math.round(slider.scrollLeft / slider.clientWidth)
-    const maxIndex = allImages.length - 1
-
-    let newIndex = currentIndex
-    if (Math.abs(diff) > 30) {
-      if (diff > 0 && currentIndex < maxIndex) {
-        newIndex = currentIndex + 1
-      } else if (diff < 0 && currentIndex > 0) {
-        newIndex = currentIndex - 1
+    // Only change image if horizontal swipe exceeded threshold
+    if (isHorizontalSwipeRef.current && Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        // Swipe left - go to next image
+        goToImage(mobileImageIndex + 1)
+      } else {
+        // Swipe right - go to previous image
+        goToImage(mobileImageIndex - 1)
       }
     }
 
-    if (newIndex !== currentIndex || Math.abs(diff) > 10) {
-      isProgrammaticScrollRef.current = true
-      slider.scrollTo({ left: newIndex * slider.clientWidth, behavior: 'smooth' })
-      setMobileImageIndex(newIndex)
-      setSelectedImage(allImages[newIndex] || primaryImage)
-      setTimeout(() => {
-        isProgrammaticScrollRef.current = false
-      }, 400)
-    }
-
     touchStartXRef.current = null
-    touchStartScrollRef.current = null
-    isScrollingRef.current = false
+    touchStartYRef.current = null
+    touchMovedRef.current = false
+    isHorizontalSwipeRef.current = false
   }
-
-  const handleScroll = useCallback(() => {
-    if (isProgrammaticScrollRef.current) return
-    const slider = mobileSliderRef.current
-    if (!slider) return
-
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current)
-    }
-
-    scrollTimeoutRef.current = setTimeout(() => {
-      if (isProgrammaticScrollRef.current) return
-      const width = slider.clientWidth
-      const newIndex = Math.round(slider.scrollLeft / width)
-      const clampedIndex = Math.max(0, Math.min(newIndex, allImages.length - 1))
-      setMobileImageIndex(clampedIndex)
-      setSelectedImage(allImages[clampedIndex] || primaryImage)
-    }, 100)
-  }, [allImages, primaryImage])
 
   useEffect(() => {
     if (selectedVariant) {
@@ -188,15 +180,6 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
   useEffect(() => {
     setSpecsExpanded(false)
   }, [selectedVariant])
-
-  // Cleanup scroll timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
-    }
-  }, [])
 
   const [pincode, setPincode] = useState('')
   const [deliveryStatus, setDeliveryStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -290,28 +273,38 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
           <div className="lg:hidden flex flex-col gap-3">
             <div
               ref={mobileSliderRef}
-              className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide rounded-3xl bg-[#F4F4F5] dark:bg-white touch-pan-y overscroll-contain"
-              onScroll={handleScroll}
+              className="relative overflow-hidden rounded-3xl bg-[#F4F4F5] dark:bg-white"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
+              style={{ touchAction: 'pan-y' }}
             >
-              {allImages.length > 0 ? allImages.map((url, idx) => (
-                <div key={idx} className="w-full shrink-0 snap-center p-4 md:p-6">
-                  <img src={url} alt={`${product.name} ${idx + 1}`} className="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
-                </div>
-              )) : (
-                <div className="w-full shrink-0 snap-center p-4 md:p-6">
-                  <img src={primaryImage} alt={product.name} className="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
-                </div>
-              )}
+              <div
+                className="flex transition-transform duration-300 ease-out"
+                style={{
+                  transform: `translateX(-${mobileImageIndex * 100}%)`,
+                }}
+              >
+                {allImages.length > 0 ? allImages.map((url, idx) => (
+                  <div key={idx} className="w-full shrink-0 p-4 md:p-6">
+                    <img src={url} alt={`${product.name} ${idx + 1}`} className="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                  </div>
+                )) : (
+                  <div className="w-full shrink-0 p-4 md:p-6">
+                    <img src={primaryImage} alt={product.name} className="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                  </div>
+                )}
+              </div>
             </div>
             {allImages.length > 1 && (
               <div className="flex justify-center gap-1.5 mt-1">
                 {allImages.map((_, idx) => (
-                  <div
+                  <button
                     key={idx}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${idx === mobileImageIndex ? 'w-4 bg-primary' : 'w-1.5 bg-border'}`}
+                    type="button"
+                    onClick={() => goToImage(idx)}
+                    aria-label={`Go to image ${idx + 1}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${idx === mobileImageIndex ? 'w-4 bg-primary' : 'w-1.5 bg-border hover:bg-border/80'}`}
                   />
                 ))}
               </div>
