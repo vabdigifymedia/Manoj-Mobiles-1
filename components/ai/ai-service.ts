@@ -2,7 +2,7 @@ import type { AIResponse, ChatMessage } from './types'
 
 export async function sendMessageToAI(userMessage: string, history: ChatMessage[]): Promise<AIResponse> {
   try {
-    const res = await fetch('http://localhost:8080/api/v1/public/ai/chat', {
+    const res = await fetch('/api/public/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // Pass the new message and the history to the backend
