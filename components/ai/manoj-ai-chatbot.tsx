@@ -48,6 +48,7 @@ export function ManojAIChatbot() {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [chatId] = useState(() => createMessageId())
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -138,7 +139,7 @@ export function ManojAIChatbot() {
 
       try {
         // ── FUTURE AI API INTEGRATION POINT (see components/ai/ai-service.ts) ──
-        const response = await sendMessageToAI(text, history)
+        const response = await sendMessageToAI(text, chatId)
         setMessages(prev => [
           ...prev,
           {
