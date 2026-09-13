@@ -9,7 +9,10 @@ export async function sendMessageToAI(userMessage: string, chatId: string): Prom
     })
     
     if (!res.ok) {
-      throw new Error('AI request failed')
+      const errorBody = await res.json().catch(() => null)
+      const backendMsg = errorBody?.message || 'AI request failed'
+      console.error(`AI request failed — status ${res.status}`, backendMsg)
+      throw new Error(backendMsg)
     }
     
     const json = await res.json()
