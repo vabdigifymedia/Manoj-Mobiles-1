@@ -12,6 +12,7 @@ import { apiClient } from '@/lib/apiClient'
 import type { ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO, StoreSettingResponseDTO } from '@/lib/types'
 import { SearchOverlay } from './search-overlay'
 import { ManojAIChatbot } from './ai/manoj-ai-chatbot'
+import { useBulkInquiry } from './bulk-inquiry-provider'
 
 import {
   DropdownMenu,
@@ -34,6 +35,7 @@ export function Header() {
   const pathname = usePathname()
   const { cartCount } = useStore()
   const { isAuthenticated, logout } = useAuth()
+  const { openBulkInquiry } = useBulkInquiry()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
@@ -517,6 +519,18 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
+              {/* Bulk Buy — placed directly below Global Buy. Opens the existing Bulk Inquiry
+                  (Bulk Buy) flow used by the home page section & product pages. */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  openBulkInquiry(null)
+                }}
+                className="p-2.5 text-left hover:bg-muted rounded-xl transition-colors cursor-pointer"
+              >
+                Bulk Buy
+              </button>
               <hr className="my-1 border-border" />
               <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">Wishlist</Link>
               <Link href={mounted && isAuthenticated ? "/account" : "/auth"} onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">

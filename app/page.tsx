@@ -17,7 +17,7 @@ import { BulkInquirySection } from '@/components/home/bulk-inquiry-section'
 
 export default async function HomePage() {
   // Parallel SSR data fetching for all home page sections
-  const [heroBanners, dealBanner, storeSettings, faqs, brands, categories, newArrivals, bestSellers, budgetPicks, allProductsData, reelsData] = await Promise.all([
+  const [heroBanners, dealBanner, storeSettings, faqs, brands, categories, newArrivals, bestSellers, allProductsData, reelsData] = await Promise.all([
     serverFetch<BannerResponseDTO[]>('/api/public/banners?type=HERO_SLIDER'),
     serverFetch<BannerResponseDTO[]>('/api/public/banners?type=DEAL_OF_THE_DAY'),
     serverFetch<StoreSettingResponseDTO>('/api/public/settings'),
@@ -26,7 +26,9 @@ export default async function HomePage() {
     serverFetch<CategoryResponseDTO[]>('/api/public/categories'),
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=createdAt,desc'),
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=avgRating,desc'),
-    serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=startingPrice,asc'),
+    // Budget Picks source — the full public catalogue. NOTE: the public products API
+    // cannot sort by the derived `startingPrice` column (sort=startingPrice,asc responds
+    // HTTP 500), so the budget ordering is derived from this real catalogue data below.
     serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=50'),
     serverFetch<InstagramReelResponseDTO[]>('/api/public/reels'),
   ])
@@ -36,7 +38,6 @@ export default async function HomePage() {
   const categoryList = categories || []
   const newProducts = newArrivals?.content || []
   const bestProducts = bestSellers?.content || []
-  const budgetProducts = budgetPicks?.content || []
 
   const allProducts = allProductsData?.content || []
 
@@ -54,7 +55,11 @@ export default async function HomePage() {
     return brand === 'apple' || brand === 'iphone' || brand.includes('apple') || brand.includes('iphone') || name.includes('iphone')
   }).slice(0, 6)
 
-  // Identify mobile phone products & sort by startingPrice ASC for Budget Phones
+  // Identify mobile phone products & sort by startingPrice ASC for the Budget sections.
+  // NOTE: the public products API cannot sort by the derived `startingPrice` column
+  // (sort=startingPrice,asc responds HTTP 500), so the ordering is derived here from the
+  // existing catalogue data. This single real-data selection feeds both the Budget Phones
+  // showcase and the Budget Picks tab of "Shop by Collection".
   const isMobilePhone = (p: ProductListResponseDTO) => {
     const cat = (p.categoryName || '').toLowerCase()
     const name = (p.name || '').toLowerCase()
@@ -75,6 +80,7 @@ export default async function HomePage() {
     return true
   }
 
+  // Most affordable mobile phones from the real catalogue (existing `startingPrice` field).
   const budgetPhoneProducts = [...allProducts]
     .filter(isMobilePhone)
     .sort((a, b) => (a.startingPrice || 0) - (b.startingPrice || 0))
@@ -106,7 +112,7 @@ export default async function HomePage() {
       <DealOfTheDay banner={activeDeal} />
 
       {/* Budget Phones Section */}
-      <BudgetPhones products={budgetPhoneProducts.length > 0 ? budgetPhoneProducts : budgetProducts} />
+      <BudgetPhones products={budgetPhoneProducts} />
 
       {/* Categories */}
       {categoryList.length > 0 && (
@@ -174,7 +180,7 @@ export default async function HomePage() {
       )}
 
       {/* Tabbed Product Showcase */}
-      <ProductTabs newArrivals={newProducts} bestSellers={bestProducts} budgetPicks={budgetProducts} />
+      <ProductTabs newArrivals={newProducts} bestSellers={bestProducts} budgetPicks={budgetPhoneProducts} />
 
       {/* Instagram Reels */}
       <InstagramReels reels={reelsData || []} />
