@@ -6,7 +6,16 @@ import { FilterSidebar } from '@/components/shop/filter-sidebar'
 import { FilterSheet } from '@/components/shop/filter-sheet'
 import { ProductGridSkeleton } from '@/components/shop/product-grid-skeleton'
 import { serverFetch } from '@/lib/apiClient'
-import type { ProductListResponseDTO, PageResponse, BrandResponseDTO, CategoryResponseDTO, ProductResponseDTO } from '@/lib/types'
+import {
+  fetchCatalogServer,
+  fetchProductDetailsServer,
+  fetchSearchServer,
+  filterCatalog,
+  findBrand,
+  findCategory,
+  type CatalogProduct,
+} from '@/lib/productCatalog'
+import type { PageResponse, BrandResponseDTO, CategoryResponseDTO } from '@/lib/types'
 
 export const metadata: Metadata = {
   title: 'Shop Phones | Manoj Mobiles',
@@ -21,67 +30,55 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   const minPriceQuery = typeof minPrice === 'string' ? minPrice : ''
   const maxPriceQuery = typeof maxPrice === 'string' ? maxPrice : ''
 
-  // Build the API URL based on search params
-  let apiUrl = '/api/public/products?page=0&size=50'
-  if (searchQuery) {
-    apiUrl = `/api/public/products/search?q=${encodeURIComponent(searchQuery)}&page=0&size=50`
-  }
-
-  const [productsRes, brandsRes, categoriesRes] = await Promise.all([
-    serverFetch<PageResponse<ProductListResponseDTO>>(apiUrl),
-    serverFetch<PageResponse<BrandResponseDTO>>('/api/public/brands?page=0&size=20'),
+  const [brandsRes, categoriesRes] = await Promise.all([
+    serverFetch<PageResponse<BrandResponseDTO>>('/api/public/brands?page=0&size=100'),
     serverFetch<CategoryResponseDTO[]>('/api/public/categories'),
   ])
 
   const brands = brandsRes?.content || []
   const categories = categoriesRes || []
 
-  let productsResData = productsRes?.content || []
+  // ------------------------------------------------------------------
+  // SINGLE SOURCE OF TRUTH (lib/productCatalog.ts)
+  // The COMPLETE catalog is read (every page of the public API) and filtered
+  // here. Reading only `page=0&size=50` previously hid the newest products —
+  // they are LAST in the API's default (oldest-first) order — which is why a
+  // product could show under New Arrivals yet be missing from Shop and from
+  // its Brand page (`Shop?brand=...` is the brand store view).
+  // ------------------------------------------------------------------
+  const catalog: CatalogProduct[] = searchQuery ? await fetchSearchServer(searchQuery) : await fetchCatalogServer()
 
-  // Apply frontend filters for brand, category, and price
-  if (brandQuery) {
-    const brandName = brands.find(b => b.slug === brandQuery)?.name
-    if (brandName) {
-      productsResData = productsResData.filter(p => p.brandName === brandName)
-    }
-  }
+  const activeBrandObj = findBrand(brands, brandQuery)
+  const activeCategoryObj = findCategory(categories, categoryQuery)
 
-  if (categoryQuery) {
-    const categoryName = categories.find(c => c.slug === categoryQuery)?.name
-    if (categoryName) {
-      productsResData = productsResData.filter(p => p.categoryName === categoryName)
-    }
-  }
+  const minPriceValue = minPriceQuery && !isNaN(Number(minPriceQuery)) ? Number(minPriceQuery) : undefined
+  const maxPriceValue = maxPriceQuery && !isNaN(Number(maxPriceQuery)) ? Number(maxPriceQuery) : undefined
 
-  if (minPriceQuery) {
-    const min = Number(minPriceQuery)
-    if (!isNaN(min)) {
-      productsResData = productsResData.filter(p => p.startingPrice >= min)
-    }
-  }
-  
-  if (maxPriceQuery) {
-    const max = Number(maxPriceQuery)
-    if (!isNaN(max)) {
-      productsResData = productsResData.filter(p => p.startingPrice <= max)
-    }
-  }
-  
-  // Fetch full details for all filtered products on this page to extract their variants
-  const fullProducts = await Promise.all(
-    productsResData.map(p => serverFetch<ProductResponseDTO>(`/api/public/products/${p.id}`))
-  )
+  // Brand / category membership is matched case- and whitespace-insensitively
+  // (the catalog stores brand names such as "realme", "POCO", "Oppo", "Techno").
+  // When a slug does not resolve to master data we still filter on the raw value
+  // instead of silently showing unrelated products.
+  const productsResData = filterCatalog(catalog, {
+    brand: activeBrandObj ?? (brandQuery || null),
+    category: activeCategoryObj ?? (categoryQuery || null),
+    minPrice: minPriceValue,
+    maxPrice: maxPriceValue,
+  })
+
+  // Variant details (colour grouping) for exactly the products being rendered,
+  // fetched with bounded parallelism through the shared catalog layer.
+  const fullProducts = await fetchProductDetailsServer(productsResData.map(p => p.id))
 
   // Group variants by color to avoid showing every single storage option as a separate card
   const displayVariants = fullProducts.flatMap(p => {
     if (!p || !p.variants || p.variants.length === 0) return []
-    
+
     const variantsByColor = new Map<string, typeof p.variants[0]>();
-    
+
     p.variants.forEach(v => {
-      // Filter variants by price
-      if (minPriceQuery && v.sellingPrice < Number(minPriceQuery)) return;
-      if (maxPriceQuery && v.sellingPrice > Number(maxPriceQuery)) return;
+      // Filter variants by price (same rules, derived from the query params)
+      if (minPriceValue !== undefined && v.sellingPrice < minPriceValue) return;
+      if (maxPriceValue !== undefined && v.sellingPrice > maxPriceValue) return;
 
       const color = v.color || 'Default';
       if (!variantsByColor.has(color)) {
@@ -97,10 +94,6 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     }))
   })
 
-  const activeBrandObj = brandQuery
-    ? brands.find(b => b.slug.toLowerCase() === brandQuery.toLowerCase() || b.name.toLowerCase() === brandQuery.toLowerCase() || b.id === brandQuery)
-    : undefined
-
   const hasFilters = brandQuery || categoryQuery || searchQuery || minPriceQuery || maxPriceQuery
 
   const pageTitle = searchQuery
@@ -108,7 +101,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     : activeBrandObj
     ? `${activeBrandObj.name} Mobiles`
     : categoryQuery
-    ? `${categories.find(c => c.slug === categoryQuery)?.name || categoryQuery}`
+    ? `${activeCategoryObj?.name || categoryQuery}`
     : 'Find your next phone'
 
   const pageSubtitle = searchQuery ? 'Search Results' : activeBrandObj ? 'Brand Store' : hasFilters ? 'Filtered results' : 'The collection'

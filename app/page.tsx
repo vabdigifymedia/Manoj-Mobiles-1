@@ -1,7 +1,16 @@
 import Link from 'next/link'
 import { FaMicrochip, FaCreditCard, FaShieldHalved, FaHeadphones, FaStopwatch, FaMobileScreen, FaLaptop, FaLocationDot, FaMessage, FaHeadset, FaClock, FaTabletScreenButton, FaArrowRight, FaTableCellsLarge, FaTruckFast, FaStar } from 'react-icons/fa6'
 import { serverFetch } from '@/lib/apiClient'
-import type { BannerResponseDTO, StoreSettingResponseDTO, FaqResponseDTO, ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO, PageResponse, InstagramReelResponseDTO } from '@/lib/types'
+import {
+  fetchCatalogServer,
+  fetchNewestServer,
+  findBrand,
+  selectBestSellers,
+  selectBudgetPicks,
+  selectByBrand,
+  selectNewArrivals,
+} from '@/lib/productCatalog'
+import type { BannerResponseDTO, StoreSettingResponseDTO, FaqResponseDTO, BrandResponseDTO, CategoryResponseDTO, PageResponse, InstagramReelResponseDTO } from '@/lib/types'
 import { HeroCarousel } from '@/components/home/hero-carousel'
 import { BrandShowcase } from '@/components/home/brand-showcase'
 import { DealOfTheDay } from '@/components/home/deal-of-the-day'
@@ -16,75 +25,44 @@ import { InstagramReels } from '@/components/home/instagram-reels'
 import { BulkInquirySection } from '@/components/home/bulk-inquiry-section'
 
 export default async function HomePage() {
-  // Parallel SSR data fetching for all home page sections
-  const [heroBanners, dealBanner, storeSettings, faqs, brands, categories, newArrivals, bestSellers, allProductsData, reelsData] = await Promise.all([
+  // Parallel SSR data fetching for all home page sections.
+  // ALL product data comes from the single catalog layer (lib/productCatalog.ts)
+  // — no section keeps its own hardcoded or separately-queried product array.
+  const [heroBanners, dealBanner, storeSettings, faqs, brands, categories, catalog, newestProducts, reelsData] = await Promise.all([
     serverFetch<BannerResponseDTO[]>('/api/public/banners?type=HERO_SLIDER'),
     serverFetch<BannerResponseDTO[]>('/api/public/banners?type=DEAL_OF_THE_DAY'),
     serverFetch<StoreSettingResponseDTO>('/api/public/settings'),
     serverFetch<FaqResponseDTO[]>('/api/public/faqs'),
     serverFetch<PageResponse<BrandResponseDTO>>('/api/public/brands?page=0&size=20'),
     serverFetch<CategoryResponseDTO[]>('/api/public/categories'),
-    serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=createdAt,desc'),
-    serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=4&sort=avgRating,desc'),
-    // Budget Picks source — the full public catalogue. NOTE: the public products API
-    // cannot sort by the derived `startingPrice` column (sort=startingPrice,asc responds
-    // HTTP 500), so the budget ordering is derived from this real catalogue data below.
-    serverFetch<PageResponse<ProductListResponseDTO>>('/api/public/products?page=0&size=50'),
+    // Master catalog (every page of the public API, normalized)
+    fetchCatalogServer(),
+    // Newest-first ordering comes from the API (`createdAt` is not in the list DTO)
+    fetchNewestServer(8),
     serverFetch<InstagramReelResponseDTO[]>('/api/public/reels'),
   ])
 
   const activeDeal = (dealBanner || [])[0] || null
   const brandList = brands?.content || []
   const categoryList = categories || []
-  const newProducts = newArrivals?.content || []
-  const bestProducts = bestSellers?.content || []
+  const newProducts = selectNewArrivals(newestProducts, 4)
+  const bestProducts = selectBestSellers(catalog, 4)
 
-  const allProducts = allProductsData?.content || []
+  // ---- Brand spotlights ----
+  // Brand membership comes from the brand master data and is matched
+  // case/whitespace-insensitively (product brand data contains values such as
+  // "realme" / "POCO" / "Oppo"), so a row can never be dropped by casing.
+  const samsungBrand = findBrand(brandList, 'samsung')
+  const appleBrand = findBrand(brandList, 'apple')
 
-  // Filter for Samsung products dynamically from backend API data
-  const samsungProducts = allProducts.filter(p => {
-    const brand = (p.brandName || '').toLowerCase()
-    const name = (p.name || '').toLowerCase()
-    return brand === 'samsung' || name.includes('samsung') || name.includes('galaxy')
-  }).slice(0, 6)
+  const samsungProducts = (samsungBrand ? selectByBrand(catalog, samsungBrand) : selectByBrand(catalog, 'samsung')).slice(0, 6)
+  const iphoneProducts = (appleBrand ? selectByBrand(catalog, appleBrand) : selectByBrand(catalog, 'apple')).slice(0, 6)
 
-  // Filter for Apple/iPhone products dynamically from backend API data
-  const iphoneProducts = allProducts.filter(p => {
-    const brand = (p.brandName || '').toLowerCase()
-    const name = (p.name || '').toLowerCase()
-    return brand === 'apple' || brand === 'iphone' || brand.includes('apple') || brand.includes('iphone') || name.includes('iphone')
-  }).slice(0, 6)
-
-  // Identify mobile phone products & sort by startingPrice ASC for the Budget sections.
-  // NOTE: the public products API cannot sort by the derived `startingPrice` column
-  // (sort=startingPrice,asc responds HTTP 500), so the ordering is derived here from the
-  // existing catalogue data. This single real-data selection feeds both the Budget Phones
-  // showcase and the Budget Picks tab of "Shop by Collection".
-  const isMobilePhone = (p: ProductListResponseDTO) => {
-    const cat = (p.categoryName || '').toLowerCase()
-    const name = (p.name || '').toLowerCase()
-    if (
-      cat.includes('audio') ||
-      cat.includes('ear') ||
-      cat.includes('head') ||
-      cat.includes('watch') ||
-      cat.includes('laptop') ||
-      cat.includes('tablet') ||
-      cat.includes('access') ||
-      cat.includes('cover') ||
-      cat.includes('case') ||
-      cat.includes('charger')
-    ) {
-      return false
-    }
-    return true
-  }
-
-  // Most affordable mobile phones from the real catalogue (existing `startingPrice` field).
-  const budgetPhoneProducts = [...allProducts]
-    .filter(isMobilePhone)
-    .sort((a, b) => (a.startingPrice || 0) - (b.startingPrice || 0))
-    .slice(0, 8)
+  // ---- Budget Phones showcase & Budget Picks collection tab ----
+  // Both read the SAME real catalog data (most affordable mobiles ordered by the
+  // existing `startingPrice` field) — the API cannot sort by `startingPrice`
+  // server-side (it responds HTTP 500), so the ordering happens in the shared layer.
+  const budgetPhoneProducts = selectBudgetPicks(catalog, 8)
 
   return (
     <>

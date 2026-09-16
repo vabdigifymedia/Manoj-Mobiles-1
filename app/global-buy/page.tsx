@@ -2,81 +2,80 @@ import { Metadata } from 'next'
 import { ProductCard as ListProductCard } from '@/components/ui/product-card-1'
 import { GlobalBuySearch } from '@/components/shop/global-buy-search'
 import { serverFetch } from '@/lib/apiClient'
-import type { ProductListResponseDTO, PageResponse, BrandResponseDTO, ProductResponseDTO } from '@/lib/types'
+import {
+  fetchCatalogServer,
+  fetchProductDetailsServer,
+  fetchSearchServer,
+  findBrand,
+  matchesBrand,
+  selectVisible,
+} from '@/lib/productCatalog'
+import type { PageResponse, BrandResponseDTO } from '@/lib/types'
 
 export const metadata: Metadata = {
   title: 'Global Buy | Samsung & Apple | Manoj Mobiles',
   description: 'Shop available Samsung and Apple smartphones from Manoj Mobiles.',
 }
 
-const normalize = (value?: string | null) => (value || '').trim().toLowerCase()
-
 export default async function GlobalBuyPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const { q, brand } = await searchParams
   const searchQuery = typeof q === 'string' ? q.trim() : ''
   const brandQuery = typeof brand === 'string' ? brand : ''
+  const brandKey = brandQuery.trim().toLowerCase()
 
-  // Build the API URL based on search params (same public endpoints used by /shop)
-  let apiUrl = '/api/public/products?page=0&size=50'
-  if (searchQuery) {
-    apiUrl = `/api/public/products/search?q=${encodeURIComponent(searchQuery)}&page=0&size=50`
-  }
-
-  const [productsRes, brandsRes] = await Promise.all([
-    serverFetch<PageResponse<ProductListResponseDTO>>(apiUrl),
-    serverFetch<PageResponse<BrandResponseDTO>>('/api/public/brands?page=0&size=20'),
+  // ------------------------------------------------------------------
+  // SINGLE SOURCE OF TRUTH (lib/productCatalog.ts) — same as /shop.
+  // The COMPLETE catalog is read (every page of the public API). Reading
+  // only `page=0&size=50` previously hid the newest Samsung/Apple products.
+  // ------------------------------------------------------------------
+  const [catalog, brandsRes] = await Promise.all([
+    searchQuery ? fetchSearchServer(searchQuery) : fetchCatalogServer(),
+    serverFetch<PageResponse<BrandResponseDTO>>('/api/public/brands?page=0&size=100'),
   ])
 
   const brands = brandsRes?.content || []
-  const allProducts = productsRes?.content || []
 
   // Identify the Samsung & Apple brands from the EXISTING brand relationship
   // (matched against the brand master data — never against product names)
-  const samsungBrand = brands.find(b => normalize(b.name) === 'samsung' || normalize(b.slug) === 'samsung') || null
-  const appleBrand = brands.find(b => normalize(b.name) === 'apple' || normalize(b.slug) === 'apple') || null
+  const samsungBrand = findBrand(brands, 'samsung') || null
+  const appleBrand = findBrand(brands, 'apple') || null
 
-  // Brand names resolved from brandId on the backend. If the brands endpoint is
-  // unavailable, fall back to the canonical names so the page keeps working.
-  const targetBrandNames = new Set<string>(
-    [samsungBrand, appleBrand]
-      .filter((b): b is BrandResponseDTO => !!b)
-      .map(b => normalize(b.name))
-  )
-  if (targetBrandNames.size === 0) {
-    targetBrandNames.add('samsung')
-    targetBrandNames.add('apple')
-  }
-
-  // GLOBAL BUY RULE: Published + Active products only, brand is Samsung OR Apple.
-  // The public endpoint already excludes drafts/unpublished/deleted products;
-  // brandName comes from the product's brandId reference in the database.
-  const globalBuyProducts = allProducts.filter(
-    p => p.status !== 'INACTIVE' && targetBrandNames.has(normalize(p.brandName))
-  )
+  // GLOBAL BUY RULE: Published + Active products only, brand is Samsung OR Apple
+  // (matched through the shared normalized brand layer so "Samsung"/"APPLE"
+  // casing can never drop a product). The public endpoint already excludes
+  // drafts/unpublished/deleted products.
+  const visibleCatalog = selectVisible(catalog)
+  const globalBuyProducts = visibleCatalog.filter(product => {
+    if (samsungBrand && matchesBrand(product, samsungBrand)) return true
+    if (appleBrand && matchesBrand(product, appleBrand)) return true
+    if (!samsungBrand && !appleBrand) {
+      return product.brandKey === 'samsung' || product.brandKey === 'apple'
+    }
+    return false
+  })
 
   // Brand tab: All (default) / Samsung / Apple
   const activeTab: 'all' | 'samsung' | 'apple' =
-    normalize(brandQuery) === 'samsung' ||
-    (samsungBrand && (normalize(samsungBrand.slug) === normalize(brandQuery) || normalize(samsungBrand.name) === normalize(brandQuery)))
+    brandKey === 'samsung' || (samsungBrand != null && findBrand([samsungBrand], brandKey) != null)
       ? 'samsung'
-      : normalize(brandQuery) === 'apple' ||
-        (appleBrand && (normalize(appleBrand.slug) === normalize(brandQuery) || normalize(appleBrand.name) === normalize(brandQuery)))
+      : brandKey === 'apple' || (appleBrand != null && findBrand([appleBrand], brandKey) != null)
       ? 'apple'
       : 'all'
 
   let productsResData = globalBuyProducts
   if (activeTab === 'samsung') {
-    const tabBrandName = samsungBrand?.name || 'Samsung'
-    productsResData = productsResData.filter(p => normalize(p.brandName) === normalize(tabBrandName))
+    productsResData = samsungBrand
+      ? productsResData.filter(p => matchesBrand(p, samsungBrand))
+      : productsResData.filter(p => p.brandKey === 'samsung')
   } else if (activeTab === 'apple') {
-    const tabBrandName = appleBrand?.name || 'Apple'
-    productsResData = productsResData.filter(p => normalize(p.brandName) === normalize(tabBrandName))
+    productsResData = appleBrand
+      ? productsResData.filter(p => matchesBrand(p, appleBrand))
+      : productsResData.filter(p => p.brandKey === 'apple')
   }
 
-  // Fetch full details for the filtered products to extract their variants
-  const fullProducts = await Promise.all(
-    productsResData.map(p => serverFetch<ProductResponseDTO>(`/api/public/products/${p.id}`))
-  )
+  // Variant details (colour grouping) for exactly the products being rendered,
+  // fetched with bounded parallelism through the shared catalog layer.
+  const fullProducts = await fetchProductDetailsServer(productsResData.map(p => p.id))
 
   // Defense-in-depth: the detailed record must still reference a Samsung/Apple brandId
   // (covers the case where an admin re-brands a product while the list is cached)

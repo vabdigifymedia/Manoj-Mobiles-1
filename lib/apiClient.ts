@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import Cookies from 'js-cookie'
 import imageCompression from 'browser-image-compression'
+import { isProductMutation, notifyProductCatalogChanged } from './productCatalogSync'
 import {
   ApiResponse, PageResponse,
   StaffLoginRequestDTO, AuthResponseDTO, RefreshTokenRequestDTO,
@@ -50,7 +51,14 @@ const processQueue = (error: AxiosError | null, token: string | null = null) => 
 }
 
 axiosInstance.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    // Every successful product write (product, variant, highlight, image, status)
+    // purges the cached storefront catalog so pages never serve stale products.
+    if (isProductMutation(response.config?.url, response.config?.method)) {
+      notifyProductCatalogChanged()
+    }
+    return response
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
@@ -168,14 +176,24 @@ export const apiClient = {
     axiosInstance.delete<ApiResponse<void>>(`/api/brands/${id}`),
 
   // --- Products ---
-  getProducts: (page = 0, size = 20, includeInactive = false) =>
-    axiosInstance.get<ApiResponse<PageResponse<ProductListResponseDTO>>>(`/api/public/products?page=${page}&size=${size}&includeInactive=${includeInactive}`),
+  // NOTE: the public products endpoint accepts ONLY `page`, `size` and `sort`
+  // (verified against the live API). The former `includeInactive` flag was
+  // silently ignored by the backend, so it has been removed. Use
+  // `lib/productCatalog.ts` (`fetchCatalogClient`) whenever the COMPLETE
+  // catalog is required — a single `page=0&size=50` request only ever returns
+  // the first (oldest) products.
+  getProducts: (page = 0, size = 20, sort?: string) =>
+    axiosInstance.get<ApiResponse<PageResponse<ProductListResponseDTO>>>(
+      `/api/public/products?page=${page}&size=${size}${sort ? `&sort=${encodeURIComponent(sort)}` : ''}`
+    ),
 
   getProductById: (id: string) =>
     axiosInstance.get<ApiResponse<ProductResponseDTO>>(`/api/public/products/${id}`),
 
-  searchProducts: (q: string, page = 0, size = 20, includeInactive = false) =>
-    axiosInstance.get<ApiResponse<PageResponse<ProductListResponseDTO>>>(`/api/public/products/search?q=${encodeURIComponent(q)}&page=${page}&size=${size}&includeInactive=${includeInactive}`),
+  searchProducts: (q: string, page = 0, size = 20, sort?: string) =>
+    axiosInstance.get<ApiResponse<PageResponse<ProductListResponseDTO>>>(
+      `/api/public/products/search?q=${encodeURIComponent(q)}&page=${page}&size=${size}${sort ? `&sort=${encodeURIComponent(sort)}` : ''}`
+    ),
 
   filterProducts: (dto: ProductFilterRequestDTO, page = 0, size = 20) =>
     axiosInstance.post<ApiResponse<PageResponse<ProductVariantResponseDTO>>>(`/api/public/products/filter?page=${page}&size=${size}`, dto),
@@ -602,11 +620,19 @@ export const formatINR = (value: number) =>
 // ===========================
 // Server-side fetch helper for SSR pages (no auth needed, public endpoints only)
 // ===========================
-export async function serverFetch<T>(path: string): Promise<T | null> {
+export async function serverFetch<T>(
+  path: string,
+  options?: { revalidate?: number; tags?: string[]; noStore?: boolean }
+): Promise<T | null> {
   // Server-side fetch needs a full URL (no browser origin available)
   const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'https://200.141.14.212.nip.io'
   try {
-    const res = await fetch(`${serverUrl}${path}`, { next: { revalidate: 30 } })
+    // `noStore` is used for catalog data so a newly published product is visible
+    // on the very next request; product details use a short revalidate + tag.
+    const res = await fetch(
+      `${serverUrl}${path}`,
+      options?.noStore ? { cache: 'no-store' } : { next: { revalidate: options?.revalidate ?? 30, tags: options?.tags } }
+    )
     if (!res.ok) return null
     const json = await res.json()
     return json.data as T

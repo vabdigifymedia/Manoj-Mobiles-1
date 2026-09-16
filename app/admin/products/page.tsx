@@ -2,36 +2,49 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
-import { FaArrowLeft, FaPen, FaMagnifyingGlass, FaTrashCan, FaStar, FaPlus, FaXmark, FaFilter, FaFileLines } from 'react-icons/fa6'
+import { FaArrowLeft, FaPen, FaMagnifyingGlass, FaTrashCan, FaStar, FaPlus, FaXmark, FaFilter, FaFileLines, FaArrowsRotate } from 'react-icons/fa6'
 import { apiClient, formatINR } from '@/lib/apiClient'
-import { ProductListResponseDTO } from '@/lib/types'
+import { fetchCatalogClient, type CatalogProduct } from '@/lib/productCatalog'
 import { CompanyFilter, CompanyOption } from '@/components/admin/company-filter'
 import { getAllProductDrafts } from '@/lib/draftService'
 
 const PAGE_SIZE = 20
 
 export default function AdminProductsPage() {
-  const [allProducts, setAllProducts] = useState<ProductListResponseDTO[]>([])
+  const [allProducts, setAllProducts] = useState<CatalogProduct[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [selectedCompany, setSelectedCompany] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [draftCount, setDraftCount] = useState<number>(0)
 
+  /**
+   * Loads the COMPLETE product catalog straight from the database through the
+   * shared product layer (`fetchCatalogClient`):
+   *  - every page of the public API is read (the old single request could return
+   *    a partial catalog, and the `includeInactive` flag it sent does not exist
+   *    on the API and was silently ignored),
+   *  - newest first, so a product saved a moment ago is always on page 1 instead
+   *    of being buried at the end of the API's oldest-first order,
+   *  - NO status/visibility filter is applied here, so inactive products stay
+   *    manageable in the Admin Panel.
+   * Failures are surfaced instead of silently emptying the list.
+   */
   const loadProducts = async () => {
     try {
       setLoading(true)
+      setLoadError(null)
       const drafts = getAllProductDrafts()
       setDraftCount(drafts.length)
-      // Fetch products catalog with a large size to allow dynamic extraction & filtering
-      const res = await apiClient.getProducts(0, 1000, true)
-      if (res.data?.data?.content) {
-        setAllProducts(res.data.data.content)
-      } else {
-        setAllProducts([])
-      }
-    } catch {
-      // silently fail
+      const products = await fetchCatalogClient({ sort: 'createdAt,desc' })
+      setAllProducts(products)
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (err as { message?: string })?.message ||
+        'Unable to load products from the server. Please retry.'
+      setLoadError(message)
       setAllProducts([])
     } finally {
       setLoading(false)
@@ -96,6 +109,12 @@ export default function AdminProductsPage() {
     return filteredProducts.slice(start, start + PAGE_SIZE)
   }, [filteredProducts, page])
 
+  // Keep the current page valid when the list shrinks (filter change, delete or a
+  // refreshed catalog) so the table can never render a blank page.
+  useEffect(() => {
+    if (page > totalPages - 1) setPage(Math.max(0, totalPages - 1))
+  }, [page, totalPages])
+
   const handleCompanyChange = (company: string) => {
     setSelectedCompany(company)
     setPage(0)
@@ -150,6 +169,16 @@ export default function AdminProductsPage() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={loadProducts}
+              disabled={loading}
+              title="Re-fetch products from the database"
+              className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground whitespace-nowrap hover:bg-muted transition-all shadow-xs active:scale-95 disabled:opacity-50"
+            >
+              <FaArrowsRotate size={14} className={loading ? 'animate-spin' : ''} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
             <Link
               href="/admin/products/drafts"
               className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground whitespace-nowrap hover:bg-muted transition-all shadow-xs active:scale-95"
@@ -265,7 +294,22 @@ export default function AdminProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {loading ? (
+              {loadError ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <p className="font-semibold text-base text-rose-600 dark:text-rose-400">Could not load products</p>
+                      <p className="max-w-md text-xs text-muted-foreground">{loadError}</p>
+                      <button
+                        onClick={loadProducts}
+                        className="mt-2 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
+                      >
+                        <FaArrowsRotate size={12} /> Retry
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : loading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                     <div className="flex items-center justify-center gap-2">

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen, FaCircleCheck, FaListCheck, FaGlobe, FaDownload, FaSpinner, FaPaste, FaCloudCheck, FaFileLines, FaTriangleExclamation } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
+import { fetchCatalogClient, type CatalogProduct } from '@/lib/productCatalog'
 import { parsePastedSpecsText, ALLOWED_GROUPS, ExtractedSpecItem } from '@/lib/specParser'
 import { saveProductDraft, getProductDraft, clearDraftForProduct, deleteProductDraft, getAllProductDrafts, ProductDraft, formatRelativeTime } from '@/lib/draftService'
 
@@ -362,19 +363,21 @@ export function ProductWizard({ productId }: { productId?: string }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catsRes, brandsRes, prodsRes] = await Promise.all([
+        const [catsRes, brandsRes, catalogProducts] = await Promise.all([
           apiClient.getCategories(),
           apiClient.getBrands(0, 100),
-          apiClient.getProducts(0, 100, true).catch(() => null)
+          // COMPLETE catalog through the shared product layer (all pages).
+          // A single `size=100` request previously missed products, which could
+          // let a duplicate SKU slip past the validation below.
+          fetchCatalogClient().catch(() => [] as CatalogProduct[])
         ])
         setCategories(catsRes.data.data)
         setBrands(brandsRes.data.data.content)
 
         // Build existing DB SKU map
         const skuMap = new Map<string, { productId: string; variantId: string }>()
-        if (prodsRes?.data?.data?.content) {
-          const prodList = prodsRes.data.data.content
-          await Promise.all(prodList.map(async (pItem) => {
+        if (catalogProducts.length > 0) {
+          await Promise.all(catalogProducts.map(async (pItem) => {
             try {
               const fullProd = await apiClient.getProductById(pItem.id)
               const pData = fullProd.data?.data
