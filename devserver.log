@@ -9235,3 +9235,978 @@ https://nextjs.org/docs/messages/module-not-found
     at <unknown> (Error: (./lib/apiClient.ts:4:1)
     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
  GET /admin/products 200 in 2.4s (next.js: 1008ms, application-code: 1407ms)
+ GET / 200 in 7.0s (next.js: 4.3s, application-code: 2.8s)
+ GET / 200 in 945ms (next.js: 143ms, application-code: 802ms)
+ GET / 200 in 854ms (next.js: 27ms, application-code: 827ms)
+ GET / 200 in 1218ms (next.js: 23ms, application-code: 1194ms)
+(node:1840) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 drain listeners added to [Gzip]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET /shop 200 in 8.0s (next.js: 966ms, application-code: 7.0s)
+ GET /shop?brand=motorola 200 in 2.5s (next.js: 18ms, application-code: 2.5s)
+ GET / 200 in 889ms (next.js: 25ms, application-code: 864ms)
+ GET /shop?brand=motorola 200 in 906ms (next.js: 44ms, application-code: 862ms)
+(node:1840) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 drain listeners added to [Gzip]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+ GET /shop 200 in 5.1s (next.js: 8ms, application-code: 5.1s)
+ GET /shop?maxPrice=0 200 in 404ms (next.js: 18ms, application-code: 386ms)
+○ Compiling /_not-found/page ...
+ GET /privacy 404 in 20.4s (next.js: 19.6s, application-code: 826ms)
+ GET /privacy 404 in 698ms (next.js: 53ms, application-code: 645ms)
+ GET /privacy 404 in 222ms (next.js: 22ms, application-code: 200ms)
+ GET /faq 404 in 71ms (next.js: 35ms, application-code: 37ms)
+ GET /faq 404 in 231ms (next.js: 23ms, application-code: 208ms)
+ GET /faq 404 in 136ms (next.js: 13ms, application-code: 124ms)
+✓ Compiled in 1771ms
+ GET /shop?maxPrice=0 200 in 438ms (next.js: 227ms, application-code: 211ms)
+ GET /shop?maxPrice=0 200 in 3.2s (next.js: 1771ms, application-code: 1424ms)
+ GET /shop?maxPrice=0 200 in 1753ms (next.js: 80ms, application-code: 1673ms)
+ GET /shop?maxPrice=0 200 in 1574ms (next.js: 33ms, application-code: 1541ms)
+ GET /shop?maxPrice=0 200 in 1588ms (next.js: 71ms, application-code: 1517ms)
+ GET /shop?maxPrice=0 200 in 1494ms (next.js: 17ms, application-code: 1477ms)
+ GET /shop?maxPrice=0 200 in 1516ms (next.js: 65ms, application-code: 1451ms)
+ GET /shop?maxPrice=0 200 in 1286ms (next.js: 90ms, application-code: 1196ms)
+ GET /shop?maxPrice=0 200 in 1144ms (next.js: 61ms, application-code: 1082ms)
+ GET /shop?maxPrice=0 200 in 937ms (next.js: 27ms, application-code: 910ms)
+ GET /shop?maxPrice=0 200 in 947ms (next.js: 26ms, application-code: 921ms)
+ GET /shop?maxPrice=0 200 in 980ms (next.js: 32ms, application-code: 948ms)
+ GET /shop?maxPrice=0 200 in 1145ms (next.js: 25ms, application-code: 1120ms)
+ GET /shop?maxPrice=0 200 in 1230ms (next.js: 24ms, application-code: 1206ms)
+ GET /shop?maxPrice=0 200 in 1460ms (next.js: 21ms, application-code: 1439ms)
+ GET /shop?maxPrice=0 200 in 1358ms (next.js: 30ms, application-code: 1328ms)
+ GET /shop?maxPrice=0 200 in 1299ms (next.js: 24ms, application-code: 1275ms)
+ GET /shop?maxPrice=0 200 in 1120ms (next.js: 30ms, application-code: 1090ms)
+ GET /shop?maxPrice=0 200 in 1117ms (next.js: 42ms, application-code: 1075ms)
+ GET /shop?maxPrice=0 200 in 1220ms (next.js: 54ms, application-code: 1166ms)
+ GET /shop?maxPrice=0 200 in 1407ms (next.js: 34ms, application-code: 1372ms)
+ GET /shop?maxPrice=0 200 in 1482ms (next.js: 28ms, application-code: 1455ms)
+ GET /shop?maxPrice=0 200 in 1383ms (next.js: 31ms, application-code: 1352ms)
+ GET /shop?maxPrice=0 200 in 1247ms (next.js: 114ms, application-code: 1133ms)
+ GET /shop?maxPrice=0 200 in 1252ms (next.js: 29ms, application-code: 1223ms)
+ GET /shop?maxPrice=0 200 in 1107ms (next.js: 26ms, application-code: 1081ms)
+ GET /shop?maxPrice=0 200 in 1254ms (next.js: 44ms, application-code: 1209ms)
+ GET /shop?maxPrice=0 200 in 1195ms (next.js: 32ms, application-code: 1162ms)
+ GET /shop?maxPrice=0 200 in 1047ms (next.js: 23ms, application-code: 1024ms)
+ GET /shop?maxPrice=0 200 in 1110ms (next.js: 34ms, application-code: 1075ms)
+ GET /shop?maxPrice=0 200 in 1212ms (next.js: 81ms, application-code: 1131ms)
+ GET /shop?maxPrice=0 200 in 994ms (next.js: 22ms, application-code: 971ms)
+ GET /shop?maxPrice=0 200 in 1210ms (next.js: 27ms, application-code: 1183ms)
+ GET /shop?maxPrice=0 200 in 1155ms (next.js: 30ms, application-code: 1125ms)
+ GET /shop?maxPrice=0 200 in 968ms (next.js: 27ms, application-code: 941ms)
+ GET /shop?maxPrice=0 200 in 957ms (next.js: 20ms, application-code: 938ms)
+ GET /shop?maxPrice=0 200 in 1140ms (next.js: 25ms, application-code: 1114ms)
+ GET /shop?maxPrice=0 200 in 944ms (next.js: 21ms, application-code: 923ms)
+ GET /shop?maxPrice=0 200 in 1164ms (next.js: 21ms, application-code: 1143ms)
+ GET /shop?maxPrice=0 200 in 1173ms (next.js: 27ms, application-code: 1146ms)
+ GET /shop?maxPrice=0 200 in 1034ms (next.js: 36ms, application-code: 999ms)
+ GET /shop?maxPrice=0 200 in 1021ms (next.js: 24ms, application-code: 997ms)
+ GET /shop?maxPrice=0 200 in 1232ms (next.js: 29ms, application-code: 1203ms)
+ GET /shop?maxPrice=0 200 in 1090ms (next.js: 25ms, application-code: 1065ms)
+ GET /shop?maxPrice=0 200 in 1219ms (next.js: 23ms, application-code: 1197ms)
+ GET /shop?maxPrice=0 200 in 1225ms (next.js: 31ms, application-code: 1194ms)
+ GET /shop?maxPrice=0 200 in 1075ms (next.js: 32ms, application-code: 1043ms)
+ GET /shop?maxPrice=0 200 in 1066ms (next.js: 31ms, application-code: 1035ms)
+ GET /shop?maxPrice=0 200 in 1202ms (next.js: 36ms, application-code: 1166ms)
+ GET /shop?maxPrice=0 200 in 1064ms (next.js: 27ms, application-code: 1037ms)
+ GET /shop?maxPrice=0 200 in 1233ms (next.js: 23ms, application-code: 1210ms)
+ GET /shop?maxPrice=0 200 in 1235ms (next.js: 31ms, application-code: 1204ms)
+ GET /shop?maxPrice=0 200 in 1095ms (next.js: 28ms, application-code: 1067ms)
+ GET /shop?maxPrice=0 200 in 1068ms (next.js: 27ms, application-code: 1041ms)
+ GET /shop?maxPrice=0 200 in 1197ms (next.js: 32ms, application-code: 1165ms)
+ GET /shop?maxPrice=0 200 in 1035ms (next.js: 30ms, application-code: 1005ms)
+ GET /shop?maxPrice=0 200 in 1134ms (next.js: 26ms, application-code: 1108ms)
+ GET /shop?maxPrice=0 200 in 1105ms (next.js: 37ms, application-code: 1068ms)
+ GET /shop?maxPrice=0 200 in 951ms (next.js: 19ms, application-code: 933ms)
+ GET /shop?maxPrice=0 200 in 994ms (next.js: 23ms, application-code: 971ms)
+ GET /shop?maxPrice=0 200 in 1155ms (next.js: 22ms, application-code: 1133ms)
+ GET /shop?maxPrice=0 200 in 980ms (next.js: 23ms, application-code: 957ms)
+ GET /shop?maxPrice=0 200 in 1131ms (next.js: 27ms, application-code: 1104ms)
+ GET /shop?maxPrice=0 200 in 1149ms (next.js: 28ms, application-code: 1121ms)
+ GET /shop?maxPrice=0 200 in 978ms (next.js: 24ms, application-code: 954ms)
+ GET /shop?maxPrice=0 200 in 1001ms (next.js: 24ms, application-code: 976ms)
+ GET /shop?maxPrice=0 200 in 1204ms (next.js: 24ms, application-code: 1181ms)
+ GET /shop?maxPrice=0 200 in 1084ms (next.js: 23ms, application-code: 1061ms)
+ GET /shop?maxPrice=0 200 in 1255ms (next.js: 25ms, application-code: 1230ms)
+ GET /shop?maxPrice=0 200 in 1223ms (next.js: 37ms, application-code: 1186ms)
+ GET /shop?maxPrice=0 200 in 1051ms (next.js: 33ms, application-code: 1018ms)
+ GET /shop?maxPrice=0 200 in 1006ms (next.js: 29ms, application-code: 977ms)
+ GET /shop?maxPrice=0 200 in 1313ms (next.js: 42ms, application-code: 1272ms)
+ GET /shop?maxPrice=0 200 in 1167ms (next.js: 16ms, application-code: 1151ms)
+ GET /shop?maxPrice=0 200 in 1387ms (next.js: 25ms, application-code: 1363ms)
+ GET /shop?maxPrice=0 200 in 1402ms (next.js: 32ms, application-code: 1370ms)
+ GET /shop?maxPrice=0 200 in 1257ms (next.js: 29ms, application-code: 1228ms)
+ GET /shop?maxPrice=0 200 in 1256ms (next.js: 17ms, application-code: 1239ms)
+ GET /shop?maxPrice=0 200 in 1231ms (next.js: 20ms, application-code: 1211ms)
+ GET /shop?maxPrice=0 200 in 1079ms (next.js: 24ms, application-code: 1055ms)
+ GET /shop?maxPrice=0 200 in 1250ms (next.js: 39ms, application-code: 1211ms)
+ GET /shop?maxPrice=0 200 in 1208ms (next.js: 28ms, application-code: 1180ms)
+ GET /shop?maxPrice=0 200 in 1074ms (next.js: 27ms, application-code: 1047ms)
+ GET /shop?maxPrice=0 200 in 1049ms (next.js: 20ms, application-code: 1029ms)
+ GET /shop?maxPrice=0 200 in 1282ms (next.js: 43ms, application-code: 1240ms)
+ GET /shop?maxPrice=0 200 in 1057ms (next.js: 20ms, application-code: 1038ms)
+ GET /shop?maxPrice=0 200 in 1272ms (next.js: 29ms, application-code: 1244ms)
+ GET /shop?maxPrice=0 200 in 1116ms (next.js: 46ms, application-code: 1070ms)
+ GET /shop?maxPrice=0 200 in 963ms (next.js: 34ms, application-code: 930ms)
+ GET /shop?maxPrice=0 200 in 954ms (next.js: 41ms, application-code: 913ms)
+ GET /shop?maxPrice=0 200 in 1140ms (next.js: 29ms, application-code: 1112ms)
+ GET /shop?maxPrice=0 200 in 968ms (next.js: 25ms, application-code: 943ms)
+ GET /shop?maxPrice=0 200 in 1168ms (next.js: 32ms, application-code: 1136ms)
+ GET /shop?maxPrice=0 200 in 1161ms (next.js: 29ms, application-code: 1131ms)
+ GET /shop?maxPrice=0 200 in 1031ms (next.js: 28ms, application-code: 1002ms)
+ GET /shop?maxPrice=0 200 in 862ms (next.js: 32ms, application-code: 830ms)
+ GET /shop?maxPrice=0 200 in 677ms (next.js: 63ms, application-code: 614ms)
+ GET /shop?maxPrice=0 200 in 465ms (next.js: 24ms, application-code: 441ms)
+○ Compiling /returns ...
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 5.6s (next.js: 3.3s, application-code: 2.3s)
+ GET /returns 307 in 28ms
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 95ms (next.js: 21ms, application-code: 75ms)
+ GET /returns 307 in 17ms
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 69ms (next.js: 15ms, application-code: 55ms)
+ GET /returns 307 in 23ms
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 113ms (next.js: 28ms, application-code: 85ms)
+ GET /returns 307 in 24ms
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 69ms (next.js: 15ms, application-code: 54ms)
+ GET /returns 307 in 17ms
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 77ms (next.js: 16ms, application-code: 61ms)
+ GET /returns 307 in 19ms
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 70ms (next.js: 18ms, application-code: 52ms)
+ GET /returns 307 in 17ms
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 83ms (next.js: 20ms, application-code: 63ms)
+ GET /returns 307 in 21ms
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 82ms (next.js: 21ms, application-code: 61ms)
+ GET /returns 307 in 19ms
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 107ms (next.js: 18ms, application-code: 89ms)
+ GET /returns 307 in 18ms
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 307 in 82ms (next.js: 18ms, application-code: 65ms)
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 500 in 291ms (next.js: 188ms, application-code: 103ms)
+[browser] Uncaught Error: The default export is not a React Component in "/returns/page"
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 500 in 168ms (next.js: 136ms, application-code: 32ms)
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 500 in 1110ms (next.js: 1008ms, application-code: 102ms)
+[browser] Uncaught Error: The default export is not a React Component in "/returns/page"
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/returns/page"
+    at ignore-listed frames {
+  page: '/returns'
+}
+ GET /returns 500 in 450ms (next.js: 386ms, application-code: 64ms)
+ GET /privacy 200 in 3.5s (next.js: 3.0s, application-code: 469ms)
+ GET /shop?maxPrice=0 200 in 13.3s (next.js: 19ms, application-code: 13.3s)
+ GET /shop?maxPrice=0 200 in 2.9s (next.js: 17ms, application-code: 2.8s)
+ GET /shop?maxPrice=0 200 in 3.5s (next.js: 17ms, application-code: 3.5s)
+ GET /privacy 200 in 115ms (next.js: 8ms, application-code: 107ms)
+ GET /privacy 200 in 277ms (next.js: 16ms, application-code: 261ms)
+✓ Compiled in 520ms
+ GET /privacy 200 in 141ms (next.js: 38ms, application-code: 103ms)
+✓ Compiled in 949ms
+ GET /privacy 200 in 255ms (next.js: 16ms, application-code: 239ms)
+✓ Compiled in 406ms
+ GET /privacy 200 in 85ms (next.js: 26ms, application-code: 59ms)
+✓ Compiled in 447ms
+ GET /privacy 200 in 104ms (next.js: 17ms, application-code: 87ms)
+✓ Compiled in 377ms
+ GET /privacy 200 in 130ms (next.js: 32ms, application-code: 98ms)
+✓ Compiled in 487ms
+ GET /privacy 200 in 167ms (next.js: 40ms, application-code: 127ms)
+✓ Compiled in 938ms
+ GET /privacy 200 in 204ms (next.js: 20ms, application-code: 184ms)
+✓ Compiled in 444ms
+ GET /privacy 200 in 84ms (next.js: 17ms, application-code: 67ms)
+✓ Compiled in 392ms
+ GET /privacy 200 in 189ms (next.js: 26ms, application-code: 164ms)
+✓ Compiled in 366ms
+⨯ ReferenceError: Cancellation is not defined
+    at Footer (components\footer.tsx:127:100)
+  125 |               <li><Link href="/auth" className="hover:text-primary transition-colors">My Account</Link></li>
+  126 |               <li><Link href="/returns" className="hover:text-primary transition-colors">Refunds Policy</Link></li>
+> 127 |               <li><Link href="/returns" className="hover:text-primary transition-colors">Return & <Cancellation></Cancellation> Policy</Link></li>
+      |                                                                                                    ^
+  128 |               <li><Link href="/warranty" className="hover:text-primary transition-colors">Warranty Policy</Link></li>
+  129 |               <li><Link href="/faq" className="hover:text-primary transition-colors">FAQs</Link></li>
+  130 |               <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li> {
+  digest: '2398855516'
+}
+ GET /privacy 500 in 493ms (next.js: 26ms, application-code: 467ms)
+ GET /privacy 200 in 218ms (next.js: 19ms, application-code: 199ms)
+ GET /privacy 200 in 316ms (next.js: 22ms, application-code: 294ms)
+✓ Compiled in 986ms
+ GET /privacy 200 in 406ms (next.js: 136ms, application-code: 270ms)
+✓ Compiled in 341ms
+ GET /privacy 200 in 168ms (next.js: 40ms, application-code: 128ms)
+ GET /privacy 200 in 2.2s (next.js: 597ms, application-code: 1627ms)
+ GET /privacy 200 in 1176ms (next.js: 34ms, application-code: 1143ms)
+ GET /privacy 200 in 671ms (next.js: 33ms, application-code: 637ms)
+ GET /privacy 200 in 935ms (next.js: 20ms, application-code: 915ms)
+ GET /privacy 200 in 1523ms (next.js: 19ms, application-code: 1504ms)
+ GET /privacy 200 in 1677ms (next.js: 18ms, application-code: 1659ms)
+ GET /privacy 200 in 1519ms (next.js: 70ms, application-code: 1449ms)
+ GET /privacy 200 in 1095ms (next.js: 70ms, application-code: 1025ms)
+ GET /privacy 200 in 509ms (next.js: 18ms, application-code: 491ms)
+ GET /privacy 200 in 526ms (next.js: 23ms, application-code: 503ms)
+ GET /privacy 200 in 507ms (next.js: 20ms, application-code: 487ms)
+ GET /privacy 200 in 595ms (next.js: 27ms, application-code: 568ms)
+ GET /privacy 200 in 676ms (next.js: 17ms, application-code: 659ms)
+ GET /privacy 200 in 673ms (next.js: 18ms, application-code: 656ms)
+ GET /privacy 200 in 591ms (next.js: 21ms, application-code: 570ms)
+ GET /privacy 200 in 587ms (next.js: 22ms, application-code: 565ms)
+ GET /privacy 200 in 593ms (next.js: 24ms, application-code: 569ms)
+ GET /privacy 200 in 551ms (next.js: 24ms, application-code: 527ms)
+ GET /privacy 200 in 839ms (next.js: 25ms, application-code: 813ms)
+ GET /privacy 200 in 735ms (next.js: 34ms, application-code: 701ms)
+ GET /privacy 200 in 825ms (next.js: 21ms, application-code: 804ms)
+ GET /privacy 200 in 809ms (next.js: 52ms, application-code: 757ms)
+ GET /privacy 200 in 729ms (next.js: 39ms, application-code: 691ms)
+ GET /privacy 200 in 776ms (next.js: 19ms, application-code: 757ms)
+ GET /privacy 200 in 677ms (next.js: 18ms, application-code: 659ms)
+ GET /privacy 200 in 643ms (next.js: 41ms, application-code: 603ms)
+ GET /privacy 200 in 524ms (next.js: 91ms, application-code: 433ms)
+ GET /privacy 200 in 436ms (next.js: 28ms, application-code: 408ms)
+ GET /privacy 200 in 424ms (next.js: 22ms, application-code: 402ms)
+ GET /privacy 200 in 449ms (next.js: 20ms, application-code: 429ms)
+ GET /privacy 200 in 467ms (next.js: 20ms, application-code: 447ms)
+ GET /privacy 200 in 486ms (next.js: 13ms, application-code: 473ms)
+ GET /privacy 200 in 596ms (next.js: 24ms, application-code: 571ms)
+ GET /privacy 200 in 609ms (next.js: 22ms, application-code: 586ms)
+ GET /privacy 200 in 666ms (next.js: 22ms, application-code: 644ms)
+ GET /privacy 200 in 1006ms (next.js: 25ms, application-code: 981ms)
+ GET /privacy 200 in 1471ms (next.js: 21ms, application-code: 1450ms)
+ GET /privacy 200 in 1374ms (next.js: 27ms, application-code: 1347ms)
+ GET /privacy 200 in 1421ms (next.js: 23ms, application-code: 1398ms)
+ GET /privacy 200 in 1338ms (next.js: 190ms, application-code: 1148ms)
+ GET /privacy 200 in 986ms (next.js: 117ms, application-code: 870ms)
+ GET /privacy 200 in 536ms (next.js: 40ms, application-code: 496ms)
+ GET /privacy 200 in 527ms (next.js: 94ms, application-code: 433ms)
+ GET /privacy 200 in 464ms (next.js: 46ms, application-code: 419ms)
+ GET /privacy 200 in 511ms (next.js: 25ms, application-code: 486ms)
+ GET /privacy 200 in 575ms (next.js: 26ms, application-code: 549ms)
+ GET /privacy 200 in 821ms (next.js: 23ms, application-code: 798ms)
+ GET /privacy 200 in 872ms (next.js: 31ms, application-code: 840ms)
+ GET /privacy 200 in 831ms (next.js: 29ms, application-code: 802ms)
+ GET /privacy 200 in 680ms (next.js: 33ms, application-code: 647ms)
+ GET /privacy 200 in 677ms (next.js: 28ms, application-code: 649ms)
+ GET /privacy 200 in 566ms (next.js: 28ms, application-code: 538ms)
+ GET /privacy 200 in 525ms (next.js: 27ms, application-code: 498ms)
+ GET /privacy 200 in 489ms (next.js: 28ms, application-code: 460ms)
+ GET /privacy 200 in 403ms (next.js: 19ms, application-code: 384ms)
+ GET /privacy 200 in 498ms (next.js: 20ms, application-code: 478ms)
+ GET /privacy 200 in 430ms (next.js: 25ms, application-code: 406ms)
+ GET /privacy 200 in 430ms (next.js: 26ms, application-code: 405ms)
+ GET /privacy 200 in 478ms (next.js: 17ms, application-code: 461ms)
+ GET /privacy 200 in 564ms (next.js: 24ms, application-code: 540ms)
+ GET /privacy 200 in 470ms (next.js: 25ms, application-code: 444ms)
+ GET /privacy 200 in 477ms (next.js: 23ms, application-code: 455ms)
+ GET /privacy 200 in 474ms (next.js: 20ms, application-code: 454ms)
+ GET /privacy 200 in 699ms (next.js: 18ms, application-code: 681ms)
+ GET /privacy 200 in 795ms (next.js: 23ms, application-code: 772ms)
+ GET /privacy 200 in 720ms (next.js: 24ms, application-code: 696ms)
+ GET /privacy 200 in 717ms (next.js: 23ms, application-code: 694ms)
+ GET /privacy 200 in 729ms (next.js: 32ms, application-code: 696ms)
+ GET /privacy 200 in 557ms (next.js: 27ms, application-code: 530ms)
+ GET /privacy 200 in 538ms (next.js: 33ms, application-code: 505ms)
+ GET /privacy 200 in 514ms (next.js: 20ms, application-code: 494ms)
+ GET /privacy 200 in 542ms (next.js: 18ms, application-code: 523ms)
+ GET /privacy 200 in 558ms (next.js: 20ms, application-code: 537ms)
+ GET /privacy 200 in 512ms (next.js: 21ms, application-code: 491ms)
+ GET /privacy 200 in 499ms (next.js: 19ms, application-code: 480ms)
+ GET /privacy 200 in 399ms (next.js: 22ms, application-code: 377ms)
+ GET /privacy 200 in 401ms (next.js: 23ms, application-code: 378ms)
+ GET /privacy 200 in 402ms (next.js: 18ms, application-code: 384ms)
+ GET /privacy 200 in 454ms (next.js: 16ms, application-code: 437ms)
+ GET /privacy 200 in 457ms (next.js: 17ms, application-code: 440ms)
+ GET /privacy 200 in 473ms (next.js: 47ms, application-code: 427ms)
+ GET /privacy 200 in 450ms (next.js: 26ms, application-code: 425ms)
+ GET /privacy 200 in 473ms (next.js: 21ms, application-code: 452ms)
+ GET /privacy 200 in 486ms (next.js: 21ms, application-code: 465ms)
+ GET /privacy 200 in 486ms (next.js: 25ms, application-code: 460ms)
+ GET /privacy 200 in 569ms (next.js: 17ms, application-code: 552ms)
+ GET /privacy 200 in 506ms (next.js: 17ms, application-code: 489ms)
+ GET /privacy 200 in 420ms (next.js: 28ms, application-code: 393ms)
+ GET /privacy 200 in 319ms (next.js: 20ms, application-code: 299ms)
+ GET /privacy 200 in 217ms (next.js: 22ms, application-code: 195ms)
+✓ Compiled in 1901ms
+ GET /privacy 200 in 2.0s (next.js: 1361ms, application-code: 646ms)
+ GET /privacy 200 in 827ms (next.js: 87ms, application-code: 740ms)
+ GET /privacy 200 in 764ms (next.js: 89ms, application-code: 675ms)
+ GET /privacy 200 in 772ms (next.js: 26ms, application-code: 746ms)
+ GET /privacy 200 in 782ms (next.js: 24ms, application-code: 759ms)
+ GET /privacy 200 in 734ms (next.js: 42ms, application-code: 692ms)
+ GET /privacy 200 in 719ms (next.js: 28ms, application-code: 691ms)
+ GET /privacy 200 in 737ms (next.js: 59ms, application-code: 678ms)
+ GET /privacy 200 in 549ms (next.js: 23ms, application-code: 526ms)
+ GET /privacy 200 in 444ms (next.js: 25ms, application-code: 420ms)
+ GET /privacy 200 in 331ms (next.js: 28ms, application-code: 303ms)
+ GET /privacy 200 in 209ms (next.js: 54ms, application-code: 155ms)
+ GET /returns 200 in 260ms (next.js: 186ms, application-code: 73ms)
+ GET /returns 200 in 659ms (next.js: 339ms, application-code: 320ms)
+✓ Compiled in 2.1s
+ GET /returns 200 in 590ms (next.js: 279ms, application-code: 311ms)
+✓ Compiled in 943ms
+ GET /returns 200 in 1208ms (next.js: 116ms, application-code: 1092ms)
+ GET /returns 200 in 6.1s (next.js: 545ms, application-code: 5.5s)
+ GET /returns 200 in 264ms (next.js: 58ms, application-code: 206ms)
+ GET /refunds 404 in 419ms (next.js: 138ms, application-code: 281ms)
+ GET /refunds 404 in 174ms (next.js: 19ms, application-code: 155ms)
+ GET /refunds 404 in 153ms (next.js: 21ms, application-code: 133ms)
+ GET /refunds 404 in 97ms (next.js: 10ms, application-code: 87ms)
+ GET /returns 200 in 227ms (next.js: 59ms, application-code: 168ms)
+ GET /returns 200 in 107ms (next.js: 16ms, application-code: 91ms)
+ GET /returns 200 in 292ms (next.js: 21ms, application-code: 271ms)
+ GET /returns 200 in 478ms (next.js: 24ms, application-code: 455ms)
+ GET /refunds 404 in 213ms (next.js: 110ms, application-code: 103ms)
+ GET /refunds 404 in 249ms (next.js: 46ms, application-code: 204ms)
+ GET /refunds 404 in 814ms (next.js: 354ms, application-code: 460ms)
+ GET /refunds 404 in 719ms (next.js: 155ms, application-code: 564ms)
+ GET /refunds 404 in 284ms (next.js: 43ms, application-code: 241ms)
+✓ Compiled in 2.7s
+ GET /refunds 404 in 368ms (next.js: 211ms, application-code: 157ms)
+ GET /refunds 404 in 276ms (next.js: 31ms, application-code: 245ms)
+ GET /refunds 404 in 230ms (next.js: 35ms, application-code: 195ms)
+ GET /refunds 404 in 326ms (next.js: 44ms, application-code: 282ms)
+ GET /refunds 404 in 227ms (next.js: 33ms, application-code: 193ms)
+ GET /refund 200 in 3.3s (next.js: 2.9s, application-code: 363ms)
+✓ Compiled in 5s
+ GET /refund 200 in 1491ms (next.js: 140ms, application-code: 1351ms)
+ GET /returns 200 in 1438ms (next.js: 330ms, application-code: 1109ms)
+✓ Compiled in 2.1s
+ GET /returns 200 in 1497ms (next.js: 632ms, application-code: 865ms)
+ GET /contact 404 in 339ms (next.js: 174ms, application-code: 165ms)
+ GET /contact 404 in 551ms (next.js: 34ms, application-code: 517ms)
+ GET /contact 404 in 326ms (next.js: 45ms, application-code: 282ms)
+ GET /returns 200 in 457ms (next.js: 28ms, application-code: 430ms)
+ GET /returns 200 in 1503ms (next.js: 41ms, application-code: 1462ms)
+ GET /returns 200 in 540ms (next.js: 25ms, application-code: 515ms)
+ GET /warranty 200 in 4.2s (next.js: 3.6s, application-code: 577ms)
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 4.0s (next.js: 2.7s, application-code: 1206ms)
+ GET /terms 307 in 46ms
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 102ms (next.js: 36ms, application-code: 66ms)
+ GET /terms 307 in 28ms
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 474ms (next.js: 260ms, application-code: 214ms)
+ GET /terms 307 in 61ms
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 256ms (next.js: 66ms, application-code: 190ms)
+ GET /terms 307 in 66ms
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 284ms (next.js: 68ms, application-code: 216ms)
+ GET /terms 307 in 61ms
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 420ms (next.js: 328ms, application-code: 91ms)
+ GET /terms 307 in 25ms
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 92ms (next.js: 22ms, application-code: 71ms)
+ GET /terms 307 in 28ms
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 86ms (next.js: 18ms, application-code: 68ms)
+ GET /terms 307 in 20ms
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 103ms (next.js: 22ms, application-code: 81ms)
+ GET /terms 307 in 21ms
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 90ms (next.js: 19ms, application-code: 71ms)
+ GET /terms 307 in 23ms
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 307 in 93ms (next.js: 23ms, application-code: 70ms)
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+[browser] Failed to fetch RSC payload for http://localhost:3000/terms. Falling back to browser navigation. TypeError: Failed to fetch (components/theme-provider.tsx:13:5)
+ GET /terms 500 in 420ms (next.js: 329ms, application-code: 91ms)
+[browser] Uncaught Error: The default export is not a React Component in "/terms/page"
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames
+⨯ Error: The default export is not a React Component in "/terms/page"
+    at ignore-listed frames {
+  page: '/terms'
+}
+ GET /terms 500 in 418ms (next.js: 384ms, application-code: 33ms)
+ GET /terms 200 in 4.3s (next.js: 1564ms, application-code: 2.7s)
+✓ Finished filesystem cache database compaction in 10.0s
+ GET /terms 200 in 446ms (next.js: 48ms, application-code: 398ms)
+Failed to proxy https://200.141.14.212.nip.io/api/public/settings Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/categories Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/brands?page=0&size=100 Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/settings Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/settings Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/categories Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/brands?page=0&size=100 Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/settings Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+✓ Compiled in 14.4s
+✓ Compiled in 5ms
+ GET /terms 200 in 2.5s (next.js: 348ms, application-code: 2.1s)
+ GET /terms 200 in 713ms (next.js: 37ms, application-code: 676ms)
+✓ Compiled in 1155ms
+ GET /terms 200 in 1089ms (next.js: 67ms, application-code: 1021ms)
+✓ Compiled in 2.4s
+ GET /terms 200 in 273ms (next.js: 26ms, application-code: 247ms)
+ GET /terms 200 in 2.1s (next.js: 641ms, application-code: 1502ms)
+ GET /terms 200 in 2.8s (next.js: 26ms, application-code: 2.8s)
+ GET /terms 200 in 2.5s (next.js: 30ms, application-code: 2.5s)
+ GET /terms 200 in 2.5s (next.js: 31ms, application-code: 2.5s)
+ GET /terms 200 in 2.7s (next.js: 31ms, application-code: 2.7s)
+ GET /terms 200 in 2.5s (next.js: 24ms, application-code: 2.5s)
+ GET /terms 200 in 2.5s (next.js: 59ms, application-code: 2.4s)
+ GET /terms 200 in 1053ms (next.js: 31ms, application-code: 1022ms)
+ GET /terms 200 in 902ms (next.js: 28ms, application-code: 875ms)
+ GET /terms 200 in 797ms (next.js: 24ms, application-code: 773ms)
+ GET /terms 200 in 1099ms (next.js: 25ms, application-code: 1074ms)
+ GET /terms 200 in 938ms (next.js: 20ms, application-code: 917ms)
+ GET /terms 200 in 1124ms (next.js: 23ms, application-code: 1101ms)
+ GET /terms 200 in 1158ms (next.js: 19ms, application-code: 1139ms)
+ GET /terms 200 in 1085ms (next.js: 21ms, application-code: 1064ms)
+ GET /terms 200 in 1095ms (next.js: 27ms, application-code: 1069ms)
+ GET /terms 200 in 1191ms (next.js: 23ms, application-code: 1169ms)
+ GET /terms 200 in 1049ms (next.js: 20ms, application-code: 1029ms)
+ GET /terms 200 in 1272ms (next.js: 21ms, application-code: 1251ms)
+ GET /terms 200 in 1262ms (next.js: 24ms, application-code: 1238ms)
+ GET /terms 200 in 1248ms (next.js: 22ms, application-code: 1226ms)
+ GET /terms 200 in 1103ms (next.js: 22ms, application-code: 1081ms)
+ GET /terms 200 in 1212ms (next.js: 23ms, application-code: 1190ms)
+ GET /terms 200 in 1072ms (next.js: 24ms, application-code: 1048ms)
+ GET /terms 200 in 1703ms (next.js: 23ms, application-code: 1680ms)
+ GET /terms 200 in 1750ms (next.js: 23ms, application-code: 1728ms)
+ GET /terms 200 in 1738ms (next.js: 22ms, application-code: 1716ms)
+ GET /terms 200 in 1771ms (next.js: 18ms, application-code: 1753ms)
+ GET /terms 200 in 1699ms (next.js: 54ms, application-code: 1645ms)
+ GET /terms 200 in 1322ms (next.js: 25ms, application-code: 1297ms)
+ GET /terms 200 in 1273ms (next.js: 31ms, application-code: 1241ms)
+ GET /terms 200 in 1338ms (next.js: 21ms, application-code: 1317ms)
+ GET /terms 200 in 1459ms (next.js: 20ms, application-code: 1440ms)
+ GET /terms 200 in 1300ms (next.js: 27ms, application-code: 1273ms)
+ GET /terms 200 in 1105ms (next.js: 21ms, application-code: 1085ms)
+ GET /terms 200 in 815ms (next.js: 25ms, application-code: 790ms)
+ GET /terms 200 in 665ms (next.js: 20ms, application-code: 645ms)
+ GET /terms 200 in 379ms (next.js: 30ms, application-code: 349ms)
+ GET /terms 200 in 1537ms (next.js: 189ms, application-code: 1348ms)
+ GET /terms 200 in 1669ms (next.js: 17ms, application-code: 1653ms)
+ GET /terms 200 in 1445ms (next.js: 20ms, application-code: 1425ms)
+ GET /terms 200 in 1715ms (next.js: 22ms, application-code: 1693ms)
+ GET /terms 200 in 1738ms (next.js: 16ms, application-code: 1722ms)
+ GET /terms 200 in 2.1s (next.js: 27ms, application-code: 2.1s)
+ GET /terms 200 in 2.2s (next.js: 147ms, application-code: 2.1s)
+ GET /terms 200 in 2.1s (next.js: 86ms, application-code: 2.0s)
+ GET /terms 200 in 1796ms (next.js: 24ms, application-code: 1772ms)
+ GET /terms 200 in 1891ms (next.js: 26ms, application-code: 1865ms)
+ GET /terms 200 in 1663ms (next.js: 31ms, application-code: 1632ms)
+ GET /terms 200 in 1914ms (next.js: 54ms, application-code: 1860ms)
+ GET /terms 200 in 1687ms (next.js: 79ms, application-code: 1608ms)
+ GET /terms 200 in 1721ms (next.js: 75ms, application-code: 1646ms)
+ GET /terms 200 in 1400ms (next.js: 24ms, application-code: 1376ms)
+ GET /terms 200 in 1584ms (next.js: 100ms, application-code: 1484ms)
+ GET /terms 200 in 1458ms (next.js: 39ms, application-code: 1420ms)
+ GET /terms 200 in 1327ms (next.js: 22ms, application-code: 1305ms)
+ GET /terms 200 in 1496ms (next.js: 40ms, application-code: 1457ms)
+ GET /terms 200 in 1722ms (next.js: 40ms, application-code: 1682ms)
+ GET /terms 200 in 1601ms (next.js: 58ms, application-code: 1543ms)
+ GET /terms 200 in 1374ms (next.js: 24ms, application-code: 1350ms)
+ GET /terms 200 in 1408ms (next.js: 21ms, application-code: 1387ms)
+ GET /terms 200 in 1387ms (next.js: 24ms, application-code: 1363ms)
+ GET /terms 200 in 1549ms (next.js: 22ms, application-code: 1526ms)
+ GET /terms 200 in 1165ms (next.js: 31ms, application-code: 1134ms)
+ GET /terms 200 in 1100ms (next.js: 27ms, application-code: 1073ms)
+ GET /terms 200 in 942ms (next.js: 25ms, application-code: 918ms)
+ GET /terms 200 in 977ms (next.js: 29ms, application-code: 948ms)
+ GET /terms 200 in 987ms (next.js: 24ms, application-code: 963ms)
+ GET /terms 200 in 1179ms (next.js: 26ms, application-code: 1153ms)
+ GET /terms 200 in 1174ms (next.js: 24ms, application-code: 1150ms)
+ GET /terms 200 in 1197ms (next.js: 23ms, application-code: 1173ms)
+ GET /terms 200 in 1146ms (next.js: 28ms, application-code: 1118ms)
+ GET /terms 200 in 994ms (next.js: 26ms, application-code: 968ms)
+ GET /terms 200 in 1006ms (next.js: 23ms, application-code: 983ms)
+ GET /terms 200 in 1026ms (next.js: 22ms, application-code: 1005ms)
+ GET /terms 200 in 1282ms (next.js: 22ms, application-code: 1260ms)
+ GET /terms 200 in 1270ms (next.js: 26ms, application-code: 1244ms)
+ GET /terms 200 in 1271ms (next.js: 27ms, application-code: 1244ms)
+ GET /terms 200 in 1077ms (next.js: 27ms, application-code: 1050ms)
+ GET /terms 200 in 1220ms (next.js: 26ms, application-code: 1194ms)
+ GET /terms 200 in 1661ms (next.js: 25ms, application-code: 1636ms)
+ GET /terms 200 in 1623ms (next.js: 25ms, application-code: 1598ms)
+ GET /terms 200 in 1608ms (next.js: 23ms, application-code: 1585ms)
+ GET /terms 200 in 1603ms (next.js: 20ms, application-code: 1583ms)
+ GET /terms 200 in 1433ms (next.js: 21ms, application-code: 1412ms)
+ GET /terms 200 in 1398ms (next.js: 57ms, application-code: 1341ms)
+ GET /terms 200 in 1044ms (next.js: 21ms, application-code: 1023ms)
+ GET /terms 200 in 1098ms (next.js: 24ms, application-code: 1074ms)
+ GET /terms 200 in 1155ms (next.js: 22ms, application-code: 1133ms)
+ GET /terms 200 in 1231ms (next.js: 27ms, application-code: 1204ms)
+ GET /terms 200 in 1095ms (next.js: 21ms, application-code: 1074ms)
+ GET /terms 200 in 1347ms (next.js: 24ms, application-code: 1323ms)
+ GET /terms 200 in 1383ms (next.js: 20ms, application-code: 1363ms)
+ GET /terms 200 in 1451ms (next.js: 28ms, application-code: 1423ms)
+ GET /terms 200 in 1469ms (next.js: 29ms, application-code: 1440ms)
+ GET /terms 200 in 1414ms (next.js: 31ms, application-code: 1383ms)
+ GET /terms 200 in 1181ms (next.js: 36ms, application-code: 1145ms)
+ GET /terms 200 in 1350ms (next.js: 33ms, application-code: 1318ms)
+ GET /terms 200 in 1169ms (next.js: 28ms, application-code: 1141ms)
+ GET /terms 200 in 1069ms (next.js: 26ms, application-code: 1044ms)
+ GET /terms 200 in 829ms (next.js: 22ms, application-code: 807ms)
+ GET /terms 200 in 626ms (next.js: 27ms, application-code: 599ms)
+ GET /terms 200 in 430ms (next.js: 24ms, application-code: 406ms)
+ GET /terms 200 in 232ms (next.js: 27ms, application-code: 205ms)
+ GET /contact 404 in 442ms (next.js: 328ms, application-code: 114ms)
+ GET /contact 404 in 1241ms (next.js: 27ms, application-code: 1214ms)
+ GET /contact 404 in 1018ms (next.js: 248ms, application-code: 770ms)
+ GET /contact 404 in 266ms (next.js: 40ms, application-code: 226ms)
+○ Compiling /copyright ...
+ GET /copyright 200 in 3.8s (next.js: 3.5s, application-code: 309ms)
+Failed to proxy https://200.141.14.212.nip.io/api/public/categories Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/settings Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/brands?page=0&size=100 Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/settings Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/settings Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/categories Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/brands?page=0&size=100 Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/settings Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+ GET /copyright 200 in 1987ms (next.js: 430ms, application-code: 1557ms)
+ GET /copyright 200 in 1593ms (next.js: 255ms, application-code: 1339ms)
+ GET /copyright 200 in 1143ms (next.js: 30ms, application-code: 1113ms)
+ GET /copyright 200 in 1302ms (next.js: 31ms, application-code: 1271ms)
+ GET /copyright 200 in 1034ms (next.js: 50ms, application-code: 984ms)
+ GET /copyright 200 in 902ms (next.js: 43ms, application-code: 859ms)
+ GET /copyright 200 in 886ms (next.js: 98ms, application-code: 788ms)
+ GET /copyright 200 in 736ms (next.js: 36ms, application-code: 701ms)
+ GET /copyright 200 in 813ms (next.js: 32ms, application-code: 781ms)
+ GET /copyright 200 in 772ms (next.js: 29ms, application-code: 743ms)
+ GET /copyright 200 in 776ms (next.js: 25ms, application-code: 750ms)
+ GET /copyright 200 in 750ms (next.js: 32ms, application-code: 718ms)
+ GET /copyright 200 in 799ms (next.js: 44ms, application-code: 754ms)
+ GET /copyright 200 in 755ms (next.js: 26ms, application-code: 729ms)
+ GET /copyright 200 in 742ms (next.js: 31ms, application-code: 711ms)
+ GET /copyright 200 in 696ms (next.js: 36ms, application-code: 660ms)
+ GET /copyright 200 in 769ms (next.js: 35ms, application-code: 735ms)
+ GET /copyright 200 in 885ms (next.js: 91ms, application-code: 793ms)
+ GET /copyright 200 in 769ms (next.js: 22ms, application-code: 748ms)
+ GET /copyright 200 in 749ms (next.js: 24ms, application-code: 724ms)
+ GET /copyright 200 in 707ms (next.js: 50ms, application-code: 657ms)
+ GET /copyright 200 in 636ms (next.js: 49ms, application-code: 587ms)
+ GET /copyright 200 in 403ms (next.js: 18ms, application-code: 385ms)
+ GET /copyright 200 in 419ms (next.js: 16ms, application-code: 403ms)
+ GET /copyright 200 in 431ms (next.js: 16ms, application-code: 414ms)
+ GET /copyright 200 in 509ms (next.js: 17ms, application-code: 492ms)
+ GET /copyright 200 in 594ms (next.js: 16ms, application-code: 578ms)
+ GET /copyright 200 in 699ms (next.js: 13ms, application-code: 686ms)
+ GET /copyright 200 in 706ms (next.js: 15ms, application-code: 691ms)
+ GET /copyright 200 in 695ms (next.js: 16ms, application-code: 679ms)
+ GET /copyright 200 in 689ms (next.js: 30ms, application-code: 659ms)
+ GET /copyright 200 in 615ms (next.js: 41ms, application-code: 574ms)
+ GET /copyright 200 in 646ms (next.js: 22ms, application-code: 624ms)
+ GET /copyright 200 in 575ms (next.js: 17ms, application-code: 559ms)
+ GET /copyright 200 in 615ms (next.js: 19ms, application-code: 596ms)
+ GET /copyright 200 in 606ms (next.js: 21ms, application-code: 585ms)
+ GET /copyright 200 in 635ms (next.js: 23ms, application-code: 612ms)
+ GET /copyright 200 in 645ms (next.js: 19ms, application-code: 627ms)
+ GET /copyright 200 in 666ms (next.js: 19ms, application-code: 648ms)
+ GET /copyright 200 in 692ms (next.js: 22ms, application-code: 669ms)
+ GET /copyright 200 in 794ms (next.js: 23ms, application-code: 771ms)
+ GET /copyright 200 in 792ms (next.js: 22ms, application-code: 769ms)
+ GET /copyright 200 in 784ms (next.js: 20ms, application-code: 763ms)
+ GET /copyright 200 in 681ms (next.js: 23ms, application-code: 658ms)
+ GET /copyright 200 in 661ms (next.js: 24ms, application-code: 637ms)
+ GET /copyright 200 in 657ms (next.js: 24ms, application-code: 633ms)
+ GET /copyright 200 in 659ms (next.js: 23ms, application-code: 636ms)
+ GET /copyright 200 in 655ms (next.js: 23ms, application-code: 632ms)
+ GET /copyright 200 in 671ms (next.js: 26ms, application-code: 644ms)
+ GET /copyright 200 in 824ms (next.js: 26ms, application-code: 798ms)
+ GET /copyright 200 in 737ms (next.js: 26ms, application-code: 712ms)
+ GET /copyright 200 in 725ms (next.js: 19ms, application-code: 707ms)
+ GET /copyright 200 in 718ms (next.js: 25ms, application-code: 693ms)
+ GET /copyright 200 in 725ms (next.js: 22ms, application-code: 703ms)
+ GET /copyright 200 in 717ms (next.js: 18ms, application-code: 699ms)
+ GET /copyright 200 in 733ms (next.js: 35ms, application-code: 698ms)
+ GET /copyright 200 in 757ms (next.js: 20ms, application-code: 737ms)
+ GET /copyright 200 in 864ms (next.js: 27ms, application-code: 837ms)
+ GET /copyright 200 in 719ms (next.js: 31ms, application-code: 688ms)
+ GET /copyright 200 in 719ms (next.js: 25ms, application-code: 694ms)
+ GET /copyright 200 in 715ms (next.js: 47ms, application-code: 668ms)
+ GET /copyright 200 in 721ms (next.js: 25ms, application-code: 695ms)
+ GET /copyright 200 in 708ms (next.js: 23ms, application-code: 684ms)
+ GET /copyright 200 in 831ms (next.js: 25ms, application-code: 806ms)
+ GET /copyright 200 in 826ms (next.js: 24ms, application-code: 802ms)
+ GET /copyright 200 in 727ms (next.js: 29ms, application-code: 698ms)
+ GET /copyright 200 in 783ms (next.js: 25ms, application-code: 759ms)
+ GET /copyright 200 in 681ms (next.js: 24ms, application-code: 657ms)
+ GET /copyright 200 in 673ms (next.js: 25ms, application-code: 648ms)
+ GET /copyright 200 in 743ms (next.js: 38ms, application-code: 705ms)
+ GET /copyright 200 in 728ms (next.js: 29ms, application-code: 699ms)
+ GET /copyright 200 in 630ms (next.js: 22ms, application-code: 609ms)

@@ -123,7 +123,9 @@ export function Footer() {
             <h3 className="font-bold mb-6 tracking-wide">Customer Support</h3>
             <ul className="space-y-4 text-sm text-muted-foreground">
               <li><Link href="/auth" className="hover:text-primary transition-colors">My Account</Link></li>
-              <li><Link href="/returns" className="hover:text-primary transition-colors">Returns & Refunds</Link></li>
+              <li><Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link></li>
+              <li><Link href="/refund" className="hover:text-primary transition-colors">Refunds Policy</Link></li>
+              <li><Link href="/returns" className="hover:text-primary transition-colors">Return & Cancellation Policy</Link></li>
               <li><Link href="/warranty" className="hover:text-primary transition-colors">Warranty Policy</Link></li>
               <li><Link href="/faq" className="hover:text-primary transition-colors">FAQs</Link></li>
               <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
@@ -151,7 +153,12 @@ export function Footer() {
         </div>
         
         <div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} {storeName}. All rights reserved.</p>
+          <Link
+            href="/copyright"
+            className="hover:text-primary transition-colors"
+          >
+            © {new Date().getFullYear()} {storeName}. All rights reserved.
+          </Link>
           <div className="flex gap-6">
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
