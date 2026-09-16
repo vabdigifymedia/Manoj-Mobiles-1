@@ -198,3 +198,32 @@
     scrollbar-width: none;
   }
 }
+
+/* ======================
+   Custom 404 Page
+====================== */
+
+.page-404 {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.four-zero-four-bg {
+  background-image: url("https://cdn.dribbble.com/users/285475/screenshots/2083086/dribbble_1.gif");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.content-box-404 {
+  margin-top: -50px;
+}
+
+@media (max-width: 640px) {
+  .four-zero-four-bg {
+    height: 300px;
+  }
+
+  .content-box-404 {
+    margin-top: -30px;
+  }
+}

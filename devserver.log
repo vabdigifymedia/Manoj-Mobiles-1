@@ -10459,3 +10459,15 @@ Error: connect ETIMEDOUT 200.141.14.212:443
   address: '200.141.14.212',
   port: 443
 }
+ GET / 200 in 6.6s (next.js: 425ms, application-code: 6.1s)
+○ Compiling /faq ...
+ GET /faq 200 in 12.8s (next.js: 11.6s, application-code: 1228ms)
+ GET /faq 200 in 893ms (next.js: 128ms, application-code: 765ms)
+ GET / 200 in 10.9s (next.js: 118ms, application-code: 10.7s)
+✓ Finished filesystem cache database compaction in 11.4s
+✓ Finished filesystem cache database compaction in 30.7s
+ GET / 200 in 10.8s (next.js: 1176ms, application-code: 9.6s)
+✓ Finished writing to filesystem cache in 11.9s
+ GET /refund 200 in 2.9s (next.js: 1135ms, application-code: 1754ms)
+ GET /refunds 404 in 3.5s (next.js: 1357ms, application-code: 2.1s)
+ GET / 200 in 14.5s (next.js: 3.2s, application-code: 11.3s)
