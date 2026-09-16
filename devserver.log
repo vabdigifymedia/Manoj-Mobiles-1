@@ -10471,3 +10471,315 @@ Error: connect ETIMEDOUT 200.141.14.212:443
  GET /refund 200 in 2.9s (next.js: 1135ms, application-code: 1754ms)
  GET /refunds 404 in 3.5s (next.js: 1357ms, application-code: 2.1s)
  GET / 200 in 14.5s (next.js: 3.2s, application-code: 11.3s)
+✓ Finished filesystem cache database compaction in 42s
+ GET / 200 in 3.1s (next.js: 210ms, application-code: 2.8s)
+○ Compiling / ...
+✓ Finished writing to filesystem cache in 27.5s
+ GET / 200 in 52s (next.js: 8.7s, application-code: 43s)
+[browser] Uncaught Error: Internal Next.js error: Router action dispatched before initialization.
+ GET / 200 in 6.0s (next.js: 2.3s, application-code: 3.8s)
+ GET /product/964a5cad-2aa7-475b-b667-d68d5036a383 200 in 13.6s (next.js: 13.0s, application-code: 679ms)
+ GET /api/public/feature-images 200 in 1785ms (next.js: 1544ms, application-code: 241ms)
+ GET /api/public/feature-images 200 in 89ms (next.js: 44ms, application-code: 45ms)
+✓ Finished filesystem cache database compaction in 13.2s
+ GET /product/964a5cad-2aa7-475b-b667-d68d5036a383 200 in 1518ms (next.js: 341ms, application-code: 1177ms)
+ GET /product/964a5cad-2aa7-475b-b667-d68d5036a383 200 in 764ms (next.js: 306ms, application-code: 457ms)
+✓ Finished filesystem cache database compaction in 15.3s
+✓ Compiled in 3.7s
+ GET /product/964a5cad-2aa7-475b-b667-d68d5036a383 200 in 1179ms (next.js: 500ms, application-code: 679ms)
+ GET /product/964a5cad-2aa7-475b-b667-d68d5036a383 200 in 339ms (next.js: 64ms, application-code: 276ms)
+✓ Compiled in 10.7s
+ GET /product/964a5cad-2aa7-475b-b667-d68d5036a383 200 in 1073ms (next.js: 580ms, application-code: 494ms)
+ GET /api/public/feature-images 200 in 220ms (next.js: 54ms, application-code: 166ms)
+ GET /api/public/feature-images 200 in 74ms (next.js: 36ms, application-code: 38ms)
+Failed to proxy https://200.141.14.212.nip.io/api/public/products/964a5cad-2aa7-475b-b667-d68d5036a383/reviews?page=0&size=5 Error: read ECONNRESET
+    at ignore-listed frames {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at ignore-listed frames {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/products/964a5cad-2aa7-475b-b667-d68d5036a383/ratings-summary Error: read ECONNRESET
+    at ignore-listed frames {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at ignore-listed frames {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/settings Error: read ECONNRESET
+    at ignore-listed frames {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at ignore-listed frames {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/products?page=0&size=100 Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Error: connect ETIMEDOUT 200.141.14.212:443
+    at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+  errno: -4039,
+  code: 'ETIMEDOUT',
+  syscall: 'connect',
+  address: '200.141.14.212',
+  port: 443
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/categories Error: read ECONNRESET
+    at ignore-listed frames {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at ignore-listed frames {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Failed to proxy https://200.141.14.212.nip.io/api/public/brands?page=0&size=100 Error: socket hang up
+    at ignore-listed frames {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at ignore-listed frames {
+  code: 'ECONNRESET'
+}
+[browser] AxiosError: Request failed with status code 500 (components/theme-provider.tsx:13:5)
+[browser] AxiosError: Request failed with status code 500 (components/theme-provider.tsx:13:5)
+ GET / 200 in 3.1s (next.js: 608ms, application-code: 2.5s)
+⨯ Error: The destination stream closed early.
+    at ignore-listed frames {
+  digest: '3182886584'
+}
+ GET / 200 in 3.3s (next.js: 45ms, application-code: 3.3s)
+ GET / 200 in 1488ms (next.js: 19ms, application-code: 1469ms)
+ GET /product/964a5cad-2aa7-475b-b667-d68d5036a383 200 in 352ms (next.js: 96ms, application-code: 256ms)
+ GET /api/public/feature-images 200 in 125ms (next.js: 35ms, application-code: 90ms)
+ GET /api/public/feature-images 200 in 67ms (next.js: 22ms, application-code: 45ms)
+ GET /product/fee6d63e-c0e4-4885-9eb9-b52d806024d8 200 in 194ms (next.js: 41ms, application-code: 154ms)
+ GET /api/public/feature-images 200 in 213ms (next.js: 104ms, application-code: 110ms)
+ GET /api/public/feature-images 200 in 67ms (next.js: 36ms, application-code: 31ms)
+✓ Compiled in 29.3s
+ GET / 200 in 2.4s (next.js: 667ms, application-code: 1733ms)
+✓ Finished filesystem cache database compaction in 11.0s
+ GET / 200 in 1457ms (next.js: 409ms, application-code: 1048ms)
+ GET / 200 in 3.2s (next.js: 2.1s, application-code: 1097ms)
+✓ Finished filesystem cache database compaction in 11.5s
+ GET / 200 in 797ms (next.js: 112ms, application-code: 685ms)
+ GET / 200 in 235ms (next.js: 29ms, application-code: 206ms)
+ GET / 200 in 211ms (next.js: 13ms, application-code: 199ms)
+ GET / 200 in 998ms (next.js: 29ms, application-code: 968ms)
+ GET / 200 in 635ms (next.js: 81ms, application-code: 554ms)
+ GET / 200 in 300ms (next.js: 24ms, application-code: 276ms)
+ GET / 200 in 230ms (next.js: 25ms, application-code: 205ms)
+ GET / 200 in 278ms (next.js: 23ms, application-code: 255ms)
+ GET / 200 in 306ms (next.js: 18ms, application-code: 288ms)
+ GET / 200 in 254ms (next.js: 26ms, application-code: 228ms)
+ GET / 200 in 490ms (next.js: 16ms, application-code: 474ms)
+ GET / 200 in 513ms (next.js: 41ms, application-code: 472ms)
+ GET / 200 in 1178ms (next.js: 102ms, application-code: 1076ms)
+ GET / 200 in 262ms (next.js: 24ms, application-code: 237ms)
+ GET / 200 in 304ms (next.js: 26ms, application-code: 278ms)
+ GET / 200 in 314ms (next.js: 35ms, application-code: 279ms)
+ GET / 200 in 241ms (next.js: 24ms, application-code: 217ms)
+ GET / 200 in 242ms (next.js: 23ms, application-code: 220ms)
+ GET / 200 in 4.2s (next.js: 52ms, application-code: 4.2s)
+ GET / 200 in 19.2s (next.js: 33ms, application-code: 19.2s)
+ GET /shop 200 in 11.6s (next.js: 129ms, application-code: 11.5s)
+ GET /shop 200 in 21.2s (next.js: 1590ms, application-code: 19.6s)
+ GET / 200 in 1043ms (next.js: 25ms, application-code: 1017ms)
+ GET /shop 200 in 10.0s (next.js: 50ms, application-code: 9.9s)
+ GET /product/edf1b14f-f8f6-4166-8c15-d5b318f13796?variant=89dc189d-cfa7-44b6-8c3a-618917a25aa1 200 in 3.2s (next.js: 2.3s, application-code: 872ms)
+ GET /api/public/feature-images 200 in 316ms (next.js: 221ms, application-code: 95ms)
+ GET /api/public/feature-images 200 in 73ms (next.js: 32ms, application-code: 41ms)
+ GET /product/0368cfd5-f8ea-4a2c-aed4-1795902f1d5b?variant=2073263e-1c99-4da6-9123-3463e59f380c 200 in 824ms (next.js: 145ms, application-code: 680ms)
+ GET /api/public/feature-images 200 in 336ms (next.js: 235ms, application-code: 101ms)
+ GET /api/public/feature-images 200 in 63ms (next.js: 23ms, application-code: 40ms)
+✓ Compiled in 9.4s
+ GET /shop 200 in 3.5s (next.js: 508ms, application-code: 3.0s)
+⨯ Error: The destination stream closed early.
+    at ignore-listed frames {
+  digest: '3182886584'
+}
+ GET /shop 200 in 28.5s (next.js: 6.8s, application-code: 21.7s)
+[browser] Image with src "https://res.cloudinary.com/wgrpodxl/image/upload/v1789043865/ManojMobiles/products/vn1wmuwesgu4wgdnmhjp.webp" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+TypeError: fetch failed
+    at ignore-listed frames {
+  [cause]: Error: connect ETIMEDOUT 200.141.14.212:443
+      at <unknown> (Error: connect ETIMEDOUT 200.141.14.212:443) {
+    errno: -4039,
+    code: 'ETIMEDOUT',
+    syscall: 'connect',
+    address: '200.141.14.212',
+    port: 443
+  }
+}
+ GET /shop 200 in 16.1s (next.js: 86ms, application-code: 16.0s)
+ GET /shop 200 in 6.8s (next.js: 143ms, application-code: 6.7s)
+ GET /product/da8ffa69-45a3-4c40-bcce-d9ee63b260d6?variant=b6800eb9-0a88-4305-afca-2df8fc24eae9 200 in 380ms (next.js: 224ms, application-code: 157ms)
+ GET /api/public/feature-images 200 in 424ms (next.js: 122ms, application-code: 302ms)
+ GET /api/public/feature-images 200 in 87ms (next.js: 45ms, application-code: 41ms)
+ GET / 200 in 1378ms (next.js: 69ms, application-code: 1309ms)
+ GET /shop 200 in 9.9s (next.js: 112ms, application-code: 9.8s)
+ GET /shop 200 in 1712ms (next.js: 117ms, application-code: 1595ms)
+⨯ Error: The destination stream closed early.
+    at ignore-listed frames {
+  digest: '3182886584'
+}
+ GET /shop 200 in 24.2s (next.js: 3.1s, application-code: 21.1s)
+[browser] Image with src "https://res.cloudinary.com/wgrpodxl/image/upload/v1787230701/ManojMobiles/products/r3mdabwsgoihfizyoy4k.webp" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+ GET /shop 200 in 13.7s (next.js: 681ms, application-code: 13.0s)
+ GET /shop 200 in 10.3s (next.js: 28ms, application-code: 10.2s)
+ GET /product/e8740a0a-4521-4999-b8fd-df6a83bd1703?variant=62569da0-64ed-495a-93a1-0846c045a2b8 200 in 4.6s (next.js: 4.4s, application-code: 164ms)
+ GET /api/public/feature-images 200 in 323ms (next.js: 266ms, application-code: 58ms)
+ GET /api/public/feature-images 200 in 44ms (next.js: 15ms, application-code: 29ms)
+ GET /product/7e8cda1a-cecf-4088-a0e2-2bbf4643803d?variant=aff08ee9-1774-448b-b358-5b717ba79f98 200 in 106ms (next.js: 31ms, application-code: 75ms)
+ GET /api/public/feature-images 200 in 80ms (next.js: 31ms, application-code: 49ms)
+ GET /api/public/feature-images 200 in 51ms (next.js: 26ms, application-code: 25ms)
+ GET /product/7e8cda1a-cecf-4088-a0e2-2bbf4643803d?variant=aff08ee9-1774-448b-b358-5b717ba79f98 200 in 835ms (next.js: 153ms, application-code: 682ms)
+ GET /api/public/feature-images 200 in 273ms (next.js: 148ms, application-code: 125ms)
+ GET /api/public/feature-images 200 in 66ms (next.js: 33ms, application-code: 33ms)
+ GET /product/7e8cda1a-cecf-4088-a0e2-2bbf4643803d?variant=aff08ee9-1774-448b-b358-5b717ba79f98 200 in 1076ms (next.js: 391ms, application-code: 685ms)

@@ -30,6 +30,7 @@ interface ProductCardProps extends HTMLMotionProps<"div"> {
   bankOffer: string;
   href?: string;
   variantsCount?: number;
+  colorsCount?: number;
 }
 
 const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
@@ -50,6 +51,7 @@ const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
       bankOffer,
       href,
       variantsCount,
+      colorsCount,
       ...props
     },
     ref
@@ -178,13 +180,23 @@ const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
                   <span className="font-bold italic text-black dark:text-white">EXPRESS</span> Delivery tomorrow
                 </p>
 
-                {variantsCount && variantsCount > 1 && (
-                  <div className="mt-2 md:mt-3">
-                    <span className="inline-block text-[11px] md:text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 transition-colors">
-                      View all {variantsCount} variants &rarr;
-                    </span>
-                  </div>
-                )}
+                {(variantsCount && variantsCount > 0) || (colorsCount && colorsCount > 0) ? (
+  <div className="mt-2 md:mt-3 flex flex-col items-start gap-1.5">
+
+    {variantsCount && variantsCount > 0 && (
+      <span className="inline-block text-[11px] md:text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 transition-colors">
+        View all {variantsCount} variants &rarr;
+      </span>
+    )}
+
+    {colorsCount && colorsCount > 0 && (
+      <span className="inline-block text-[11px] md:text-xs font-semibold text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded">
+        Available in {colorsCount} colours
+      </span>
+    )}
+
+  </div>
+) : null}
               </div>
             </div>
           </div>

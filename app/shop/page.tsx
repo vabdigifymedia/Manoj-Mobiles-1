@@ -17,6 +17,41 @@ import {
 } from '@/lib/productCatalog'
 import type { PageResponse, BrandResponseDTO, CategoryResponseDTO } from '@/lib/types'
 
+function getIndiaDateKey() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+}
+
+function seededHash(value: string) {
+  let hash = 0
+
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash << 5) - hash + value.charCodeAt(i)
+    hash |= 0
+  }
+
+  return Math.abs(hash)
+}
+
+function seededShuffle<T>(items: T[], seed: string): T[] {
+  const result = [...items]
+  let randomSeed = seededHash(seed)
+
+  for (let i = result.length - 1; i > 0; i--) {
+    randomSeed = (randomSeed * 9301 + 49297) % 233280
+    const j = Math.floor((randomSeed / 233280) * (i + 1))
+
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+
+  return result
+}
+
+
 export const metadata: Metadata = {
   title: 'Shop Phones | Manoj Mobiles',
   description: 'Browse our collection of genuine smartphones from top brands.',
@@ -70,29 +105,114 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   const fullProducts = await fetchProductDetailsServer(productsResData.map(p => p.id))
 
   // Group variants by color to avoid showing every single storage option as a separate card
-  const displayVariants = fullProducts.flatMap(p => {
-    if (!p || !p.variants || p.variants.length === 0) return []
+// ------------------------------------------------------------
+// DAILY PRODUCT + COLOUR SHUFFLE
+// ------------------------------------------------------------
 
-    const variantsByColor = new Map<string, typeof p.variants[0]>();
+const todayIndia = getIndiaDateKey()
 
-    p.variants.forEach(v => {
-      // Filter variants by price (same rules, derived from the query params)
-      if (minPriceValue !== undefined && v.sellingPrice < minPriceValue) return;
-      if (maxPriceValue !== undefined && v.sellingPrice > maxPriceValue) return;
+const displayVariants = fullProducts.flatMap(p => {
+  if (!p || !p.variants || p.variants.length === 0) return []
 
-      const color = v.color || 'Default';
-      if (!variantsByColor.has(color)) {
-        variantsByColor.set(color, v);
-      }
-    });
+  // Apply price filters first
+  const filteredVariants = p.variants.filter(v => {
+    if (minPriceValue !== undefined && v.sellingPrice < minPriceValue) {
+      return false
+    }
 
-    return Array.from(variantsByColor.values()).map(v => ({
-      ...v,
-      parentProduct: p,
-      parentListInfo: productsResData.find(pl => pl.id === p.id),
-      totalVariantsInProduct: p.variants.length
-    }))
+    if (maxPriceValue !== undefined && v.sellingPrice > maxPriceValue) {
+      return false
+    }
+
+    return true
   })
+
+  if (filteredVariants.length === 0) return []
+
+  // ----------------------------------------------------------
+  // 1. Count unique configurations
+  //
+  // Example:
+  //
+  // 12GB + 256GB + 4 colours = 1 variant
+  // 12GB + 512GB + 4 colours = 1 variant
+  //
+  // Result = 2 variants
+  // ----------------------------------------------------------
+
+// Count UNIQUE variant names entered from the Admin Panel.
+// Example:
+// 256 GB + 256 GB + 256 GB + 512 GB + 512 GB
+// => 2 variants
+//
+// Colours are intentionally NOT included in this count.
+const variantNames = new Set<string>()
+
+p.variants.forEach(v => {
+  const variantName =
+    (v as typeof v & { variantName?: string }).variantName?.trim() || ''
+
+  if (variantName) {
+    variantNames.add(variantName.toLowerCase())
+  }
+})
+
+const variantCount = variantNames.size
+
+  // ----------------------------------------------------------
+  // 2. Group by colour
+  // ----------------------------------------------------------
+
+  const variantsByColor = new Map<string, typeof filteredVariants[0]>()
+
+  filteredVariants.forEach(v => {
+    const color = v.color?.trim() || 'Default'
+
+    if (!variantsByColor.has(color)) {
+      variantsByColor.set(color, v)
+    }
+  })
+
+  // ----------------------------------------------------------
+  // 3. Shuffle colours DAILY
+  // ----------------------------------------------------------
+
+  const allColors = Array.from(variantsByColor.entries())
+
+  const shuffledColors = seededShuffle(
+    allColors,
+    `${p.id}-${todayIndia}-colors`
+  )
+
+  // Only show maximum 2 colours on Shop
+  const selectedColors = shuffledColors.slice(0, 2)
+
+  // ----------------------------------------------------------
+  // 4. Create cards
+  // ----------------------------------------------------------
+
+  return selectedColors.map(([color, v]) => ({
+    ...v,
+    parentProduct: p,
+    parentListInfo: productsResData.find(pl => pl.id === p.id),
+
+    // New values
+    totalVariantsInProduct: variantCount,
+    totalColorsInProduct: variantsByColor.size,
+
+    // Keep colour available if card needs it
+    displayColor: color,
+  }))
+})
+
+// ------------------------------------------------------------
+// 5. Shuffle COMPLETE PRODUCT LIST DAILY
+// ------------------------------------------------------------
+
+const shuffledDisplayVariants = seededShuffle(
+  displayVariants,
+  `shop-products-${todayIndia}`
+)
 
   const hasFilters = brandQuery || categoryQuery || searchQuery || minPriceQuery || maxPriceQuery
 
@@ -147,7 +267,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
             <h1 className="mt-1 text-2xl sm:text-3xl font-black">
               {pageTitle}
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground">{displayVariants.length} phones found</p>
+            <p className="mt-2 text-sm text-muted-foreground">{shuffledDisplayVariants.length} phones found</p>
           </div>
 
           {/* Mobile Filter Button */}
@@ -194,20 +314,20 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                 {activeBrandObj.name} Mobiles
               </h3>
               <span className="text-xs font-semibold text-muted-foreground">
-                {displayVariants.length} products
+                {shuffledDisplayVariants.length} products
               </span>
             </div>
           )}
 
           {/* Products */}
-          {displayVariants.length === 0 ? (
+          {shuffledDisplayVariants.length === 0 ? (
             <div className="col-span-full py-20 text-center rounded-2xl border border-dashed border-border">
               <h3 className="text-xl font-bold">No phones found</h3>
               <p className="text-muted-foreground mt-2">Try adjusting your filters or search term.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-4 w-full">
-              {displayVariants.map(variant => {
+              {shuffledDisplayVariants.map(variant => {
                 const parent = variant.parentProduct;
                 const parentListInfo = variant.parentListInfo;
                 
@@ -266,6 +386,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
                     bankOffer="10% off on Credit Cards"
                     href={`/product/${parent.id}?variant=${variant.id}`}
                     variantsCount={variant.totalVariantsInProduct}
+                    colorsCount={variant.totalColorsInProduct}
                   />
                 );
               })}
