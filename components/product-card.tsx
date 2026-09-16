@@ -7,6 +7,73 @@ import { formatINR } from '@/lib/apiClient'
 import { useStore } from './store-provider'
 import type { ProductListResponseDTO } from '@/lib/types'
 
+function getColorDotStyle(color: string): React.CSSProperties {
+  const name = color.toLowerCase().trim()
+
+  if (name.includes('black')) {
+    return { backgroundColor: '#171717' }
+  }
+
+  if (name.includes('white')) {
+    return { backgroundColor: '#ffffff' }
+  }
+
+  if (name.includes('blue')) {
+    return { backgroundColor: '#2563eb' }
+  }
+
+  if (name.includes('green')) {
+    return { backgroundColor: '#10b981' }
+  }
+
+  if (name.includes('red')) {
+    return { backgroundColor: '#ef4444' }
+  }
+
+  if (name.includes('pink')) {
+    return { backgroundColor: '#ec4899' }
+  }
+
+  if (name.includes('purple') || name.includes('violet')) {
+    return { backgroundColor: '#8b5cf6' }
+  }
+
+  if (name.includes('yellow')) {
+    return { backgroundColor: '#eab308' }
+  }
+
+  if (name.includes('orange')) {
+    return { backgroundColor: '#f97316' }
+  }
+
+  if (name.includes('gold')) {
+    return { backgroundColor: '#d4af37' }
+  }
+
+  if (name.includes('silver')) {
+    return { backgroundColor: '#c0c0c0' }
+  }
+
+  if (
+    name.includes('gray') ||
+    name.includes('grey') ||
+    name.includes('titanium') ||
+    name.includes('natural')
+  ) {
+    return { backgroundColor: '#737373' }
+  }
+
+  if (name.includes('brown')) {
+    return { backgroundColor: '#92400e' }
+  }
+
+  if (name.includes('cream')) {
+    return { backgroundColor: '#f5e6c8' }
+  }
+
+  return { backgroundColor: '#94a3b8' }
+}
+
 export function ProductCard({ product, hideHeart }: { product: ProductListResponseDTO; hideHeart?: boolean }) {
   const router = useRouter()
   const { toggleWishlist, wishlist, toggleCompare, isInCompare } = useStore()
@@ -119,9 +186,15 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0 ml-1">
-            <span className="size-2.5 rounded-full bg-slate-900 dark:bg-slate-100 ring-1 ring-slate-300" />
-            <span className="size-2.5 rounded-full bg-blue-600 ring-1 ring-slate-300" />
-            <span className="size-2.5 rounded-full bg-emerald-500 ring-1 ring-slate-300" />
+            {colorList.slice(0, 5).map((color: string, index: number) => (
+              <span
+                key={`${color}-${index}`}
+                title={color}
+                className="size-2.5 rounded-full ring-1 ring-slate-300 shadow-sm transition-transform duration-150 hover:scale-125 cursor-help"
+                style={getColorDotStyle(color)}
+                aria-label={color}
+              />
+            ))}
           </div>
         </div>
 

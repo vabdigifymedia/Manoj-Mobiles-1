@@ -39,10 +39,41 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ImageUpload } from './image-upload'
+import { Pencil } from 'lucide-react'
 
 const availableIcons = { Settings: FaGear, Camera: FaCamera, Cpu: FaMicrochip, Zap: FaBolt, Battery: FaBatteryFull, Bluetooth: FaBluetooth, MemoryStick: FaMemory, Microchip: FaMicrochip, Star: FaStar, Wifi: FaWifi, CheckCircle: FaCircleCheck, Truck: FaTruckFast, Smartphone: FaMobileScreen, HardDrive: FaHardDrive, ShieldCheck: FaShieldHalved }
 
 import { parseRamRomFromText } from '@/lib/utils'
+
+function getColorDotStyle(color: string): React.CSSProperties {
+  const name = color.toLowerCase().trim()
+
+  if (name.includes('black')) return { backgroundColor: '#171717' }
+  if (name.includes('white')) return { backgroundColor: '#ffffff' }
+  if (name.includes('blue')) return { backgroundColor: '#2563eb' }
+  if (name.includes('green')) return { backgroundColor: '#10b981' }
+  if (name.includes('red')) return { backgroundColor: '#ef4444' }
+  if (name.includes('pink')) return { backgroundColor: '#ec4899' }
+  if (name.includes('purple') || name.includes('violet')) {
+    return { backgroundColor: '#8b5cf6' }
+  }
+  if (name.includes('yellow')) return { backgroundColor: '#eab308' }
+  if (name.includes('orange')) return { backgroundColor: '#f97316' }
+  if (name.includes('gold')) return { backgroundColor: '#d4af37' }
+  if (name.includes('silver')) return { backgroundColor: '#c0c0c0' }
+  if (
+    name.includes('gray') ||
+    name.includes('grey') ||
+    name.includes('titanium')
+  ) {
+    return { backgroundColor: '#737373' }
+  }
+  if (name.includes('brown')) return { backgroundColor: '#92400e' }
+  if (name.includes('cream')) return { backgroundColor: '#f5e6c8' }
+
+  return { backgroundColor: '#94a3b8' }
+}
+
 
 export function ProductWizard({ productId }: { productId?: string }) {
   const router = useRouter()
@@ -91,6 +122,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const [draggedImage, setDraggedImage] = useState<{color: string, index: number} | null>(null)
   const [dragActiveColor, setDragActiveColor] = useState<string | null>(null)
   const [dragEnabledImage, setDragEnabledImage] = useState<{color: string, index: number} | null>(null)
+  const [imageSelectorColor, setImageSelectorColor] = useState<string | null>(null)
+  const [pickedColors, setPickedColors] = useState<Record<string, string>>({})
 
   // Step 4: Global Specs
   const [globalSpecs, setGlobalSpecs] = useState<{specGroup: string, specKey: string, specValue: string}[]>([])
@@ -1084,6 +1117,35 @@ export function ProductWizard({ productId }: { productId?: string }) {
       setImportLoading(false)
     }
   }
+
+  const handlePickImageColor = async (color: string, imageUrl: string) => {
+  try {
+    if (!('EyeDropper' in window)) {
+      toast.error('Your browser does not support colour picking. Please use Chrome or Edge.')
+      return
+    }
+
+    const EyeDropperClass = (window as any).EyeDropper
+    const eyeDropper = new EyeDropperClass()
+
+    const result = await eyeDropper.open()
+
+    if (result?.sRGBHex) {
+      const hex = result.sRGBHex
+
+      setPickedColors(prev => ({
+        ...prev,
+        [color]: hex,
+      }))
+
+      toast.success(`Colour selected: ${hex}`)
+    }
+  } catch (error) {
+    // User cancelled the colour picker
+  }
+}
+
+
 
   const handleMoveImage = (color: string, fromIndex: number, toIndex: number) => {
     setVariants(variants.map(varItem => {
@@ -2370,9 +2432,76 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
                 return (
                   <div key={color} className="bg-card border border-border p-4 rounded-xl shadow-sm space-y-4">
-                    <h4 className="text-sm font-bold border-b border-border pb-2">
-                      Color: {color} <span className="text-muted-foreground font-normal ml-2">({variants.filter(v => (v.color || 'Default Color') === color).length} variants)</span>
-                    </h4>
+<div className="flex items-center justify-between border-b border-border pb-2">
+  <div className="flex items-center gap-2">
+    <button
+      type="button"
+      onClick={() =>
+        setImageSelectorColor(
+          imageSelectorColor === color ? null : color
+        )
+      }
+      className="relative flex items-center justify-center"
+      title={`Select ${color} display image`}
+    >
+      <span
+        className="size-5 rounded-full ring-2 ring-offset-2 ring-border shadow-sm transition-transform hover:scale-110"
+        style={getColorDotStyle(color)}
+      />
+
+      {imageSelectorColor === color && (
+        <span className="absolute -right-1 -bottom-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-white text-[8px]">
+          ✓
+        </span>
+      )}
+    </button>
+
+    <div>
+
+      {pickedColors[color] && (
+  <span
+  className="inline-block size-2.5 rounded-full border border-slate-300 shadow-sm shrink-0"
+  style={{ backgroundColor: pickedColors[color] }}
+  title={pickedColors[color]}
+/>
+)}
+      <h4 className="text-sm font-bold">
+        {color}
+      </h4>
+
+      <span className="text-xs text-muted-foreground">
+        {variants.filter(
+          v => (v.color || 'Default Color') === color
+        ).length} variants
+      </span>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    onClick={() =>
+      setImageSelectorColor(
+        imageSelectorColor === color ? null : color
+      )
+    }
+    className="text-xs font-semibold text-primary hover:underline"
+  >
+    {imageSelectorColor === color
+      ? 'Close'
+      : 'Select Display Photo'}
+  </button>
+</div>
+
+{imageSelectorColor === color && currentImages.length > 0 && (
+  <div className="w-full rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+    <p className="text-xs font-semibold text-primary">
+      Select the photo you want to use for {color}
+    </p>
+    <p className="text-[11px] text-muted-foreground mt-0.5">
+      Click "Use as Display" on any photo. That photo will become the first/primary image.
+    </p>
+  </div>
+)}
                     
                     <div className="flex flex-wrap gap-4 pb-2">
                       {currentImages.map((img, imgIdx) => (
@@ -2400,7 +2529,44 @@ export function ProductWizard({ productId }: { productId?: string }) {
                           className={`relative shrink-0 group transition-all ${draggedImage?.color === color && draggedImage?.index === imgIdx ? 'opacity-50 scale-95' : ''}`}
                         >
                           <img src={img} alt="Variant" className="w-24 h-24 object-cover rounded-lg border border-border" />
+
+                          <button
+  type="button"
+  onClick={(e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    handlePickImageColor(color, img)
+  }}
+  className="absolute bottom-1 right-1 z-20 flex items-center justify-center rounded-full bg-white p-1.5 text-slate-700 shadow-md border border-slate-200 hover:bg-primary hover:text-white transition-colors"
+  title={`Pick colour from ${color} photo`}
+>
+  <Pencil size={12} />
+</button>
                           
+                          {imageSelectorColor === color && (
+  <button
+    type="button"
+    onClick={(e) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      if (imgIdx !== 0) {
+        handleMoveImage(color, imgIdx, 0)
+      }
+
+      setImageSelectorColor(null)
+    }}
+    className={`mt-1 w-24 rounded-md px-1.5 py-1 text-[9px] font-bold transition-colors ${
+      imgIdx === 0
+        ? 'bg-emerald-100 text-emerald-700 cursor-default'
+        : 'bg-primary text-primary-foreground hover:bg-primary/90'
+    }`}
+  >
+    {imgIdx === 0 ? '✓ Display Photo' : 'Use as Display'}
+  </button>
+)}
+
+
                           {/* Drag Handle */}
                           <div 
                             className="absolute top-1 right-1/2 translate-x-1/2 bg-black/40 text-white rounded cursor-grab active:cursor-grabbing p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
