@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen, FaCircleCheck, FaListCheck, FaGlobe, FaDownload, FaSpinner, FaPaste, FaCloudCheck, FaFileLines, FaTriangleExclamation } from 'react-icons/fa6'
+import { FaCircleInfo, FaHardDrive, FaImage, FaShieldHalved, FaMobileScreen, FaStar, FaBatteryFull, FaBolt, FaCamera, FaBox, FaCheck, FaWifi, FaCircleQuestion, FaGear, FaChevronLeft, FaMemory, FaMicrochip, FaBluetooth, FaTrashCan, FaChevronRight, FaTruckFast, FaPlus, FaPen, FaCircleCheck, FaListCheck, FaGlobe, FaDownload, FaSpinner, FaPaste, FaCloud, FaFileLines, FaTriangleExclamation } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import { fetchCatalogClient, type CatalogProduct } from '@/lib/productCatalog'
 import { parsePastedSpecsText, ALLOWED_GROUPS, ExtractedSpecItem } from '@/lib/specParser'
@@ -27,7 +27,7 @@ interface LocalVariant {
   codAvailable: boolean;
   images: string[];
 }
-import { CategoryResponseDTO, BrandResponseDTO, IconName } from '@/lib/types'
+import { CategoryResponseDTO, BrandResponseDTO, IconName, ProductFeatureImage } from '@/lib/types'
 import { RichTextEditor } from './rich-text-editor'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -121,9 +121,21 @@ export function ProductWizard({ productId }: { productId?: string }) {
   })
   const [draggedImage, setDraggedImage] = useState<{color: string, index: number} | null>(null)
   const [dragActiveColor, setDragActiveColor] = useState<string | null>(null)
+  type UploadProgressItem = {
+  id: string
+  fileName: string
+  progress: number
+  target: string
+}
+
+  const [uploadProgress, setUploadProgress] = useState<UploadProgressItem[]>([])
   const [dragEnabledImage, setDragEnabledImage] = useState<{color: string, index: number} | null>(null)
   const [imageSelectorColor, setImageSelectorColor] = useState<string | null>(null)
   const [pickedColors, setPickedColors] = useState<Record<string, string>>({})
+
+  // Feature Images (Independent product-level list)
+  const [featureImages, setFeatureImages] = useState<ProductFeatureImage[]>([])
+  const featureFileInputRef = useRef<HTMLInputElement>(null)
 
   // Step 4: Global Specs
   const [globalSpecs, setGlobalSpecs] = useState<{specGroup: string, specKey: string, specValue: string}[]>([])
@@ -372,14 +384,22 @@ export function ProductWizard({ productId }: { productId?: string }) {
       })))
 
       // 4. Restore Specifications
-      const rawSpecs = draft.globalSpecs || draft.specifications || (draft as any).productSpecs || []
+      const rawSpecs = draft.globalSpecs || (draft as any).specifications || (draft as any).productSpecs || []
       setGlobalSpecs(rawSpecs.map((s: any) => ({
         specGroup: s.specGroup || 'General',
         specKey: s.specKey || '',
         specValue: s.specValue || ''
       })))
 
-      // 5. Restore Navigation state and lock activeDraftId
+      // 5. Restore Feature Images
+      const rawFeatureImages = draft.featureImages || (draft as any).productFeatureImages || []
+      setFeatureImages(rawFeatureImages.map((f: any, idx: number) => ({
+        id: f.id || `pfi_restored_${idx}_${Date.now()}`,
+        url: f.url || '',
+        caption: f.caption || ''
+      })))
+
+      // 6. Restore Navigation state and lock activeDraftId
       if (draft.currentStep) setCurrentStep(draft.currentStep)
       if (draft.highestStepReached) setHighestStepReached(draft.highestStepReached)
       if (draft.draftId) setActiveDraftId(draft.draftId)
@@ -469,6 +489,16 @@ export function ProductWizard({ productId }: { productId?: string }) {
             specKey: s.specKey,
             specValue: s.specValue
           })))
+
+          // Load product feature images for edit mode
+          try {
+            const featRes = await apiClient.getProductFeatureImages(productId)
+            if (featRes.data?.data && Array.isArray(featRes.data.data)) {
+              setFeatureImages(featRes.data.data)
+            }
+          } catch (e) {
+            console.error('Failed to load feature images for product', e)
+          }
         }
 
         // Automatic Draft Restoration
@@ -538,7 +568,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
           baseInfo,
           highlights,
           variants,
-          globalSpecs
+          globalSpecs,
+          featureImages
         })
         setDraftSaveStatus(isOnline ? 'saved' : 'offline')
       } catch (e) {
@@ -548,7 +579,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
     }, 600)
 
     return () => clearTimeout(timer)
-  }, [baseInfo, highlights, variants, globalSpecs, currentStep, highestStepReached, initialLoading, isOnline, activeDraftId, productId, brands])
+  }, [baseInfo, highlights, variants, globalSpecs, featureImages, currentStep, highestStepReached, initialLoading, isOnline, activeDraftId, productId, brands])
 
   // Auto-generate RAM/ROM Highlight from globalSpecs or variants
   const handleAutoGenerateRamRomHighlight = () => {
@@ -1145,6 +1176,67 @@ export function ProductWizard({ productId }: { productId?: string }) {
   }
 }
 
+const uploadFilesParallel = async (
+  files: File[],
+  target: string,
+  onComplete: (urls: string[]) => void
+) => {
+  if (!files.length) return
+
+  const uploadItems = files.map(file => ({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    fileName: file.name,
+    progress: 0,
+    target,
+  }))
+
+  setUploadProgress(prev => [...prev, ...uploadItems])
+
+  try {
+    const results = await Promise.all(
+      files.map((file, index) =>
+        apiClient.uploadImage(
+          file,
+          'products',
+          (progress) => {
+            setUploadProgress(prev =>
+              prev.map(item =>
+                item.id === uploadItems[index].id
+                  ? { ...item, progress }
+                  : item
+              )
+            )
+          }
+        )
+      )
+    )
+
+    const urls = results.map(res => res.data.data)
+
+    onComplete(urls)
+
+    // 100% hone ke baad thoda visible rakho,
+    // phir progress row remove
+    setTimeout(() => {
+      setUploadProgress(prev =>
+        prev.filter(
+          item => !uploadItems.some(upload => upload.id === item.id)
+        )
+      )
+    }, 400)
+
+    return urls
+  } catch (error) {
+    setUploadProgress(prev =>
+      prev.filter(
+        item => !uploadItems.some(upload => upload.id === item.id)
+      )
+    )
+
+    throw error
+  }
+}
+
 
 
   const handleMoveImage = (color: string, fromIndex: number, toIndex: number) => {
@@ -1243,6 +1335,13 @@ export function ProductWizard({ productId }: { productId?: string }) {
         if (v.images && v.images.length > 0) {
           await apiClient.addVariantImages(finalVariantId, v.images)
         }
+      }
+
+      // 6. Feature Images (Saved specifically for this product)
+      if (finalProductId) {
+        await apiClient.saveProductFeatureImages(finalProductId, featureImages).catch((err) => {
+          console.error('Failed to save feature images', err)
+        })
       }
 
       // On successful publish, remove draft so admin doesn't get duplicate draft prompts
@@ -2336,8 +2435,61 @@ export function ProductWizard({ productId }: { productId?: string }) {
             <h3 className="text-lg font-bold border-b border-border pb-2">Images & Publish</h3>
             <p className="text-sm text-muted-foreground">Upload images for each variant. The first image will be used as the primary image.</p>
             
+
             {/* Global/Common Images Upload */}
-            <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl shadow-sm mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div
+              className={`bg-primary/5 border-2 p-4 rounded-xl shadow-sm mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${
+                dragActiveColor === 'global'
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
+                  : 'border-primary/20'
+              }`}
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                if (e.dataTransfer.types.includes('Files')) {
+                  setDragActiveColor('global')
+                }
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setDragActiveColor(null)
+                }
+              }}
+              onDrop={async (e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setDragActiveColor(null)
+
+                const files = Array.from(e.dataTransfer.files || [])
+                  .filter(file => file.type.startsWith('image/'))
+
+                if (files.length === 0) {
+                  toast.error('Please drop valid image files.')
+                  return
+                }
+
+                try {
+                  await uploadFilesParallel(
+                    files,
+                    'global',
+                    (urls) => {
+                      setVariants(prev =>
+                        prev.map(varItem => ({
+                          ...varItem,
+                          images: [...(varItem.images || []), ...urls]
+                        }))
+                      )
+                      toast.success(`Added ${urls.length} image(s) to all colors!`)
+                    }
+                  )
+                } catch (err) {
+                  console.error(err)
+                  toast.error('Failed to upload image(s)')
+                }
+              }}
+            >
               <div>
                 <h4 className="text-sm font-bold text-primary flex items-center gap-2"><FaImage size={16} /> Global Images</h4>
                 <p className="text-xs text-muted-foreground mt-1">Upload common images (like charger, box) here to automatically add them to ALL colors.</p>
@@ -2351,42 +2503,6 @@ export function ProductWizard({ productId }: { productId?: string }) {
                     ? 'border-primary bg-primary/20' 
                     : 'border-primary/40 hover:bg-primary/10'
                 }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (dragActiveColor !== 'global') setDragActiveColor('global');
-                }}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (dragActiveColor === 'global') setDragActiveColor(null);
-                }}
-                onDrop={async (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setDragActiveColor(null);
-                  const files = Array.from(e.dataTransfer.files || []);
-                  if (files.length === 0) return;
-                  try {
-                    setLoading(true);
-                    const urls: string[] = [];
-                    for (const file of files) {
-                      const res = await apiClient.uploadImage(file, 'products');
-                      urls.push(res.data.data);
-                    }
-                    if (urls.length > 0) {
-                      setVariants(prev => prev.map(varItem => ({
-                        ...varItem,
-                        images: [...(varItem.images || []), ...urls]
-                      })));
-                      toast.success(`Added ${urls.length} image(s) to all colors!`);
-                    }
-                  } catch (err) {
-                    toast.error('Failed to upload some images');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
               >
                 <FaPlus size={16} className="text-primary" />
                 <span className="text-xs font-bold text-primary">{dragActiveColor === 'global' ? 'Drop Images Here' : 'Upload to All Colors'}</span>
@@ -2397,32 +2513,237 @@ export function ProductWizard({ productId }: { productId?: string }) {
                   className="hidden"
                   disabled={loading}
                   onChange={async (e) => {
-                    const files = Array.from(e.target.files || []);
-                    if (files.length === 0) return;
+                    const files = Array.from(e.target.files || [])
+                    if (files.length === 0) return
                     try {
-                      setLoading(true);
-                      const urls: string[] = [];
-                      for (const file of files) {
-                        const res = await apiClient.uploadImage(file, 'products');
-                        urls.push(res.data.data);
-                      }
-                      if (urls.length > 0) {
-                        setVariants(prev => prev.map(varItem => ({
-                          ...varItem,
-                          images: [...(varItem.images || []), ...urls]
-                        })));
-                        toast.success(`Added ${urls.length} image(s) to all colors!`);
-                      }
-                    } catch (err) {
-                      toast.error('Failed to upload some images');
+                      await uploadFilesParallel(
+                        files,
+                        'global',
+                        (urls) => {
+                          setVariants(prev =>
+                            prev.map(varItem => ({
+                              ...varItem,
+                              images: [...(varItem.images || []), ...urls]
+                            }))
+                          )
+                          toast.success(`Added ${urls.length} image(s) to all colors!`)
+                        }
+                      )
+                    } catch {
+                      toast.error('Failed to upload image(s)')
                     } finally {
-                      setLoading(false);
-                      e.target.value = '';
+                      e.target.value = ''
                     }
                   }}
                 />
               </label>
             </div>
+
+            {/* Feature Images Section (Completely separate from Global and Color Images) */}
+            <div className="rounded-2xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 via-card to-background p-5 shadow-sm space-y-4 mt-6">
+              <div className="flex items-center justify-between border-b border-border/70 pb-3">
+                <div>
+                  <h4 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <FaImage className="text-primary" size={17} /> Feature Images
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Upload high-impact marketing / showcase images for this specific product. These will appear ONLY in the Feature Images section.
+                  </p>
+                </div>
+                {featureImages.length > 0 && (
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/15 text-primary">
+                    {featureImages.length} image{featureImages.length === 1 ? '' : 's'}
+                  </span>
+                )}
+              </div>
+
+              {/* Drag & Drop Upload Zone */}
+              <div
+                className={`relative rounded-xl border-2 border-dashed p-8 text-center transition-all flex flex-col items-center justify-center cursor-pointer select-none ${
+                  dragActiveColor === 'feature-images'
+                    ? 'border-primary bg-primary/15 ring-2 ring-primary/30 scale-[1.01]'
+                    : 'border-primary/40 hover:border-primary/70 hover:bg-primary/5 bg-card/50'
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (e.dataTransfer.types.includes('Files')) {
+                    setDragActiveColor('feature-images')
+                  }
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    setDragActiveColor(null)
+                  }
+                }}
+                onDrop={async (e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setDragActiveColor(null)
+
+                  const files = Array.from(e.dataTransfer.files || []).filter(file => file.type.startsWith('image/'))
+                  if (files.length === 0) {
+                    toast.error('Please drop valid image files.')
+                    return
+                  }
+
+                  try {
+                    await uploadFilesParallel(
+                      files,
+                      'feature-images',
+                      (urls) => {
+                        const newItems: ProductFeatureImage[] = urls.map((url, idx) => ({
+                          id: `pfi_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+                          url,
+                          caption: ''
+                        }))
+                        setFeatureImages(prev => [...prev, ...newItems])
+                        toast.success(`Added ${urls.length} feature image(s)!`)
+                      }
+                    )
+                  } catch {
+                    toast.error('Failed to upload feature image(s)')
+                  }
+                }}
+                onClick={() => featureFileInputRef.current?.click()}
+              >
+                <input
+                  ref={featureFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  disabled={loading}
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files || [])
+                    if (files.length === 0) return
+                    try {
+                      await uploadFilesParallel(
+                        files,
+                        'feature-images',
+                        (urls) => {
+                          const newItems: ProductFeatureImage[] = urls.map((url, idx) => ({
+                            id: `pfi_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+                            url,
+                            caption: ''
+                          }))
+                          setFeatureImages(prev => [...prev, ...newItems])
+                          toast.success(`Added ${urls.length} feature image(s)!`)
+                        }
+                      )
+                    } catch {
+                      toast.error('Failed to upload feature image(s)')
+                    } finally {
+                      e.target.value = ''
+                    }
+                  }}
+                />
+
+                <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-2.5">
+                  <FaPlus size={20} />
+                </div>
+                <p className="text-sm font-bold text-foreground">
+                  {dragActiveColor === 'feature-images' ? 'Drop Feature Images Here' : '+ Add Feature Images'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Drag & drop images anywhere inside this box, or click to browse (parallel uploads supported)
+                </p>
+              </div>
+
+              {/* Uploaded Feature Images Grid */}
+              {featureImages.length > 0 && (
+                <div className="pt-2">
+                  <p className="text-xs font-semibold text-muted-foreground mb-3">
+                    Uploaded Feature Images ({featureImages.length}):
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {featureImages.map((img, idx) => (
+                      <div
+                        key={img.id || idx}
+                        className="group relative rounded-xl border border-border bg-card p-2.5 shadow-sm space-y-2"
+                      >
+                        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted border border-border">
+                          <img
+                            src={img.url}
+                            alt={img.caption || `Feature image ${idx + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setFeatureImages(prev => prev.filter((_, i) => i !== idx))
+                              toast.success('Feature image removed')
+                            }}
+                            className="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-700 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                            title="Remove Feature Image"
+                            aria-label="Remove Feature Image"
+                          >
+                            <FaTrashCan size={12} />
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={img.caption || ''}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setFeatureImages(prev => prev.map((item, i) => i === idx ? { ...item, caption: val } : item))
+                          }}
+                          placeholder="Caption (optional)"
+                          className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {uploadProgress.length > 0 && (
+            <div className="space-y-2 mt-4">
+              {uploadProgress.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-xl border border-border bg-card p-3 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {item.fileName}
+                      </p>
+
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {item.target === 'global'
+                          ? 'Uploading to all colors...'
+                          : item.target === 'feature-images'
+                          ? 'Uploading Feature Image...'
+                          : `Uploading to ${item.target}...`}
+                      </p>
+                    </div>
+
+                    <span className="shrink-0 text-xs font-bold text-primary">
+                      {item.progress}%
+                    </span>
+                  </div>
+
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-200"
+                      style={{
+                        width: `${item.progress}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+
+
 
             <div className="space-y-6 mt-4">
               {Array.from(new Set(variants.map(v => v.color || 'Default Color'))).map(color => {
@@ -2431,7 +2752,63 @@ export function ProductWizard({ productId }: { productId?: string }) {
                 const currentImages = representativeVariant?.images || [];
 
                 return (
-                  <div key={color} className="bg-card border border-border p-4 rounded-xl shadow-sm space-y-4">
+                  <div
+  key={color}
+  className={`relative bg-card border p-4 rounded-xl shadow-sm space-y-4 transition-all ${
+    dragActiveColor === color
+      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+      : 'border-border'
+  }`}
+  onDragOver={(e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (e.dataTransfer.types.includes('Files')) {
+      setDragActiveColor(color)
+    }
+  }}
+  onDragLeave={(e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    // Prevent flickering while moving inside child elements
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragActiveColor(null)
+    }
+  }}
+  onDrop={async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    setDragActiveColor(null)
+
+    const files = Array.from(e.dataTransfer.files || [])
+      .filter(file => file.type.startsWith('image/'))
+
+    if (files.length === 0) return
+
+    try {
+      await uploadFilesParallel(
+        files,
+        color,
+        (urls) => {
+          setVariants(prev =>
+            prev.map(varItem =>
+              (varItem.color || 'Default Color') === color
+                ? {
+                    ...varItem,
+                    images: [...(varItem.images || []), ...urls]
+                  }
+                : varItem
+            )
+          )
+        }
+      )
+    } catch {
+      toast.error('Failed to upload image(s)')
+    }
+  }}
+>
 <div className="flex items-center justify-between border-b border-border pb-2">
   <div className="flex items-center gap-2">
     <button
@@ -2676,27 +3053,32 @@ export function ProductWizard({ productId }: { productId?: string }) {
                           multiple
                           className="hidden" 
                           onChange={async (e) => {
-                            const files = Array.from(e.target.files || []);
-                            if (files.length === 0) return;
+                            const files = Array.from(e.target.files || [])
+                            if (files.length === 0) return
+
                             try {
-                              setLoading(true);
-                              const urls: string[] = [];
-                              for (const file of files) {
-                                const res = await apiClient.uploadImage(file, 'products');
-                                urls.push(res.data.data);
-                              }
-                              if (urls.length > 0) {
-                                setVariants(prev => prev.map(varItem => 
-                                  (varItem.color || 'Default Color') === color 
-                                    ? { ...varItem, images: [...(varItem.images || []), ...urls] } 
-                                    : varItem
-                                ));
-                              }
+                              await uploadFilesParallel(
+                                files,
+                                color,
+                                (urls) => {
+                                  setVariants(prev =>
+                                    prev.map(varItem =>
+                                      (varItem.color || 'Default Color') === color
+                                        ? {
+                                            ...varItem,
+                                            images: [...(varItem.images || []), ...urls]
+                                          }
+                                        : varItem
+                                    )
+                                  )
+                                  toast.success(`Added ${urls.length} image(s) to ${color}!`)
+                                }
+                              )
                             } catch (err) {
-                              toast.error('Failed to upload image(s)');
+                              console.error(err)
+                              toast.error('Failed to upload image(s)')
                             } finally {
-                              setLoading(false);
-                              e.target.value = '';
+                              e.target.value = ''
                             }
                           }}
                         />

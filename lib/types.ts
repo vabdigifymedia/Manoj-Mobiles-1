@@ -53,6 +53,12 @@ export interface BrandResponseDTO {
   slug: string
 }
 
+export interface ProductFeatureImage {
+  id: string
+  url: string
+  caption?: string
+}
+
 // --- Product ---
 export interface ProductRequestDTO {
   name: string
@@ -66,6 +72,7 @@ export interface ProductRequestDTO {
   metaTitle?: string
   metaDescription?: string
   metaKeywords?: string
+  featureImages?: ProductFeatureImage[]
 }
 
 export interface ProductResponseDTO {
@@ -88,6 +95,7 @@ export interface ProductResponseDTO {
   metaKeywords?: string
   variants: ProductVariantResponseDTO[]
   highlights: HighlightResponseDTO[]
+  featureImages?: ProductFeatureImage[]
 }
 
 export interface ProductListResponseDTO {

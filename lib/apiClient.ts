@@ -14,7 +14,8 @@ import {
   CreateStaffRequestDTO, UserResponseDTO,
   OrderResponseDTO, DashboardStatsDTO,
   ProductFilterRequestDTO,
-  SpecTemplateRequestDTO, SpecTemplateResponseDTO
+  SpecTemplateRequestDTO, SpecTemplateResponseDTO,
+  ProductFeatureImage
 } from './types'
 
 // ===========================
@@ -210,6 +211,13 @@ export const apiClient = {
   updateProductStatus: (id: string, status: 'ACTIVE' | 'INACTIVE') =>
     axiosInstance.put<ApiResponse<void>>(`/api/products/${id}/status?status=${status}`),
 
+  // --- Product Feature Images ---
+  getProductFeatureImages: (productId: string) =>
+    axiosInstance.get<ApiResponse<ProductFeatureImage[]>>(`/api/products/${productId}/feature-images`),
+
+  saveProductFeatureImages: (productId: string, featureImages: ProductFeatureImage[]) =>
+    axiosInstance.post<ApiResponse<ProductFeatureImage[]>>(`/api/products/${productId}/feature-images`, { featureImages }),
+
   // --- Variants ---
   createVariant: (dto: ProductVariantRequestDTO) =>
     axiosInstance.post<ApiResponse<ProductVariantResponseDTO>>('/api/products/variants', dto),
@@ -237,7 +245,11 @@ export const apiClient = {
     axiosInstance.delete<ApiResponse<void>>(`/api/products/highlights/${highlightId}`),
 
   // --- Image Upload (Cloudinary) ---
-  uploadImage: async (file: File, folder?: string) => {
+  uploadImage: async (
+  file: File,
+  folder?: string,
+  onProgress?: (progress: number) => void
+) => {
     let fileToUpload = file;
     // Compress images larger than 800KB
     if (file.type.startsWith('image/') && file.size > 800 * 1024) {

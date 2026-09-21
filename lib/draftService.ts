@@ -47,6 +47,11 @@ export interface ProductDraft {
     specKey: string
     specValue: string
   }>
+  featureImages?: Array<{
+    id: string
+    url: string
+    caption?: string
+  }>
 }
 
 const DRAFTS_STORAGE_KEY = 'manoj_mobiles_product_drafts_v1'

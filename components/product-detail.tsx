@@ -15,6 +15,8 @@ import { ProductFeatureImages } from './product-detail-feature-images'
 import { ProductSuggestedPhones } from './product-detail-suggested-phones'
 import { motion, AnimatePresence } from 'framer-motion'
 import { parseRamRomFromText } from '@/lib/utils'
+import { ImageWithMagnifier } from '@/components/ui/image-magnifier'
+import { ImageLightbox } from '@/components/ui/image-lightbox'
 
 export function ProductDetailClient({ product: initialProduct }: { product: ProductResponseDTO }) {
   const [product] = useState<ProductResponseDTO>(initialProduct)
@@ -96,6 +98,8 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [mobileImageIndex, setMobileImageIndex] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
   const mobileSliderRef = useRef<HTMLDivElement>(null)
   const touchStartXRef = useRef<number | null>(null)
   const touchStartYRef = useRef<number | null>(null)
@@ -251,18 +255,41 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
           {/* Desktop View Image Gallery */}
           <div className="hidden lg:flex flex-col gap-4">
-            <div className="rounded-3xl bg-[#F4F4F5] p-6 dark:bg-white">
-              <img src={selectedImage || primaryImage} alt={product.name} className="aspect-square w-full object-contain transition-all duration-300 mix-blend-multiply dark:mix-blend-normal" />
+            <div className="relative overflow-hidden rounded-3xl bg-[#F4F4F5] p-6 dark:bg-white">
+              <ImageWithMagnifier
+                src={selectedImage || primaryImage}
+                alt={product.name}
+                className="aspect-square w-full"
+                imageClassName="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal"
+                zoomLevel={2.6}
+                lensSize={180}
+                onImageClick={() => {
+                  const activeSrc = selectedImage || primaryImage
+                  const idx = allImages.indexOf(activeSrc)
+                  setLightboxIndex(idx >= 0 ? idx : 0)
+                  setLightboxOpen(true)
+                }}
+                buttonPosition="bottom-right"
+              />
             </div>
             {allImages.length > 1 && (
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {allImages.map((url, idx) => (
                   <button
                     key={idx}
+                    type="button"
                     onClick={() => setSelectedImage(url)}
-                    className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 bg-[#F4F4F5] p-2 transition-all dark:bg-white ${selectedImage === url ? 'border-primary shadow-sm dark:border-primary' : 'border-transparent hover:border-primary/40 dark:border-zinc-200 dark:hover:border-primary/40'}`}
+                    className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 bg-[#F4F4F5] p-2 transition-all dark:bg-white ${
+                      (selectedImage || primaryImage) === url
+                        ? 'border-primary shadow-sm dark:border-primary'
+                        : 'border-transparent hover:border-primary/40 dark:border-zinc-200 dark:hover:border-primary/40'
+                    }`}
                   >
-                    <img src={url} alt={`${product.name} thumbnail ${idx + 1}`} className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                    <img
+                      src={url}
+                      alt={`${product.name} thumbnail ${idx + 1}`}
+                      className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal"
+                    />
                   </button>
                 ))}
               </div>
@@ -285,13 +312,39 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
                   transform: `translateX(-${mobileImageIndex * 100}%)`,
                 }}
               >
-                {allImages.length > 0 ? allImages.map((url, idx) => (
-                  <div key={idx} className="w-full shrink-0 p-4 md:p-6">
-                    <img src={url} alt={`${product.name} ${idx + 1}`} className="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
-                  </div>
-                )) : (
+                {allImages.length > 0 ? (
+                  allImages.map((url, idx) => (
+                    <div key={idx} className="w-full shrink-0 p-4 md:p-6">
+                      <ImageWithMagnifier
+                        src={url}
+                        alt={`${product.name} ${idx + 1}`}
+                        className="aspect-square w-full"
+                        imageClassName="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal"
+                        zoomLevel={2.6}
+                        lensSize={160}
+                        onImageClick={() => {
+                          setLightboxIndex(idx)
+                          setLightboxOpen(true)
+                        }}
+                        buttonPosition="bottom-right"
+                      />
+                    </div>
+                  ))
+                ) : (
                   <div className="w-full shrink-0 p-4 md:p-6">
-                    <img src={primaryImage} alt={product.name} className="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                    <ImageWithMagnifier
+                      src={primaryImage}
+                      alt={product.name}
+                      className="aspect-square w-full"
+                      imageClassName="aspect-square w-full object-contain mix-blend-multiply dark:mix-blend-normal"
+                      zoomLevel={2.6}
+                      lensSize={160}
+                      onImageClick={() => {
+                        setLightboxIndex(0)
+                        setLightboxOpen(true)
+                      }}
+                      buttonPosition="bottom-right"
+                    />
                   </div>
                 )}
               </div>
@@ -304,7 +357,11 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
                     type="button"
                     onClick={() => goToImage(idx)}
                     aria-label={`Go to image ${idx + 1}`}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${idx === mobileImageIndex ? 'w-4 bg-primary' : 'w-1.5 bg-border hover:bg-border/80'}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      idx === mobileImageIndex
+                        ? 'w-4 bg-primary'
+                        : 'w-1.5 bg-border hover:bg-border/80'
+                    }`}
                   />
                 ))}
               </div>
@@ -567,11 +624,30 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
       <hr className="my-12 border-border" />
 
-      <ProductFeatureImages />
-
       <ProductReviews productId={product.id} />
 
+      <ProductFeatureImages productId={product.id} productName={product.name} />
+
       <ProductSuggestedPhones product={product} />
+
+      {/* Normal Product Images Fullscreen Lightbox Gallery */}
+      <ImageLightbox
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        images={(allImages.length > 0 ? allImages : [primaryImage]).map((url, idx) => ({
+          url,
+          caption: `${product.name} - ${selectedVariant?.variantName || selectedColor || 'Product Photo'} (${idx + 1}/${allImages.length || 1})`,
+          alt: `${product.name} ${idx + 1}`,
+        }))}
+        currentIndex={lightboxIndex}
+        onNavigate={(newIdx) => {
+          setLightboxIndex(newIdx)
+          if (allImages[newIdx]) {
+            setSelectedImage(allImages[newIdx])
+            setMobileImageIndex(newIdx)
+          }
+        }}
+      />
 
       {/* Mobile Fixed Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-2.5 border-t border-border bg-background p-3 lg:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>

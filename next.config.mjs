@@ -9,8 +9,12 @@ const nextConfig = {
   async rewrites() {
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://200.141.14.212.nip.io'
     return [
-      // Local (Next.js) routes for Common Feature Images — resolved
+      // Local (Next.js) routes for Feature Images — resolved
       // BEFORE the /api/* backend proxy below so they are never shadowed.
+      {
+        source: '/api/products/:id/feature-images',
+        destination: '/product-feature-images/:id',
+      },
       {
         source: '/api/public/feature-images',
         destination: '/feature-images',

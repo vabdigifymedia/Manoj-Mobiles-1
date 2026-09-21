@@ -10862,3 +10862,53 @@ Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
  GET /admin/products/964a5cad-2aa7-475b-b667-d68d5036a383/edit 200 in 507ms (next.js: 275ms, application-code: 232ms)
 [browser] Next.js detected. `immediatelyRender` defaults to false to avoid hydration mismatches. Pass `immediatelyRender: true` explicitly if you are rendering the editor only on the client. (components/admin/rich-text-editor.tsx:8:27)
 [browser] Next.js detected. `immediatelyRender` defaults to false to avoid hydration mismatches. Pass `immediatelyRender: true` explicitly if you are rendering the editor only on the client. (components/admin/rich-text-editor.tsx:8:27)
+ GET /admin/products/964a5cad-2aa7-475b-b667-d68d5036a383/edit 200 in 3.4s (next.js: 972ms, application-code: 2.4s)
+ GET / 200 in 6.5s (next.js: 230ms, application-code: 6.3s)
+ POST /api/revalidate-catalog 200 in 196ms (next.js: 161ms, application-code: 35ms)
+ POST /api/revalidate-catalog 200 in 40ms (next.js: 15ms, application-code: 25ms)
+ POST /api/revalidate-catalog 200 in 20ms (next.js: 8ms, application-code: 12ms)
+ POST /api/revalidate-catalog 200 in 21ms (next.js: 7ms, application-code: 14ms)
+ GET /admin/products 200 in 329ms (next.js: 200ms, application-code: 130ms)
+ POST /api/revalidate-catalog 200 in 31ms (next.js: 10ms, application-code: 20ms)
+ GET /admin/products 200 in 793ms (next.js: 127ms, application-code: 666ms)
+ GET /admin/products 200 in 205ms (next.js: 27ms, application-code: 178ms)
+ GET /admin/products/80d1e24c-655b-44fe-9bee-3b636f405161/edit 200 in 634ms (next.js: 478ms, application-code: 156ms)
+[browser] Next.js detected. `immediatelyRender` defaults to false to avoid hydration mismatches. Pass `immediatelyRender: true` explicitly if you are rendering the editor only on the client. (components/admin/rich-text-editor.tsx:8:27)
+[browser] Next.js detected. `immediatelyRender` defaults to false to avoid hydration mismatches. Pass `immediatelyRender: true` explicitly if you are rendering the editor only on the client. (components/admin/rich-text-editor.tsx:8:27)
+Failed to proxy https://200.141.14.212.nip.io/api/products/80d1e24c-655b-44fe-9bee-3b636f405161 Error: read ECONNRESET
+    at ignore-listed frames {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+Error: read ECONNRESET
+    at ignore-listed frames {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+ POST /api/revalidate-catalog 200 in 488ms (next.js: 102ms, application-code: 386ms)
+ POST /api/revalidate-catalog 200 in 43ms (next.js: 18ms, application-code: 25ms)
+ POST /api/revalidate-catalog 200 in 57ms (next.js: 27ms, application-code: 30ms)
+ POST /api/revalidate-catalog 200 in 41ms (next.js: 14ms, application-code: 26ms)
+ POST /api/revalidate-catalog 200 in 73ms (next.js: 25ms, application-code: 48ms)
+ POST /api/revalidate-catalog 200 in 34ms (next.js: 12ms, application-code: 22ms)
+ POST /api/revalidate-catalog 200 in 34ms (next.js: 21ms, application-code: 13ms)
+ POST /api/revalidate-catalog 200 in 31ms (next.js: 12ms, application-code: 18ms)
+ POST /api/revalidate-catalog 200 in 28ms (next.js: 10ms, application-code: 18ms)
+ POST /api/revalidate-catalog 200 in 33ms (next.js: 11ms, application-code: 23ms)
+ POST /api/revalidate-catalog 200 in 34ms (next.js: 12ms, application-code: 22ms)
+ POST /api/revalidate-catalog 200 in 46ms (next.js: 15ms, application-code: 32ms)
+ GET /admin/products 200 in 867ms (next.js: 75ms, application-code: 792ms)
+ GET / 200 in 13.3s (next.js: 18ms, application-code: 13.3s)
+ GET / 200 in 18.8s (next.js: 17ms, application-code: 18.8s)
+ GET / 200 in 64s (next.js: 718ms, application-code: 63s)
+ GET / 200 in 1853ms (next.js: 52ms, application-code: 1801ms)
+Failed to proxy https://200.141.14.212.nip.io/api/user/cart Error: socket hang up
+    at ignore-listed frames {
+  code: 'ECONNRESET'
+}
+Error: socket hang up
+    at ignore-listed frames {
+  code: 'ECONNRESET'
+}
