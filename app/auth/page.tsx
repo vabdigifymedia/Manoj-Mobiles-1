@@ -74,13 +74,11 @@ export default function AuthPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await apiClient.sendOtp(phone)
-      console.log("[DEV ONLY] The OTP is:", res.data.data)
+      await apiClient.sendOtp(phone)
       setStep(2)
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
     } catch (err: any) {
-      setStep(2)
-      setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
+      setError(err.response?.data?.message || 'Failed to send OTP. Please try again.')
     } finally {
       setLoading(false)
     }
