@@ -355,13 +355,12 @@ export default function AuthPage() {
           <div className='hidden lg:block w-1/2 right h-full overflow-hidden relative'>
               <div className="absolute inset-0 bg-gradient-to-r from-[var(--login-color-surface)] to-transparent z-10 w-24"></div>
               <Image
-                src='https://cdn.21st.dev/assets/mirror/c7/c7c7aee18ed1be4c0450d411b3339874a04999ad26948273c9d6fe96a66a21ea.jpg'
-                loader={({ src }) => src}
+                src='/login page side image.png'
                 width={1000}
                 height={1000}
                 priority
                 alt="Brand image"
-                className="w-full h-full object-cover opacity-80 mix-blend-luminosity hover:mix-blend-normal transition-all duration-1000"
+                className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-all duration-1000"
               />
               <div className="absolute inset-0 bg-black/50"></div>
               <div className="absolute bottom-12 left-12 z-20 max-w-md">
