@@ -8,7 +8,7 @@ import { formatINR } from '@/lib/apiClient'
 import { useStore } from '@/components/store-provider'
 import { useBulkInquiry } from '@/components/bulk-inquiry-provider'
 import { useAuth } from '@/lib/auth-context'
-import type { ProductResponseDTO, ProductVariantResponseDTO, ProductSpecificationResponseDTO } from '@/lib/types'
+import type { ProductResponseDTO, ProductVariantResponseDTO, ProductSpecificationResponseDTO, ProductFeatureImage } from '@/lib/types'
 import { ProductReviews } from '@/components/product-reviews'
 import { apiClient } from '@/lib/apiClient'
 import { ProductFeatureImages } from './product-detail-feature-images'
@@ -232,10 +232,10 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
   if (!selectedVariant) return <div className="p-8 text-center">Loading product details...</div>
 
-  // Flatten specifications preserving their existing groups (all data kept - only the visual is collapsed)
+  // Flatten specifications preserving their existing groups (Feature Images specs are rendered in dedicated showcase section)
   const specFlatItems: { group: string; spec: ProductSpecificationResponseDTO }[] = []
   Object.entries(
-    selectedVariant.specifications?.reduce((acc, spec) => {
+    (selectedVariant.specifications || []).filter(spec => spec.specGroup !== 'Feature Images').reduce((acc, spec) => {
       const group = spec.specGroup || 'General';
       if (!acc[group]) acc[group] = [];
       acc[group].push(spec);
@@ -626,7 +626,27 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
       <ProductReviews productId={product.id} />
 
-      <ProductFeatureImages productId={product.id} productName={product.name} initialImages={product.featureImages} />
+      {(() => {
+        const specFeatureImages: ProductFeatureImage[] = (selectedVariant?.specifications || product.variants?.[0]?.specifications || [])
+          .filter(s => s.specGroup === 'Feature Images' && Boolean(s.specValue?.trim()))
+          .map((s, idx) => ({
+            id: `pfi_${product.id}_${idx}`,
+            url: s.specValue.trim(),
+            caption: ''
+          }))
+
+        const finalFeatureImages: ProductFeatureImage[] = (product.featureImages && product.featureImages.length > 0)
+          ? product.featureImages
+          : (product.featureImageUrls && product.featureImageUrls.length > 0)
+          ? product.featureImageUrls.map((url, idx) => ({ id: `pfi_${product.id}_${idx}`, url, caption: '' }))
+          : (product.featureImageUrl)
+          ? [{ id: `pfi_${product.id}_0`, url: product.featureImageUrl, caption: '' }]
+          : specFeatureImages
+
+        return (
+          <ProductFeatureImages productId={product.id} productName={product.name} initialImages={finalFeatureImages} />
+        )
+      })()}
 
       <ProductSuggestedPhones product={product} />
 

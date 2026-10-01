@@ -484,16 +484,28 @@ export function ProductWizard({ productId }: { productId?: string }) {
           })))
 
           const firstVariantSpecs = p.variants[0]?.specifications || []
-          setGlobalSpecs(firstVariantSpecs.map(s => ({
+          setGlobalSpecs(firstVariantSpecs.filter(s => s.specGroup !== 'Feature Images').map(s => ({
             specGroup: s.specGroup,
             specKey: s.specKey,
             specValue: s.specValue
           })))
 
-          // Load product feature images for edit mode
+          // Load product feature images for edit mode (from DTO fields, database specifications, or cached endpoint)
+          const specFeatureImages: ProductFeatureImage[] = firstVariantSpecs
+            .filter(s => s.specGroup === 'Feature Images' && Boolean(s.specValue?.trim()))
+            .map((s, idx) => ({
+              id: `pfi_${p.id || 'edit'}_${idx}`,
+              url: s.specValue.trim(),
+              caption: ''
+            }))
+
           let loadedFeatureImages: ProductFeatureImage[] = []
           if (p.featureImages && Array.isArray(p.featureImages) && p.featureImages.length > 0) {
             loadedFeatureImages = p.featureImages
+          } else if (p.featureImageUrl) {
+            loadedFeatureImages = [{ id: `pfi_${p.id}_0`, url: p.featureImageUrl, caption: '' }]
+          } else if (specFeatureImages.length > 0) {
+            loadedFeatureImages = specFeatureImages
           } else {
             try {
               const featRes = await apiClient.getProductFeatureImages(productId)
@@ -1269,12 +1281,18 @@ const uploadFilesParallel = async (
     try {
       // 1. Create or Update Product
       let finalProductId = productId
+      const featureUrls = featureImages.map(f => f.url).filter(Boolean)
+      const primaryFeatureUrl = featureUrls[0] || ''
+
       const productPayload: ProductRequestDTO = {
         ...baseInfo,
+        featureImageUrl: primaryFeatureUrl,
+        featureImageUrls: featureUrls,
         featureImages: featureImages && featureImages.length > 0 ? featureImages : []
       }
 
       console.log('[Product Save] featureImages:', productPayload.featureImages)
+      console.log('[Product Save] featureImageUrl:', productPayload.featureImageUrl)
 
       if (finalProductId) {
         await apiClient.updateProduct(finalProductId, productPayload)
@@ -1338,9 +1356,16 @@ const uploadFilesParallel = async (
           })
         }
 
-        // 4. Specs (Applied globally to all variants)
-        const validSpecs = globalSpecs.filter(s => s.specKey?.trim() && s.specValue?.trim());
-        await apiClient.addVariantSpecifications(finalVariantId, validSpecs.map(s => ({
+        // 4. Specs (Applied globally to all variants + Feature Images persisted to backend database)
+        const validSpecs = globalSpecs.filter(s => s.specKey?.trim() && s.specValue?.trim() && s.specGroup !== 'Feature Images');
+        const featureImageSpecs = featureImages.map((f, idx) => ({
+          specGroup: 'Feature Images',
+          specKey: `Feature Image ${idx + 1}`,
+          specValue: f.url
+        }));
+        const allSpecsToPersist = [...validSpecs, ...featureImageSpecs];
+
+        await apiClient.addVariantSpecifications(finalVariantId, allSpecsToPersist.map(s => ({
           specGroup: s.specGroup || 'General',
           specKey: s.specKey.trim(),
           specValue: s.specValue.trim()

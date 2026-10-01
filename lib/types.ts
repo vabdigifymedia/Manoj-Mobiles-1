@@ -73,6 +73,8 @@ export interface ProductRequestDTO {
   metaDescription?: string
   metaKeywords?: string
   featureImages?: ProductFeatureImage[]
+  featureImageUrl?: string
+  featureImageUrls?: string[]
 }
 
 export interface ProductResponseDTO {
@@ -96,6 +98,8 @@ export interface ProductResponseDTO {
   variants: ProductVariantResponseDTO[]
   highlights: HighlightResponseDTO[]
   featureImages?: ProductFeatureImage[]
+  featureImageUrl?: string
+  featureImageUrls?: string[]
 }
 
 export interface ProductListResponseDTO {
