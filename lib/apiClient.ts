@@ -636,6 +636,116 @@ export const apiClient = {
   deleteSpecTemplate: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/api/admin/spec-templates/${id}`),
 
+  // --- Variant Templates & Category Configs ---
+  getVariantTemplates: async () => {
+    try {
+      const res = await fetch('/api/variant-templates', { cache: 'no-store' })
+      return await res.json() as { success: boolean; data: (import('./variantTemplates').VariantTemplate & { usageCount?: number; categoryIds?: string[] })[] }
+    } catch {
+      return { success: false, data: [] }
+    }
+  },
+
+  getVariantTemplateById: async (id: string) => {
+    try {
+      const res = await fetch(`/api/variant-templates/${id}`, { cache: 'no-store' })
+      return await res.json() as { success: boolean; data?: import('./variantTemplates').VariantTemplate; message?: string }
+    } catch {
+      return { success: false, message: 'Network error' }
+    }
+  },
+
+  saveVariantTemplate: async (template: Partial<import('./variantTemplates').VariantTemplate>) => {
+    try {
+      const res = await fetch('/api/variant-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(template)
+      })
+      return await res.json() as { success: boolean; data?: import('./variantTemplates').VariantTemplate; message?: string }
+    } catch {
+      return { success: false, message: 'Network error' }
+    }
+  },
+
+  deleteVariantTemplate: async (id: string) => {
+    try {
+      const res = await fetch(`/api/variant-templates/${id}`, {
+        method: 'DELETE'
+      })
+      return await res.json() as { success: boolean; message?: string }
+    } catch {
+      return { success: false, message: 'Network error' }
+    }
+  },
+
+  getCategoryConfigs: async () => {
+    try {
+      const res = await fetch('/api/category-configs', { cache: 'no-store' })
+      return await res.json() as { success: boolean; data: Record<string, import('./variantTemplates').CategoryProductConfig> }
+    } catch {
+      return { success: false, data: {} }
+    }
+  },
+
+  saveCategoryConfig: async (config: import('./variantTemplates').CategoryProductConfig) => {
+    try {
+      const res = await fetch('/api/category-configs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      })
+      return await res.json() as { success: boolean; data?: import('./variantTemplates').CategoryProductConfig; message?: string }
+    } catch {
+      return { success: false, message: 'Network error' }
+    }
+  },
+
+  getProductVariantAttributes: async (productId: string) => {
+    try {
+      const res = await fetch(`/api/variant-attributes/${productId}`, { cache: 'no-store' })
+      return await res.json() as { success: boolean; data: Record<string, Record<string, any>> }
+    } catch {
+      return { success: false, data: {} }
+    }
+  },
+
+  saveProductVariantAttributes: async (productId: string, attributesMap: Record<string, Record<string, any>>) => {
+    try {
+      const res = await fetch(`/api/variant-attributes/${productId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(attributesMap)
+      })
+      return await res.json() as { success: boolean; data?: any; message?: string }
+    } catch {
+      return { success: false, message: 'Network error' }
+    }
+  },
+
+  // --- Brand Categories ---
+  getBrandCategories: async () => {
+    try {
+      const res = await fetch('/api/brand-categories', { cache: 'no-store' })
+      return await res.json() as { success: boolean; data: Record<string, string[]> }
+    } catch {
+      return { success: false, data: {} }
+    }
+  },
+
+  saveBrandCategories: async (brandId: string, categoryIds: string[]) => {
+    try {
+      const res = await fetch('/api/brand-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brandId, categoryIds })
+      })
+      return await res.json() as { success: boolean; data?: any; message?: string }
+    } catch {
+      return { success: false, message: 'Network error' }
+    }
+  },
+
   // --- Spec Importer ---
   importSpecsFromUrl: async (url: string) => {
     // Calling local Next.js API route directly
@@ -652,7 +762,7 @@ export const apiClient = {
     }>
   },
 
-  importSpecsFromImage: async (payload: { image?: string; text?: string }) => {
+  importSpecsFromImage: async (payload: { image?: string; images?: string[]; text?: string }) => {
     const res = await fetch('/api/import-specs-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

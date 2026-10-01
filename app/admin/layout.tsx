@@ -107,6 +107,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
               { label: 'Products', icon: FaBox, href: '/admin/products', exact: false }, 
               { label: 'Bulk Inquiry', icon: FaBoxesPacking, href: '/admin/bulk-inquiries', exact: false, badge: pendingInquiryCount },
               { label: 'Categories', icon: FaTag, href: '/admin/categories', exact: false },
+              { label: 'Variant Templates', icon: FaTableColumns, href: '/admin/variant-templates', exact: false },
               { label: 'Spec Templates', icon: FaListCheck, href: '/admin/spec-templates', exact: false },
               { label: 'Brands', icon: FaAward, href: '/admin/brands', exact: false },
               { label: 'Orders', icon: FaBagShopping, href: '/admin/orders', exact: false }, 

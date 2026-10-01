@@ -250,7 +250,7 @@ export async function POST(req: NextRequest) {
         const text = $(scriptEl).html() || ''
         if (text.includes('specifications') || text.includes('productDetails') || text.includes('pageData')) {
           try {
-            const jsonMatch = text.match(/\{.* specifications .*\}/s) || text.match(/window\.__[A-Z_]+__\s*=\s*(\{.*\});?/)
+            const jsonMatch = text.match(/\{[\s\S]* specifications [\s\S]*\}/) || text.match(/window\.__[A-Z_]+__\s*=\s*(\{[\s\S]*\});?/)
             if (jsonMatch) {
               const parsed = JSON.parse(jsonMatch[1] || jsonMatch[0])
               const searchSpecs = (obj: any, currentCat = 'General') => {

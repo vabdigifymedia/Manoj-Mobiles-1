@@ -49,7 +49,7 @@ export default function AdminCommonFeatureImagesPage() {
         if (server && server.length > 0) {
           const local = getCommonFeatureImages()
           const merged = [...server]
-          const urls = new Set(server.map(i => i.url))
+          const urls = new Set(server.map((i: any) => i.url))
           local.forEach(item => { if (!urls.has(item.url)) merged.push(item) })
           saveCommonFeatureImages(merged)
         }

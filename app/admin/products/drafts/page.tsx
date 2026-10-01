@@ -20,7 +20,8 @@ export default function AdminDraftsPage() {
     try {
       const bRes = await apiClient.getBrands()
       if (bRes.data?.data) {
-        setBrands(bRes.data.data)
+        const brandList = Array.isArray(bRes.data.data) ? bRes.data.data : (bRes.data.data.content || [])
+        setBrands(brandList)
       }
     } catch {
       // ignore brand load error

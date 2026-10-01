@@ -1,0 +1,24 @@
+{
+  "f2f25a5d-d0c9-45cb-b6c9-725d524e97b2": {
+    "categoryId": "f2f25a5d-d0c9-45cb-b6c9-725d524e97b2",
+    "variantTemplateId": "mobiles"
+  },
+  "e10a9423-8d22-402f-ae7e-beb301b9301c": {
+    "categoryId": "e10a9423-8d22-402f-ae7e-beb301b9301c",
+    "variantTemplateId": "tablets"
+  },
+  "47b9b952-b86a-42c4-bde5-93724832ff39": {
+    "categoryId": "47b9b952-b86a-42c4-bde5-93724832ff39",
+    "variantTemplateId": "smartwatches"
+  },
+  "ce946946-260b-4d42-8f0a-cb1782ac748b": {
+    "categoryId": "ce946946-260b-4d42-8f0a-cb1782ac748b",
+    "variantTemplateId": "audio-wearables",
+    "updatedAt": "2026-10-01T10:23:27.913Z"
+  },
+  "02d6c00b-ad39-4e07-9da4-7d979c8cbd5f": {
+    "categoryId": "02d6c00b-ad39-4e07-9da4-7d979c8cbd5f",
+    "variantTemplateId": "laptops",
+    "updatedAt": "2026-10-01T10:23:46.380Z"
+  }
+}

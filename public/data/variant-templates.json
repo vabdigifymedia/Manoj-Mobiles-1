@@ -1,0 +1,606 @@
+[
+  {
+    "id": "mobiles",
+    "name": "Mobiles",
+    "description": "Variant template for Smartphones and Mobile Phones",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_mob_ram",
+        "name": "RAM",
+        "label": "RAM",
+        "type": "select",
+        "options": [
+          "2GB",
+          "3GB",
+          "4GB",
+          "6GB",
+          "8GB",
+          "12GB",
+          "16GB",
+          "24GB"
+        ],
+        "required": true,
+        "sortOrder": 1,
+        "placeholder": "Select RAM"
+      },
+      {
+        "id": "f_mob_storage",
+        "name": "Storage",
+        "label": "Storage",
+        "type": "select",
+        "options": [
+          "32GB",
+          "64GB",
+          "128GB",
+          "256GB",
+          "512GB",
+          "1TB",
+          "2TB"
+        ],
+        "required": true,
+        "sortOrder": 2,
+        "placeholder": "Select Storage"
+      }
+    ]
+  },
+  {
+    "id": "tablets",
+    "name": "Tablets",
+    "description": "Variant template for Tablets and iPads",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_tab_ram",
+        "name": "RAM",
+        "label": "RAM",
+        "type": "select",
+        "options": [
+          "3GB",
+          "4GB",
+          "6GB",
+          "8GB",
+          "12GB",
+          "16GB"
+        ],
+        "required": true,
+        "sortOrder": 1,
+        "placeholder": "Select RAM"
+      },
+      {
+        "id": "f_tab_storage",
+        "name": "Storage",
+        "label": "Storage",
+        "type": "select",
+        "options": [
+          "32GB",
+          "64GB",
+          "128GB",
+          "256GB",
+          "512GB",
+          "1TB"
+        ],
+        "required": true,
+        "sortOrder": 2,
+        "placeholder": "Select Storage"
+      },
+      {
+        "id": "f_tab_conn",
+        "name": "Connectivity",
+        "label": "Connectivity",
+        "type": "select",
+        "options": [
+          "Wi-Fi",
+          "4G",
+          "5G",
+          "Wi-Fi + Cellular"
+        ],
+        "required": true,
+        "sortOrder": 3,
+        "placeholder": "Select Connectivity"
+      }
+    ]
+  },
+  {
+    "id": "laptops",
+    "name": "Laptops",
+    "description": "Variant template for Laptops and Notebooks",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_lap_ram",
+        "name": "RAM",
+        "label": "RAM",
+        "type": "select",
+        "options": [
+          "4GB",
+          "8GB",
+          "16GB",
+          "32GB",
+          "64GB"
+        ],
+        "required": true,
+        "sortOrder": 1,
+        "placeholder": "Select RAM"
+      },
+      {
+        "id": "f_lap_storage",
+        "name": "Storage / SSD",
+        "label": "Storage / SSD",
+        "type": "select",
+        "options": [
+          "128GB",
+          "256GB",
+          "512GB",
+          "1TB",
+          "2TB"
+        ],
+        "required": true,
+        "sortOrder": 2,
+        "placeholder": "Select Storage / SSD"
+      },
+      {
+        "id": "f_lap_proc",
+        "name": "Processor",
+        "label": "Processor",
+        "type": "text",
+        "required": false,
+        "sortOrder": 3,
+        "placeholder": "e.g. Intel Core i5 / Apple M3 / AMD Ryzen 7"
+      },
+      {
+        "id": "f_lap_os",
+        "name": "Operating System",
+        "label": "Operating System",
+        "type": "select",
+        "options": [
+          "Windows",
+          "macOS",
+          "Linux",
+          "ChromeOS",
+          "Other"
+        ],
+        "required": false,
+        "sortOrder": 4,
+        "placeholder": "Select OS"
+      }
+    ]
+  },
+  {
+    "id": "smartwatches",
+    "name": "Smartwatches",
+    "description": "Variant template for Smartwatches and Wearables",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_sw_strap_color",
+        "name": "Strap Colour",
+        "label": "Strap Colour",
+        "type": "text",
+        "required": false,
+        "sortOrder": 1,
+        "placeholder": "e.g. Midnight Black, Ocean Blue"
+      },
+      {
+        "id": "f_sw_strap_size",
+        "name": "Strap Size",
+        "label": "Strap Size",
+        "type": "text",
+        "required": false,
+        "sortOrder": 2,
+        "placeholder": "e.g. 40mm, 44mm, 45mm, S/M, M/L"
+      },
+      {
+        "id": "f_sw_conn",
+        "name": "Connectivity",
+        "label": "Connectivity",
+        "type": "select",
+        "options": [
+          "Bluetooth",
+          "Cellular",
+          "Bluetooth + Cellular"
+        ],
+        "required": true,
+        "sortOrder": 3,
+        "placeholder": "Select Connectivity"
+      }
+    ]
+  },
+  {
+    "id": "earbuds-tws",
+    "name": "Earbuds / TWS",
+    "description": "Variant template for True Wireless Earbuds",
+    "isSystem": true,
+    "fields": []
+  },
+  {
+    "id": "headphones",
+    "name": "Headphones",
+    "description": "Variant template for Over-Ear and On-Ear Headphones",
+    "isSystem": true,
+    "fields": []
+  },
+  {
+    "id": "speakers",
+    "name": "Speakers",
+    "description": "Variant template for Bluetooth Speakers and Soundbars",
+    "isSystem": true,
+    "fields": []
+  },
+  {
+    "id": "chargers-adapters",
+    "name": "Chargers & Adapters",
+    "description": "Variant template for Wall Chargers, Adapters, and Cables",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_chg_wattage",
+        "name": "Wattage",
+        "label": "Wattage",
+        "type": "select",
+        "options": [
+          "10W",
+          "18W",
+          "20W",
+          "25W",
+          "30W",
+          "33W",
+          "45W",
+          "65W",
+          "67W",
+          "80W",
+          "100W",
+          "120W",
+          "140W"
+        ],
+        "required": true,
+        "sortOrder": 1,
+        "placeholder": "Select Wattage"
+      },
+      {
+        "id": "f_chg_connector",
+        "name": "Connector Type",
+        "label": "Connector Type",
+        "type": "select",
+        "options": [
+          "USB-A",
+          "USB-C",
+          "USB-A + USB-C",
+          "Lightning",
+          "Micro USB"
+        ],
+        "required": true,
+        "sortOrder": 2,
+        "placeholder": "Select Connector Type"
+      }
+    ]
+  },
+  {
+    "id": "power-banks",
+    "name": "Power Banks",
+    "description": "Variant template for Portable Power Banks",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_pb_capacity",
+        "name": "Capacity",
+        "label": "Capacity",
+        "type": "select",
+        "options": [
+          "5,000mAh",
+          "10,000mAh",
+          "20,000mAh",
+          "30,000mAh"
+        ],
+        "required": true,
+        "sortOrder": 1,
+        "placeholder": "Select Battery Capacity"
+      }
+    ]
+  },
+  {
+    "id": "mobile-accessories",
+    "name": "Mobile Accessories",
+    "description": "Variant template for General Mobile Accessories",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_acc_compat",
+        "name": "Compatible Model",
+        "label": "Compatible Model",
+        "type": "text",
+        "required": false,
+        "sortOrder": 1,
+        "placeholder": "e.g. iPhone 15 Pro, Galaxy S24 Ultra"
+      }
+    ]
+  },
+  {
+    "id": "televisions",
+    "name": "Televisions",
+    "description": "Variant template for Smart TVs and Televisions",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_tv_size",
+        "name": "Screen Size",
+        "label": "Screen Size",
+        "type": "select",
+        "options": [
+          "24\"",
+          "32\"",
+          "40\"",
+          "43\"",
+          "50\"",
+          "55\"",
+          "65\"",
+          "75\"",
+          "85\"",
+          "98\""
+        ],
+        "required": true,
+        "sortOrder": 1,
+        "placeholder": "Select Screen Size"
+      },
+      {
+        "id": "f_tv_res",
+        "name": "Resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          "HD",
+          "Full HD",
+          "4K",
+          "8K"
+        ],
+        "required": true,
+        "sortOrder": 2,
+        "placeholder": "Select Resolution"
+      },
+      {
+        "id": "f_tv_disp",
+        "name": "Display Type",
+        "label": "Display Type",
+        "type": "select",
+        "options": [
+          "LED",
+          "QLED",
+          "OLED",
+          "Mini LED"
+        ],
+        "required": true,
+        "sortOrder": 3,
+        "placeholder": "Select Display Technology"
+      }
+    ]
+  },
+  {
+    "id": "gaming-consoles",
+    "name": "Gaming / Consoles",
+    "description": "Variant template for Gaming Consoles and Bundles",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_game_storage",
+        "name": "Storage",
+        "label": "Storage",
+        "type": "select",
+        "options": [
+          "512GB",
+          "1TB",
+          "2TB"
+        ],
+        "required": true,
+        "sortOrder": 1,
+        "placeholder": "Select Storage"
+      },
+      {
+        "id": "f_game_edition",
+        "name": "Edition",
+        "label": "Edition",
+        "type": "text",
+        "required": false,
+        "sortOrder": 2,
+        "placeholder": "e.g. Digital Edition, Disc Edition, Slim"
+      }
+    ]
+  },
+  {
+    "id": "cameras",
+    "name": "Cameras",
+    "description": "Variant template for DSLR, Mirrorless, and Action Cameras",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_cam_lens",
+        "name": "Lens / Kit Variant",
+        "label": "Lens / Kit Variant",
+        "type": "text",
+        "required": false,
+        "sortOrder": 1,
+        "placeholder": "e.g. Body Only, 18-55mm Kit Lens, 24-70mm f/2.8"
+      }
+    ]
+  },
+  {
+    "id": "monitors",
+    "name": "Monitors",
+    "description": "Variant template for Desktop and Gaming Monitors",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_mon_size",
+        "name": "Screen Size",
+        "label": "Screen Size",
+        "type": "select",
+        "options": [
+          "21.5\"",
+          "24\"",
+          "27\"",
+          "32\"",
+          "34\"",
+          "43\""
+        ],
+        "required": true,
+        "sortOrder": 1,
+        "placeholder": "Select Screen Size"
+      },
+      {
+        "id": "f_mon_res",
+        "name": "Resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          "Full HD",
+          "QHD",
+          "4K",
+          "5K"
+        ],
+        "required": true,
+        "sortOrder": 2,
+        "placeholder": "Select Resolution"
+      },
+      {
+        "id": "f_mon_refresh",
+        "name": "Refresh Rate",
+        "label": "Refresh Rate",
+        "type": "select",
+        "options": [
+          "60Hz",
+          "75Hz",
+          "100Hz",
+          "120Hz",
+          "144Hz",
+          "165Hz",
+          "240Hz",
+          "360Hz"
+        ],
+        "required": true,
+        "sortOrder": 3,
+        "placeholder": "Select Refresh Rate"
+      }
+    ]
+  },
+  {
+    "id": "printers",
+    "name": "Printers",
+    "description": "Variant template for Inkjet, Laser, and All-in-One Printers",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_print_model",
+        "name": "Model / Variant",
+        "label": "Model / Variant",
+        "type": "text",
+        "required": false,
+        "sortOrder": 1,
+        "placeholder": "e.g. Standard, Duplex, WiFi Edition"
+      },
+      {
+        "id": "f_print_conn",
+        "name": "Connectivity",
+        "label": "Connectivity",
+        "type": "select",
+        "options": [
+          "USB",
+          "Wi-Fi",
+          "Ethernet",
+          "USB + Wi-Fi",
+          "USB + Ethernet"
+        ],
+        "required": true,
+        "sortOrder": 2,
+        "placeholder": "Select Connectivity"
+      }
+    ]
+  },
+  {
+    "id": "computer-accessories",
+    "name": "Computer Accessories",
+    "description": "Variant template for Keyboards, Mice, Cables, and PC Peripherals",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_comp_compat",
+        "name": "Compatibility",
+        "label": "Compatibility",
+        "type": "text",
+        "required": false,
+        "sortOrder": 1,
+        "placeholder": "e.g. Windows & Mac, Type-C Devices"
+      }
+    ]
+  },
+  {
+    "id": "cases-covers",
+    "name": "Cases & Covers",
+    "description": "Variant template for Mobile Cases, Sleeves, and Screen Protectors",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_case_model",
+        "name": "Compatible Model",
+        "label": "Compatible Model",
+        "type": "text",
+        "required": true,
+        "sortOrder": 1,
+        "placeholder": "e.g. iPhone 16 Pro Max, Pixel 9"
+      }
+    ]
+  },
+  {
+    "id": "other-accessories",
+    "name": "Other Accessories",
+    "description": "General template using common variant fields (Colour, Price, Stock)",
+    "isSystem": true,
+    "fields": []
+  },
+  {
+    "id": "audio-wearables",
+    "name": "Audio & Wearables",
+    "description": "Variant template for Audio & Wearable devices",
+    "isSystem": true,
+    "fields": [
+      {
+        "id": "f_aud_type",
+        "name": "Type",
+        "label": "Type",
+        "type": "select",
+        "options": [
+          "In-Ear",
+          "Over-Ear",
+          "On-Ear",
+          "Neckband",
+          "TWS",
+          "Speaker"
+        ],
+        "required": true,
+        "sortOrder": 1,
+        "placeholder": "Select Type"
+      },
+      {
+        "id": "f_aud_playtime",
+        "name": "Playtime",
+        "label": "Playtime",
+        "type": "text",
+        "required": false,
+        "sortOrder": 2,
+        "placeholder": "e.g. Up to 40 Hours"
+      },
+      {
+        "id": "f_aud_mic",
+        "name": "Microphone",
+        "label": "Microphone",
+        "type": "select",
+        "options": [
+          "Yes",
+          "No",
+          "Dual Mic ENC"
+        ],
+        "required": false,
+        "sortOrder": 3,
+        "placeholder": "Has Mic?"
+      }
+    ]
+  }
+]

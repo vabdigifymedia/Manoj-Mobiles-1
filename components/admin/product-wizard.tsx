@@ -8,6 +8,10 @@ import { fetchCatalogClient, type CatalogProduct } from '@/lib/productCatalog'
 import { parsePastedSpecsText, ALLOWED_GROUPS, ExtractedSpecItem } from '@/lib/specParser'
 import { saveProductDraft, getProductDraft, clearDraftForProduct, deleteProductDraft, getAllProductDrafts, ProductDraft, formatRelativeTime } from '@/lib/draftService'
 
+import { CategoryResponseDTO, BrandResponseDTO, IconName, ProductFeatureImage, ProductRequestDTO } from '@/lib/types'
+import { VariantTemplate, VariantTemplateField, getDefaultTemplateForCategory, generateVariantNameFromAttributes, CategoryProductConfig, PREDEFINED_VARIANT_TEMPLATES } from '@/lib/variantTemplates'
+import { FaBoxesStacked, FaTag as FaTagIcon } from 'react-icons/fa6'
+
 interface LocalHighlight {
   id: string;
   iconName: string;
@@ -26,8 +30,8 @@ interface LocalVariant {
   stockQty: number;
   codAvailable: boolean;
   images: string[];
+  attributes?: Record<string, any>;
 }
-import { CategoryResponseDTO, BrandResponseDTO, IconName, ProductFeatureImage, ProductRequestDTO } from '@/lib/types'
 import { RichTextEditor } from './rich-text-editor'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -79,6 +83,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const paramDraftId = searchParams?.get('draftId')
+  const paramCategoryId = searchParams?.get('categoryId')
+  const paramBrandId = searchParams?.get('brandId')
 
   const [activeDraftId, setActiveDraftId] = useState<string>(() => 
     paramDraftId || `draft_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
@@ -99,7 +105,10 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   // Step 1: Base FaCircleInfo
   const [baseInfo, setBaseInfo] = useState({
-    name: '', brandId: '', categoryId: '', description: '',
+    name: '',
+    brandId: paramBrandId || '',
+    categoryId: paramCategoryId || '',
+    description: '',
     warrantyMonths: 12, returnPolicyDays: 7, isReturnable: true,
     slug: '', metaTitle: '', metaDescription: '', metaKeywords: ''
   })
@@ -117,8 +126,14 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null)
   const [variantForm, setVariantForm] = useState({
     variantName: '', sku: '', color: '', mrp: '', sellingPrice: '',
-    gstPercent: 0, stockQty: 0, codAvailable: true
+    gstPercent: 0, stockQty: 0, codAvailable: true,
+    attributes: {} as Record<string, any>
   })
+
+  // Dynamic Variant Templates & Category Configuration
+  const [variantTemplates, setVariantTemplates] = useState<VariantTemplate[]>(PREDEFINED_VARIANT_TEMPLATES)
+  const [categoryConfigs, setCategoryConfigs] = useState<Record<string, CategoryProductConfig>>({})
+  const [activeVariantTemplate, setActiveVariantTemplate] = useState<VariantTemplate | null>(null)
   const [draggedImage, setDraggedImage] = useState<{color: string, index: number} | null>(null)
   const [dragActiveColor, setDragActiveColor] = useState<string | null>(null)
   type UploadProgressItem = {
@@ -416,16 +431,17 @@ export function ProductWizard({ productId }: { productId?: string }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catsRes, brandsRes, catalogProducts] = await Promise.all([
+        const [catsRes, brandsRes, catalogProducts, vtRes, ccRes] = await Promise.all([
           apiClient.getCategories(),
           apiClient.getBrands(0, 100),
-          // COMPLETE catalog through the shared product layer (all pages).
-          // A single `size=100` request previously missed products, which could
-          // let a duplicate SKU slip past the validation below.
-          fetchCatalogClient().catch(() => [] as CatalogProduct[])
+          fetchCatalogClient().catch(() => [] as CatalogProduct[]),
+          apiClient.getVariantTemplates().catch(() => ({ data: [] })),
+          apiClient.getCategoryConfigs().catch(() => ({ data: {} }))
         ])
         setCategories(catsRes.data.data)
         setBrands(brandsRes.data.data.content)
+        if (vtRes.data?.length) setVariantTemplates(vtRes.data)
+        setCategoryConfigs(ccRes.data || {})
 
         // Build existing DB SKU map
         const skuMap = new Map<string, { productId: string; variantId: string }>()
@@ -449,8 +465,13 @@ export function ProductWizard({ productId }: { productId?: string }) {
         setExistingDbSkus(skuMap)
 
         if (productId) {
-          const prodRes = await apiClient.getProductById(productId)
+          const [prodRes, attrRes] = await Promise.all([
+            apiClient.getProductById(productId),
+            apiClient.getProductVariantAttributes(productId).catch(() => ({ data: {} }))
+          ])
           const p = prodRes.data.data
+          const savedAttrsMap: Record<string, Record<string, any>> = (attrRes.data as any) || {}
+
           setBaseInfo({
             name: p.name,
             brandId: p.brandId,
@@ -470,18 +491,44 @@ export function ProductWizard({ productId }: { productId?: string }) {
             text: h.text,
             displayOrder: h.displayOrder
           })))
-          setVariants(p.variants.map(v => ({
-            id: v.id,
-            variantName: v.variantName,
-            sku: v.sku,
-            color: v.color || '',
-            mrp: v.mrp,
-            sellingPrice: v.sellingPrice,
-            gstPercent: v.gstPercent || 0,
-            stockQty: v.stockQty,
-            codAvailable: v.codAvailable,
-            images: v.imageUrls || []
-          })))
+          setVariants(p.variants.map(v => {
+            const attrs: Record<string, any> = {
+              ...(savedAttrsMap[v.id] || savedAttrsMap[v.sku] || {})
+            }
+
+            if (v.specifications && Array.isArray(v.specifications)) {
+              v.specifications.forEach(spec => {
+                if (spec.specGroup === 'Variant Attributes' && spec.specKey && spec.specValue) {
+                  attrs[spec.specKey] = spec.specValue
+                }
+              })
+            }
+
+            // Fallback for Mobiles/Tablets: parse RAM and Storage from variantName if missing
+            if (!attrs['RAM'] || !attrs['Storage']) {
+              const parsed = parseRamRomFromText(v.variantName)
+              if (parsed.ram && !attrs['RAM']) {
+                attrs['RAM'] = parsed.ram.replace(/\s*RAM/i, '').trim()
+              }
+              if (parsed.rom && !attrs['Storage']) {
+                attrs['Storage'] = parsed.rom.replace(/\s*ROM/i, '').trim()
+              }
+            }
+
+            return {
+              id: v.id,
+              variantName: v.variantName,
+              sku: v.sku,
+              color: v.color || '',
+              mrp: v.mrp,
+              sellingPrice: v.sellingPrice,
+              gstPercent: v.gstPercent || 0,
+              stockQty: v.stockQty,
+              codAvailable: v.codAvailable,
+              images: v.imageUrls || [],
+              attributes: attrs
+            }
+          }))
 
           const firstVariantSpecs = p.variants[0]?.specifications || []
           setGlobalSpecs(firstVariantSpecs.filter(s => s.specGroup !== 'Feature Images').map(s => ({
@@ -600,6 +647,28 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
     return () => clearTimeout(timer)
   }, [baseInfo, highlights, variants, globalSpecs, featureImages, currentStep, highestStepReached, initialLoading, isOnline, activeDraftId, productId, brands])
+
+  // Synchronize activeVariantTemplate whenever category or templates change
+  useEffect(() => {
+    if (!baseInfo.categoryId) {
+      setActiveVariantTemplate(null)
+      return
+    }
+
+    const conf = categoryConfigs[baseInfo.categoryId]
+    const cat = categories.find(c => c.id === baseInfo.categoryId)
+    let matchedTemplate: VariantTemplate | undefined
+
+    if (conf?.variantTemplateId) {
+      matchedTemplate = variantTemplates.find(t => t.id === conf.variantTemplateId)
+    }
+
+    if (!matchedTemplate) {
+      matchedTemplate = getDefaultTemplateForCategory(cat?.name, cat?.slug)
+    }
+
+    setActiveVariantTemplate(matchedTemplate || null)
+  }, [baseInfo.categoryId, categoryConfigs, variantTemplates, categories])
 
   // Auto-generate RAM/ROM Highlight from globalSpecs or variants
   const handleAutoGenerateRamRomHighlight = () => {
@@ -821,6 +890,16 @@ export function ProductWizard({ productId }: { productId?: string }) {
         }
       }
 
+      if (fieldKey.startsWith('variant_attr_')) {
+        const fieldName = fieldKey.replace('variant_attr_', '')
+        const fieldDef = activeVariantTemplate?.fields?.find(f => f.name === fieldName)
+        if (fieldDef?.required && (!value || String(value).trim() === '')) {
+          copy[fieldKey] = `${fieldDef.label || fieldName} is required.`
+        } else {
+          delete copy[fieldKey]
+        }
+      }
+
       return copy
     })
   }
@@ -840,6 +919,18 @@ export function ProductWizard({ productId }: { productId?: string }) {
     if (!variantForm.variantName || !variantForm.variantName.trim()) errs['variant_variantName'] = 'Variant Name is required.'
     if (!variantForm.color || !variantForm.color.trim()) errs['variant_color'] = 'Color is required.'
     
+    // Validate Category-Specific Template Fields
+    if (activeVariantTemplate && activeVariantTemplate.fields) {
+      for (const f of activeVariantTemplate.fields) {
+        if (f.required) {
+          const val = variantForm.attributes?.[f.name]
+          if (val === undefined || val === null || String(val).trim() === '') {
+            errs[`variant_attr_${f.name}`] = `${f.label || f.name} is required.`
+          }
+        }
+      }
+    }
+
     const skuVal = (variantForm.sku || '').trim().toUpperCase()
     if (!skuVal) {
       errs['variant_sku'] = 'SKU is required.'
@@ -858,7 +949,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
     }
 
     const stockNum = Number(variantForm.stockQty)
-    if (variantForm.stockQty === '' || variantForm.stockQty === undefined || isNaN(stockNum) || stockNum < 0) {
+    if (variantForm.stockQty === undefined || variantForm.stockQty === null || isNaN(stockNum) || stockNum < 0) {
       errs['variant_stockQty'] = 'Stock quantity cannot be negative.'
     }
 
@@ -919,15 +1010,36 @@ export function ProductWizard({ productId }: { productId?: string }) {
   }
 
   const handleRestoreDraftData = (draftObj: ProductDraft) => {
-    if (draftObj.baseInfo) setBaseInfo(draftObj.baseInfo)
-    if (draftObj.highlights) setHighlights(draftObj.highlights)
-    if (draftObj.variants) setVariants(draftObj.variants)
+    if (draftObj.baseInfo) {
+      setBaseInfo({
+        name: draftObj.baseInfo.name || '',
+        brandId: draftObj.baseInfo.brandId || '',
+        categoryId: draftObj.baseInfo.categoryId || '',
+        description: draftObj.baseInfo.description || '',
+        warrantyMonths: draftObj.baseInfo.warrantyMonths ?? 12,
+        returnPolicyDays: draftObj.baseInfo.returnPolicyDays ?? 7,
+        isReturnable: draftObj.baseInfo.isReturnable ?? true,
+        slug: draftObj.baseInfo.slug || '',
+        metaTitle: draftObj.baseInfo.metaTitle || '',
+        metaDescription: draftObj.baseInfo.metaDescription || '',
+        metaKeywords: draftObj.baseInfo.metaKeywords || ''
+      })
+    }
+    if (draftObj.highlights) setHighlights(draftObj.highlights as any)
+    if (draftObj.variants) {
+      setVariants(draftObj.variants.map((v: any) => ({
+        ...v,
+        mrp: Number(v.mrp) || 0,
+        sellingPrice: Number(v.sellingPrice) || 0,
+        images: v.images || []
+      })))
+    }
     if (draftObj.globalSpecs) setGlobalSpecs(draftObj.globalSpecs)
     if (draftObj.currentStep) setCurrentStep(draftObj.currentStep)
     if (draftObj.highestStepReached) setHighestStepReached(draftObj.highestStepReached)
     if (draftObj.draftId) setActiveDraftId(draftObj.draftId)
-    setPendingDraftToRestore(null)
     setDraftAvailable(false)
+    setIsDraftRestored(true)
     toast.success('Product draft restored successfully!')
   }
 
@@ -959,6 +1071,37 @@ export function ProductWizard({ productId }: { productId?: string }) {
     setHighlights(highlights.filter(h => h.id !== id))
   }
 
+  const handleDynamicFieldChange = (fieldName: string, value: any) => {
+    const updatedAttrs = {
+      ...variantForm.attributes,
+      [fieldName]: value
+    }
+
+    // Auto-generate suggested variantName
+    let updatedVariantName = variantForm.variantName
+    if (activeVariantTemplate) {
+      const generatedName = generateVariantNameFromAttributes(activeVariantTemplate, updatedAttrs)
+      const prevGenerated = generateVariantNameFromAttributes(activeVariantTemplate, variantForm.attributes)
+      if (!variantForm.variantName || variantForm.variantName === prevGenerated) {
+        updatedVariantName = generatedName
+      }
+    }
+
+    const autoSku = generateUniqueSku(updatedVariantName, variantForm.color, editingVariantId)
+
+    setVariantForm(prev => ({
+      ...prev,
+      attributes: updatedAttrs,
+      variantName: updatedVariantName,
+      sku: (!prev.sku || prev.sku === generateAutoSku(prev.variantName, prev.color)) ? autoSku : prev.sku
+    }))
+
+    validateField(`variant_attr_${fieldName}`, value)
+    if (!variantForm.sku || variantForm.sku === generateAutoSku(variantForm.variantName, variantForm.color)) {
+      validateField('variant_sku', autoSku)
+    }
+  }
+
   const handleAddVariant = (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateVariantForm()) {
@@ -977,7 +1120,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
         sellingPrice: Number(variantForm.sellingPrice),
         gstPercent: Number(variantForm.gstPercent),
         stockQty: Number(variantForm.stockQty),
-        codAvailable: variantForm.codAvailable
+        codAvailable: variantForm.codAvailable,
+        attributes: variantForm.attributes
       } : v))
       setEditingVariantId(null)
     } else {
@@ -991,15 +1135,31 @@ export function ProductWizard({ productId }: { productId?: string }) {
         gstPercent: Number(variantForm.gstPercent),
         stockQty: Number(variantForm.stockQty),
         codAvailable: variantForm.codAvailable,
-        images: []
+        images: [],
+        attributes: variantForm.attributes
       }])
     }
     setShowVariantForm(false)
-    setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true })
+    setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true, attributes: {} })
     clearFieldError('variants')
   }
 
   const handleEditVariantClick = (v: LocalVariant) => {
+    const existingAttrs = { ...(v.attributes || {}) }
+    if (activeVariantTemplate) {
+      if (activeVariantTemplate.id === 'mobiles' || activeVariantTemplate.id === 'tablets') {
+        if (!existingAttrs['RAM'] || !existingAttrs['Storage']) {
+          const parsed = parseRamRomFromText(v.variantName)
+          if (parsed.ram && !existingAttrs['RAM']) {
+            existingAttrs['RAM'] = parsed.ram.replace(/\s*RAM/i, '').trim()
+          }
+          if (parsed.rom && !existingAttrs['Storage']) {
+            existingAttrs['Storage'] = parsed.rom.replace(/\s*ROM/i, '').trim()
+          }
+        }
+      }
+    }
+
     setVariantForm({
       variantName: v.variantName,
       sku: v.sku || generateUniqueSku(v.variantName, v.color, v.id),
@@ -1008,7 +1168,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
       sellingPrice: v.sellingPrice.toString(),
       gstPercent: v.gstPercent,
       stockQty: v.stockQty,
-      codAvailable: v.codAvailable
+      codAvailable: v.codAvailable,
+      attributes: existingAttrs
     })
     setEditingVariantId(v.id)
     setShowVariantForm(true)
@@ -1020,6 +1181,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
       delete copy['variant_mrp']
       delete copy['variant_sellingPrice']
       delete copy['variant_stockQty']
+      Object.keys(copy).forEach(k => {
+        if (k.startsWith('variant_attr_')) delete copy[k]
+      })
       return copy
     })
   }
@@ -1046,6 +1210,17 @@ export function ProductWizard({ productId }: { productId?: string }) {
       initialCod = lastVariant.codAvailable
     }
 
+    const initialAttrs: Record<string, any> = {}
+    if (activeVariantTemplate) {
+      for (const field of activeVariantTemplate.fields) {
+        if (variants.length > 0 && variants[variants.length - 1].attributes?.[field.name]) {
+          initialAttrs[field.name] = variants[variants.length - 1].attributes![field.name]
+        } else if (field.defaultValue) {
+          initialAttrs[field.name] = field.defaultValue
+        }
+      }
+    }
+
     const autoSku = generateUniqueSku(initialVName, '', null)
 
     setVariantForm({
@@ -1056,7 +1231,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
       sellingPrice: initialPrice,
       gstPercent: initialGst,
       stockQty: initialStock,
-      codAvailable: initialCod
+      codAvailable: initialCod,
+      attributes: initialAttrs
     })
     setEditingVariantId(null)
     setShowVariantForm(true)
@@ -1068,6 +1244,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
       delete copy['variant_mrp']
       delete copy['variant_sellingPrice']
       delete copy['variant_stockQty']
+      Object.keys(copy).forEach(k => {
+        if (k.startsWith('variant_attr_')) delete copy[k]
+      })
       return copy
     })
   }
@@ -1100,24 +1279,45 @@ export function ProductWizard({ productId }: { productId?: string }) {
     if (!baseInfo.categoryId) return toast.error('Please select a category first (Step 1)')
     setLoadingTemplate(true)
     try {
-      const res = await apiClient.getSpecTemplateByCategoryId(baseInfo.categoryId)
-      if (res.data.data) {
-        const template = res.data.data
+      let template: any = null
+      const catConfig = categoryConfigs[baseInfo.categoryId]
+      
+      // If a specific spec template is configured in category configs
+      if (catConfig?.specTemplateId && catConfig.specTemplateId !== 'none') {
+        try {
+          const allRes = await apiClient.getSpecTemplates()
+          if (allRes.data?.data) {
+            template = allRes.data.data.find((t: any) => t.id === catConfig.specTemplateId)
+          }
+        } catch {
+          // fallback to category endpoint
+        }
+      }
+
+      if (!template) {
+        const res = await apiClient.getSpecTemplateByCategoryId(baseInfo.categoryId)
+        if (res.data?.data) {
+          template = res.data.data
+        }
+      }
+
+      if (template && template.groups && template.groups.length > 0) {
         const newSpecs = [...globalSpecs]
-        
-        template.groups.forEach(g => {
-          g.specKeys.forEach(k => {
+        let addedCount = 0
+        template.groups.forEach((g: any) => {
+          g.specKeys?.forEach((k: string) => {
             // Only add if this exact group+key combination doesn't exist
-            if (!newSpecs.some(s => s.specGroup === g.groupName && s.specKey === k)) {
+            if (!newSpecs.some(s => s.specGroup.trim().toLowerCase() === g.groupName.trim().toLowerCase() && s.specKey.trim().toLowerCase() === k.trim().toLowerCase())) {
               newSpecs.push({ specGroup: g.groupName, specKey: k, specValue: '' })
+              addedCount++
             }
           })
         })
         
         setGlobalSpecs(newSpecs)
-        toast.success(`Loaded spec template for category`)
+        toast.success(`Loaded ${addedCount} specifications from ${template.templateName || 'category template'}`)
       } else {
-        toast.error('No template found for this category')
+        toast.error('No specification template configured or found for this category')
       }
     } catch (e) {
       toast.error('Failed to load category spec template')
@@ -1356,14 +1556,19 @@ const uploadFilesParallel = async (
           })
         }
 
-        // 4. Specs (Applied globally to all variants + Feature Images persisted to backend database)
-        const validSpecs = globalSpecs.filter(s => s.specKey?.trim() && s.specValue?.trim() && s.specGroup !== 'Feature Images');
+        // 4. Specs (Applied globally to all variants + Feature Images + Variant Attributes persisted to backend database)
+        const validSpecs = globalSpecs.filter(s => s.specKey?.trim() && s.specValue?.trim() && s.specGroup !== 'Feature Images' && s.specGroup !== 'Variant Attributes');
         const featureImageSpecs = featureImages.map((f, idx) => ({
           specGroup: 'Feature Images',
           specKey: `Feature Image ${idx + 1}`,
           specValue: f.url
         }));
-        const allSpecsToPersist = [...validSpecs, ...featureImageSpecs];
+        const variantAttrSpecs = Object.entries(v.attributes || {}).map(([key, val]) => ({
+          specGroup: 'Variant Attributes',
+          specKey: key,
+          specValue: String(val)
+        }));
+        const allSpecsToPersist = [...validSpecs, ...featureImageSpecs, ...variantAttrSpecs];
 
         await apiClient.addVariantSpecifications(finalVariantId, allSpecsToPersist.map(s => ({
           specGroup: s.specGroup || 'General',
@@ -1377,11 +1582,22 @@ const uploadFilesParallel = async (
         }
       }
 
-      // 6. Feature Images (Saved specifically for this product)
+      // 6. Feature Images & Variant Attributes Persistence (Saved specifically for this product)
       if (finalProductId) {
         await apiClient.saveProductFeatureImages(finalProductId, featureImages).catch((err) => {
           console.error('Failed to save feature images', err)
         })
+
+        const variantAttributesMap: Record<string, Record<string, any>> = {}
+        variants.forEach(v => {
+          if (v.attributes && Object.keys(v.attributes).length > 0) {
+            if (v.id) variantAttributesMap[v.id] = v.attributes
+            if (v.sku) variantAttributesMap[v.sku] = v.attributes
+          }
+        })
+        if (Object.keys(variantAttributesMap).length > 0) {
+          await apiClient.saveProductVariantAttributes(finalProductId, variantAttributesMap).catch(console.error)
+        }
       }
 
       // On successful publish, remove draft so admin doesn't get duplicate draft prompts
@@ -1697,39 +1913,116 @@ const uploadFilesParallel = async (
             )}
 
             {showVariantForm && (
-              <form onSubmit={handleAddVariant} className="bg-muted/50 p-4 rounded-xl border border-border space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold mb-1 block">Variant Name <span className="text-red-500">*</span></label>
-                    <input 
-                      required 
-                      value={variantForm.variantName} 
-                      onChange={e => {
-                        const val = e.target.value
-                        const autoSku = generateUniqueSku(val, variantForm.color, editingVariantId)
-                        setVariantForm(prev => ({
-                          ...prev,
-                          variantName: val,
-                          sku: (!prev.sku || prev.sku === generateAutoSku(prev.variantName, prev.color)) ? autoSku : prev.sku
-                        }))
-                        validateField('variant_variantName', val)
-                        if (!variantForm.sku || variantForm.sku === generateAutoSku(variantForm.variantName, variantForm.color)) {
-                          validateField('variant_sku', autoSku)
+              <form onSubmit={handleAddVariant} className="bg-muted/50 p-5 rounded-2xl border border-border space-y-5">
+                {/* Category-Specific Variant Attributes (Dynamic from Category Template) */}
+                {activeVariantTemplate && activeVariantTemplate.fields && activeVariantTemplate.fields.length > 0 && (
+                  <div className="p-4 rounded-xl bg-card border border-border space-y-3">
+                    <div className="flex items-center justify-between border-b border-border pb-2">
+                      <div className="flex items-center gap-2">
+                        <FaBoxesStacked className="text-primary" size={14} />
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                          {activeVariantTemplate.name} Variant Attributes
+                        </h4>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground font-medium">
+                        Category: {categories.find(c => c.id === baseInfo.categoryId)?.name || 'Default'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {activeVariantTemplate.fields.map((field) => {
+                        const fieldKey = `variant_attr_${field.name}`
+                        const errorMsg = formErrors[fieldKey]
+                        const currentValue = variantForm.attributes?.[field.name] ?? ''
+
+                        if (field.type === 'select') {
+                          return (
+                            <div key={field.id || field.name}>
+                              <label className="text-xs font-semibold mb-1 block">
+                                {field.label || field.name} {field.required && <span className="text-red-500">*</span>}
+                              </label>
+                              <Select
+                                value={currentValue ? String(currentValue) : null}
+                                onValueChange={(val) => handleDynamicFieldChange(field.name, val || '')}
+                              >
+                                <SelectTrigger
+                                  className={`w-full rounded-lg border ${
+                                    errorMsg
+                                      ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20'
+                                      : 'border-border bg-background focus:border-primary'
+                                  } px-3 py-2 text-sm h-10`}
+                                >
+                                  <SelectValue placeholder={field.placeholder || `Select ${field.label || field.name}`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(field.options || []).map((opt) => (
+                                    <SelectItem key={opt} value={opt}>
+                                      {opt}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {errorMsg && (
+                                <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                                  <span>⚠️</span> {errorMsg}
+                                </p>
+                              )}
+                            </div>
+                          )
                         }
-                      }} 
-                      placeholder="e.g. 8GB + 128GB"
-                      className={`w-full rounded-lg border ${
-                        formErrors['variant_variantName'] 
-                          ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-200 focus:border-red-600 focus:ring-1 focus:ring-red-500' 
-                          : 'border-border bg-background focus:border-primary'
-                      } px-3 py-2 text-sm transition-colors`} 
-                    />
-                    {formErrors['variant_variantName'] && (
-                      <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
-                        <span>⚠️</span> {formErrors['variant_variantName']}
-                      </p>
-                    )}
+
+                        if (field.type === 'boolean') {
+                          return (
+                            <div key={field.id || field.name}>
+                              <label className="text-xs font-semibold mb-1 block">
+                                {field.label || field.name} {field.required && <span className="text-red-500">*</span>}
+                              </label>
+                              <Select
+                                value={currentValue ? String(currentValue) : 'No'}
+                                onValueChange={(val) => handleDynamicFieldChange(field.name, val || 'No')}
+                              >
+                                <SelectTrigger className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm h-10">
+                                  <SelectValue placeholder={`Select ${field.label || field.name}`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Yes">Yes</SelectItem>
+                                  <SelectItem value="No">No</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <div key={field.id || field.name}>
+                            <label className="text-xs font-semibold mb-1 block">
+                              {field.label || field.name} {field.required && <span className="text-red-500">*</span>}
+                            </label>
+                            <input
+                              type={field.type === 'number' ? 'number' : 'text'}
+                              value={currentValue}
+                              onChange={(e) => handleDynamicFieldChange(field.name, e.target.value)}
+                              placeholder={field.placeholder || `Enter ${field.label || field.name}`}
+                              className={`w-full rounded-lg border ${
+                                errorMsg
+                                  ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20'
+                                  : 'border-border bg-background focus:border-primary'
+                              } px-3 py-2 text-sm h-10 outline-none transition-colors`}
+                            />
+                            {errorMsg && (
+                              <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                                <span>⚠️</span> {errorMsg}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
+                )}
+
+                {/* Common Product Variant Fields */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold mb-1 block">Color <span className="text-red-500">*</span></label>
                     <input 
@@ -1758,6 +2051,37 @@ const uploadFilesParallel = async (
                     {formErrors['variant_color'] && (
                       <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
                         <span>⚠️</span> {formErrors['variant_color']}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold mb-1 block">Variant Name <span className="text-red-500">*</span></label>
+                    <input 
+                      required 
+                      value={variantForm.variantName} 
+                      onChange={e => {
+                        const val = e.target.value
+                        const autoSku = generateUniqueSku(val, variantForm.color, editingVariantId)
+                        setVariantForm(prev => ({
+                          ...prev,
+                          variantName: val,
+                          sku: (!prev.sku || prev.sku === generateAutoSku(prev.variantName, prev.color)) ? autoSku : prev.sku
+                        }))
+                        validateField('variant_variantName', val)
+                        if (!variantForm.sku || variantForm.sku === generateAutoSku(variantForm.variantName, variantForm.color)) {
+                          validateField('variant_sku', autoSku)
+                        }
+                      }} 
+                      placeholder="e.g. 8GB / 128GB / Black"
+                      className={`w-full rounded-lg border ${
+                        formErrors['variant_variantName'] 
+                          ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-950/20 text-red-900 dark:text-red-200 focus:border-red-600 focus:ring-1 focus:ring-red-500' 
+                          : 'border-border bg-background focus:border-primary'
+                      } px-3 py-2 text-sm transition-colors`} 
+                    />
+                    {formErrors['variant_variantName'] && (
+                      <p className="text-xs font-semibold text-red-500 mt-1 flex items-center gap-1">
+                        <span>⚠️</span> {formErrors['variant_variantName']}
                       </p>
                     )}
                   </div>
@@ -1871,9 +2195,26 @@ const uploadFilesParallel = async (
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={() => { setShowVariantForm(false); setEditingVariantId(null); setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true }); setFormErrors(prev => { const copy = {...prev}; delete copy['variant_variantName']; delete copy['variant_color']; delete copy['variant_sku']; delete copy['variant_mrp']; delete copy['variant_sellingPrice']; delete copy['variant_stockQty']; return copy; }) }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
-                  <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm">{editingVariantId ? 'Update Variant' : 'Save Variant'}</button>
+                <div className="flex gap-2 justify-end pt-2">
+                  <button type="button" onClick={() => { 
+                    setShowVariantForm(false); 
+                    setEditingVariantId(null); 
+                    setVariantForm({ variantName: '', sku: '', color: '', mrp: '', sellingPrice: '', gstPercent: 0, stockQty: 0, codAvailable: true, attributes: {} }); 
+                    setFormErrors(prev => { 
+                      const copy = {...prev}; 
+                      delete copy['variant_variantName']; 
+                      delete copy['variant_color']; 
+                      delete copy['variant_sku']; 
+                      delete copy['variant_mrp']; 
+                      delete copy['variant_sellingPrice']; 
+                      delete copy['variant_stockQty']; 
+                      Object.keys(copy).forEach(k => {
+                        if (k.startsWith('variant_attr_')) delete copy[k]
+                      });
+                      return copy; 
+                    }) 
+                  }} className="bg-muted text-foreground font-bold px-4 py-2 rounded-lg text-sm border border-border">Cancel</button>
+                  <button type="submit" className="bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg text-sm cursor-pointer">{editingVariantId ? 'Update Variant' : 'Save Variant'}</button>
                 </div>
               </form>
             )}
@@ -1908,7 +2249,7 @@ const uploadFilesParallel = async (
                           <table className="w-full text-left text-sm whitespace-nowrap">
                             <thead className="border-b border-border text-muted-foreground font-semibold text-xs uppercase tracking-wider">
                               <tr>
-                                <th className="py-2 pr-4">Colour</th>
+                                <th className="py-2 pr-4">Colour & Attributes</th>
                                 <th className="py-2 pr-4">SKU</th>
                                 <th className="py-2 pr-4">Selling Price</th>
                                 <th className="py-2 pr-4">MRP</th>
@@ -1919,14 +2260,27 @@ const uploadFilesParallel = async (
                             <tbody className="divide-y divide-border">
                               {colorRows.map(v => (
                                 <tr key={v.id}>
-                                  <td className="py-2.5 pr-4 font-semibold text-foreground">{v.color || 'Default'}</td>
+                                  <td className="py-2.5 pr-4 font-semibold text-foreground">
+                                    <div className="flex flex-col gap-1">
+                                      <span>{v.color || 'Default'}</span>
+                                      {v.attributes && Object.keys(v.attributes).length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {Object.entries(v.attributes).map(([aKey, aVal]) => (
+                                            <span key={aKey} className="text-[10px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded border border-border">
+                                              {aVal}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
                                   <td className="py-2.5 pr-4 text-xs font-mono text-muted-foreground">{v.sku || '-'}</td>
                                   <td className="py-2.5 pr-4 font-bold text-foreground">₹{v.sellingPrice}</td>
                                   <td className="py-2.5 pr-4 text-xs text-muted-foreground line-through">₹{v.mrp}</td>
                                   <td className="py-2.5 pr-4">{v.stockQty}</td>
                                   <td className="py-2.5 text-right">
-                                    <button onClick={() => handleEditVariantClick(v)} className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 p-2 rounded-lg mr-1" title="Edit Variant"><FaPen size={14} /></button>
-                                    <button onClick={() => handleDeleteVariant(v.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950 p-2 rounded-lg" title="Delete Variant"><FaTrashCan size={14} /></button>
+                                    <button onClick={() => handleEditVariantClick(v)} className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 p-2 rounded-lg mr-1 cursor-pointer" title="Edit Variant"><FaPen size={14} /></button>
+                                    <button onClick={() => handleDeleteVariant(v.id)} className="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950 p-2 rounded-lg cursor-pointer" title="Delete Variant"><FaTrashCan size={14} /></button>
                                   </td>
                                 </tr>
                               ))}
@@ -1953,7 +2307,24 @@ const uploadFilesParallel = async (
         {/* Step 4: Specs */}
         {currentStep === 4 && (
           <div className="space-y-6">
-            <h3 className="text-lg font-bold border-b border-border pb-2">Specifications</h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+              <div>
+                <h3 className="text-lg font-bold">Specifications</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Define technical specifications and product features.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleLoadCategoryTemplate}
+                disabled={loadingTemplate || !baseInfo.categoryId}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold border border-border bg-background hover:bg-muted text-foreground flex items-center gap-2 transition-all shadow-xs disabled:opacity-50 cursor-pointer self-start sm:self-auto"
+                title="Load predefined specification blueprint for this category"
+              >
+                {loadingTemplate ? <FaSpinner className="animate-spin text-primary" size={13} /> : <FaListCheck size={13} className="text-primary" />}
+                <span>Load Category Spec Blueprint</span>
+              </button>
+            </div>
             
             {/* Import Specifications Card */}
             <div className="bg-gradient-to-r from-blue-500/10 via-primary/5 to-blue-500/10 border border-blue-500/30 rounded-2xl p-5 shadow-xs space-y-4">
@@ -2356,7 +2727,7 @@ const uploadFilesParallel = async (
                               "{item.line}"
                             </span>
                             <div className="flex items-center gap-2 shrink-0">
-                              <Select onValueChange={(val) => handleAssignUnclassifiedToGroup(uIdx, val, 'value')}>
+                              <Select onValueChange={(val) => { if (val) handleAssignUnclassifiedToGroup(uIdx, val as string, 'value') }}>
                                 <SelectTrigger className="h-7 text-[11px] w-40">
                                   <SelectValue placeholder="Assign as Value..." />
                                 </SelectTrigger>

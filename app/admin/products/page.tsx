@@ -1,135 +1,252 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
 import Link from 'next/link'
-import { FaArrowLeft, FaPen, FaMagnifyingGlass, FaTrashCan, FaStar, FaPlus, FaXmark, FaFilter, FaFileLines, FaArrowsRotate } from 'react-icons/fa6'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { 
+  FaArrowLeft, 
+  FaChevronRight, 
+  FaPen, 
+  FaMagnifyingGlass, 
+  FaTrashCan, 
+  FaStar, 
+  FaPlus, 
+  FaXmark, 
+  FaFileLines, 
+  FaArrowsRotate,
+  FaBoxesStacked,
+  FaMobileScreen,
+  FaTabletScreenButton,
+  FaLaptop,
+  FaClock,
+  FaHeadphones,
+  FaTv,
+  FaCamera,
+  FaPrint,
+  FaGamepad,
+  FaBox
+} from 'react-icons/fa6'
 import { apiClient, formatINR } from '@/lib/apiClient'
 import { fetchCatalogClient, type CatalogProduct } from '@/lib/productCatalog'
-import { CompanyFilter, CompanyOption } from '@/components/admin/company-filter'
+import { CategoryResponseDTO, BrandResponseDTO } from '@/lib/types'
 import { getAllProductDrafts } from '@/lib/draftService'
 
 const PAGE_SIZE = 20
 
-export default function AdminProductsPage() {
+function getCategoryIcon(name: string) {
+  const q = name.toLowerCase()
+  if (q.includes('mobile') || q.includes('phone')) return FaMobileScreen
+  if (q.includes('tablet') || q.includes('ipad')) return FaTabletScreenButton
+  if (q.includes('laptop') || q.includes('notebook')) return FaLaptop
+  if (q.includes('watch')) return FaClock
+  if (q.includes('audio') || q.includes('earbud') || q.includes('headphone')) return FaHeadphones
+  if (q.includes('tv') || q.includes('television')) return FaTv
+  if (q.includes('camera')) return FaCamera
+  if (q.includes('print')) return FaPrint
+  if (q.includes('game') || q.includes('console')) return FaGamepad
+  return FaBox
+}
+
+function ProductsCatalogContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const categoryParam = searchParams?.get('category') || ''
+  const brandParam = searchParams?.get('brand') || ''
+
   const [allProducts, setAllProducts] = useState<CatalogProduct[]>([])
+  const [categories, setCategories] = useState<CategoryResponseDTO[]>([])
+  const [brands, setBrands] = useState<BrandResponseDTO[]>([])
+  const [brandCategoriesMap, setBrandCategoriesMap] = useState<Record<string, string[]>>({})
+  
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
-  const [selectedCompany, setSelectedCompany] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [draftCount, setDraftCount] = useState<number>(0)
+  const [globalProductSearch, setGlobalProductSearch] = useState(false)
 
-  /**
-   * Loads the COMPLETE product catalog straight from the database through the
-   * shared product layer (`fetchCatalogClient`):
-   *  - every page of the public API is read (the old single request could return
-   *    a partial catalog, and the `includeInactive` flag it sent does not exist
-   *    on the API and was silently ignored),
-   *  - newest first, so a product saved a moment ago is always on page 1 instead
-   *    of being buried at the end of the API's oldest-first order,
-   *  - NO status/visibility filter is applied here, so inactive products stay
-   *    manageable in the Admin Panel.
-   * Failures are surfaced instead of silently emptying the list.
-   */
-  const loadProducts = async () => {
+  const loadData = async () => {
     try {
       setLoading(true)
       setLoadError(null)
+
       const drafts = getAllProductDrafts()
       setDraftCount(drafts.length)
-      const products = await fetchCatalogClient({ sort: 'createdAt,desc' })
+
+      const [products, catsRes, brandsRes, bCatRes] = await Promise.all([
+        fetchCatalogClient({ sort: 'createdAt,desc' }),
+        apiClient.getCategories().catch(() => ({ data: { data: [] } })),
+        apiClient.getBrands(0, 100).catch(() => ({ data: { data: { content: [] } } })),
+        apiClient.getBrandCategories().catch(() => ({ data: {} }))
+      ])
+
       setAllProducts(products)
-    } catch (err) {
+      setCategories(catsRes.data?.data || [])
+
+      const brandList = Array.isArray(brandsRes.data?.data)
+        ? brandsRes.data.data
+        : (brandsRes.data?.data?.content || [])
+      setBrands(brandList)
+      setBrandCategoriesMap(bCatRes.data || {})
+    } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         (err as { message?: string })?.message ||
-        'Unable to load products from the server. Please retry.'
+        'Unable to load products catalog from the server.'
       setLoadError(message)
-      setAllProducts([])
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadProducts()
+    loadData()
   }, [])
 
-  // Dynamically extract company counts and unique company names from actual product data
-  const companyCountsMap = useMemo(() => {
+  // 1. Identify currently selected category and brand objects
+  const selectedCategory = useMemo(() => {
+    if (!categoryParam) return null
+    return (
+      categories.find(c => c.id === categoryParam || c.slug === categoryParam) ||
+      categories.find(c => c.name.toLowerCase() === categoryParam.toLowerCase()) ||
+      null
+    )
+  }, [categories, categoryParam])
+
+  const selectedBrand = useMemo(() => {
+    if (!brandParam) return null
+    return (
+      brands.find(b => b.id === brandParam || b.slug === brandParam) ||
+      brands.find(b => b.name.toLowerCase() === brandParam.toLowerCase()) ||
+      null
+    )
+  }, [brands, brandParam])
+
+  // 2. Compute Product Counts per Category
+  const categoryProductCountMap = useMemo(() => {
     const map: Record<string, number> = {}
     allProducts.forEach(product => {
-      const brand = product.brandName?.trim()
-      if (brand) {
-        map[brand] = (map[brand] || 0) + 1
-      }
+      const cId = product.categoryId
+      const cName = product.categoryName?.trim().toLowerCase()
+      if (cId) map[cId] = (map[cId] || 0) + 1
+      if (cName) map[cName] = (map[cName] || 0) + 1
     })
     return map
   }, [allProducts])
 
-  // Alphabetically sorted list of companies with counts
-  const uniqueCompanies: CompanyOption[] = useMemo(() => {
-    const names = Object.keys(companyCountsMap)
-    names.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
-    return names.map(name => ({
-      name,
-      count: companyCountsMap[name]
-    }))
-  }, [companyCountsMap])
+  // 3. Compute Product Counts per Brand inside Selected Category
+  const brandProductCountInCatMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    if (!selectedCategory) return map
 
-  // Ensure selected company remains valid if products are added/deleted/edited
-  useEffect(() => {
-    if (selectedCompany !== 'ALL' && !uniqueCompanies.some(c => c.name === selectedCompany)) {
-      setSelectedCompany('ALL')
-    }
-  }, [uniqueCompanies, selectedCompany])
+    allProducts.forEach(product => {
+      const matchesCat = 
+        product.categoryId === selectedCategory.id || 
+        product.categoryName?.trim().toLowerCase() === selectedCategory.name.toLowerCase()
 
-  // Combined Search + Company Filter logic
-  const filteredProducts = useMemo(() => {
-    return allProducts.filter(product => {
-      const brand = product.brandName?.trim() || ''
-      const matchesCompany = selectedCompany === 'ALL' || brand === selectedCompany
-
-      const query = searchQuery.trim().toLowerCase()
-      const matchesSearch =
-        !query ||
-        product.name.toLowerCase().includes(query) ||
-        brand.toLowerCase().includes(query) ||
-        (product.categoryName && product.categoryName.toLowerCase().includes(query))
-
-      return matchesCompany && matchesSearch
+      if (matchesCat) {
+        const bName = product.brandName?.trim()
+        const bKey = product.brandKey || bName?.toLowerCase()
+        if (bName) map[bName] = (map[bName] || 0) + 1
+        if (bKey) map[bKey] = (map[bKey] || 0) + 1
+      }
     })
-  }, [allProducts, selectedCompany, searchQuery])
+    return map
+  }, [allProducts, selectedCategory])
 
-  // Pagination calculation
+  // 4. Brands list for selected category
+  const categoryBrands = useMemo(() => {
+    if (!selectedCategory) return []
+
+    return brands.filter(brand => {
+      const bKey = brand.name.toLowerCase()
+      const hasProducts = (brandProductCountInCatMap[brand.name] || brandProductCountInCatMap[bKey] || 0) > 0
+      const assignedCatIds = brandCategoriesMap[brand.id] || []
+      const isAssigned = assignedCatIds.includes(selectedCategory.id)
+
+      return hasProducts || isAssigned
+    }).sort((a, b) => {
+      const countA = brandProductCountInCatMap[a.name] || 0
+      const countB = brandProductCountInCatMap[b.name] || 0
+      if (countB !== countA) return countB - countA
+      return a.name.localeCompare(b.name)
+    })
+  }, [selectedCategory, brands, brandProductCountInCatMap, brandCategoriesMap])
+
+  // 5. Products filtered for current view
+  const filteredProducts = useMemo(() => {
+    if (globalProductSearch && searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      return allProducts.filter(p => 
+        p.name.toLowerCase().includes(q) ||
+        (p.brandName && p.brandName.toLowerCase().includes(q)) ||
+        (p.categoryName && p.categoryName.toLowerCase().includes(q))
+      )
+    }
+
+    if (!selectedCategory || !selectedBrand) return []
+
+    return allProducts.filter(p => {
+      const matchesCat = 
+        p.categoryId === selectedCategory.id || 
+        p.categoryName?.trim().toLowerCase() === selectedCategory.name.toLowerCase()
+
+      const bName = p.brandName?.trim()
+      const matchesBrand = 
+        p.brandId === selectedBrand.id ||
+        (bName && bName.toLowerCase() === selectedBrand.name.toLowerCase())
+
+      if (!matchesCat || !matchesBrand) return false
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase()
+        return p.name.toLowerCase().includes(q)
+      }
+
+      return true
+    })
+  }, [allProducts, selectedCategory, selectedBrand, searchQuery, globalProductSearch])
+
+  // Pagination for Level 3 products table
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
-
   const paginatedProducts = useMemo(() => {
     const start = page * PAGE_SIZE
     return filteredProducts.slice(start, start + PAGE_SIZE)
   }, [filteredProducts, page])
 
-  // Keep the current page valid when the list shrinks (filter change, delete or a
-  // refreshed catalog) so the table can never render a blank page.
   useEffect(() => {
     if (page > totalPages - 1) setPage(Math.max(0, totalPages - 1))
   }, [page, totalPages])
 
-  const handleCompanyChange = (company: string) => {
-    setSelectedCompany(company)
+  // Navigation helpers
+  const navigateToAllCategories = () => {
+    setSearchQuery('')
+    setGlobalProductSearch(false)
     setPage(0)
+    router.push('/admin/products')
   }
 
-  const handleSearchChange = (q: string) => {
-    setSearchQuery(q)
+  const navigateToCategory = (cat: CategoryResponseDTO) => {
+    setSearchQuery('')
+    setGlobalProductSearch(false)
     setPage(0)
+    router.push(`/admin/products?category=${encodeURIComponent(cat.id)}`)
+  }
+
+  const navigateToBrand = (brand: BrandResponseDTO) => {
+    if (!selectedCategory) return
+    setSearchQuery('')
+    setGlobalProductSearch(false)
+    setPage(0)
+    router.push(`/admin/products?category=${encodeURIComponent(selectedCategory.id)}&brand=${encodeURIComponent(brand.id)}`)
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return
     try {
       await apiClient.deleteProduct(id)
-      loadProducts()
+      loadData()
     } catch {
       alert('Failed to delete product')
     }
@@ -139,317 +256,597 @@ export default function AdminProductsPage() {
     try {
       const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
       await apiClient.updateProductStatus(id, newStatus as 'ACTIVE' | 'INACTIVE')
-      loadProducts()
+      loadData()
     } catch {
       alert('Failed to update status')
     }
   }
 
-  const isFiltered = selectedCompany !== 'ALL' || searchQuery.trim().length > 0
+  // Preselect query for Add Product button
+  const addProductUrl = useMemo(() => {
+    if (selectedCategory && selectedBrand) {
+      return `/admin/products/new?categoryId=${encodeURIComponent(selectedCategory.id)}&brandId=${encodeURIComponent(selectedBrand.id)}`
+    }
+    if (selectedCategory) {
+      return `/admin/products/new?categoryId=${encodeURIComponent(selectedCategory.id)}`
+    }
+    return '/admin/products/new'
+  }, [selectedCategory, selectedBrand])
+
+  // Current view level: 1 (Categories), 2 (Brands), 3 (Products)
+  const isLevel3 = Boolean(selectedCategory && selectedBrand && !globalProductSearch)
+  const isLevel2 = Boolean(selectedCategory && !selectedBrand && !globalProductSearch)
+  const isLevel1 = !isLevel2 && !isLevel3 && !globalProductSearch
 
   return (
-    <>
-      <Link
-        href="/admin"
-        className="mb-6 flex w-fit items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <FaArrowLeft size={16} /> Back to Dashboard
-      </Link>
-
-      <div className="flex flex-col gap-4">
-        {/* Header Title & Dynamic Count */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight">Products</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {isFiltered
-                ? `Showing ${filteredProducts.length} of ${allProducts.length} products`
-                : `Manage your store catalog (${allProducts.length} products)`}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+    <div className="space-y-6 pb-12">
+      {/* Top Header & Breadcrumbs Bar */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          {/* Breadcrumb Navigation */}
+          <nav className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-1">
             <button
               type="button"
-              onClick={loadProducts}
-              disabled={loading}
-              title="Re-fetch products from the database"
-              className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground whitespace-nowrap hover:bg-muted transition-all shadow-xs active:scale-95 disabled:opacity-50"
+              onClick={navigateToAllCategories}
+              className={`hover:text-primary transition-colors cursor-pointer ${
+                isLevel1 ? 'text-foreground font-bold' : ''
+              }`}
             >
-              <FaArrowsRotate size={14} className={loading ? 'animate-spin' : ''} />
-              <span className="hidden sm:inline">Refresh</span>
+              Products
             </button>
-            <Link
-              href="/admin/products/drafts"
-              className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground whitespace-nowrap hover:bg-muted transition-all shadow-xs active:scale-95"
-            >
-              <FaFileLines size={15} className="text-amber-500" />
-              <span>Drafts</span>
-              {draftCount > 0 && (
-                <span className="rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-xs font-black border border-amber-500/30">
-                  {draftCount}
-                </span>
-              )}
-            </Link>
-            <Link
-              href="/admin/products/new"
-              className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground whitespace-nowrap hover:bg-primary/90 transition-all shadow-sm active:scale-95"
-            >
-              <FaPlus size={16} /> Add Product
-            </Link>
-          </div>
+
+            {selectedCategory && (
+              <>
+                <FaChevronRight size={11} className="text-muted-foreground/60" />
+                <button
+                  type="button"
+                  onClick={() => navigateToCategory(selectedCategory)}
+                  className={`hover:text-primary transition-colors cursor-pointer ${
+                    isLevel2 ? 'text-foreground font-bold' : ''
+                  }`}
+                >
+                  {selectedCategory.name}
+                </button>
+              </>
+            )}
+
+            {selectedBrand && isLevel3 && (
+              <>
+                <FaChevronRight size={11} className="text-muted-foreground/60" />
+                <span className="text-foreground font-bold">{selectedBrand.name}</span>
+              </>
+            )}
+
+            {globalProductSearch && (
+              <>
+                <FaChevronRight size={11} className="text-muted-foreground/60" />
+                <span className="text-foreground font-bold">Search Results</span>
+              </>
+            )}
+          </nav>
+
+          <h1 className="text-3xl font-black tracking-tight text-foreground">
+            {globalProductSearch
+              ? 'Search Catalog'
+              : isLevel3
+              ? `${selectedBrand?.name} Products`
+              : isLevel2
+              ? `${selectedCategory?.name} Brands`
+              : 'Product Categories'}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {globalProductSearch
+              ? `Found ${filteredProducts.length} products matching "${searchQuery}"`
+              : isLevel3
+              ? `Showing ${filteredProducts.length} ${selectedBrand?.name} products in ${selectedCategory?.name}`
+              : isLevel2
+              ? `Select a brand in ${selectedCategory?.name} (${categoryProductCountMap[selectedCategory?.id || ''] || categoryProductCountMap[selectedCategory?.name.toLowerCase() || ''] || 0} total products)`
+              : `Browse product categories across ${allProducts.length} total products`}
+          </p>
         </div>
 
-        {/* Professional Filter & Search Controls Bar */}
-        <div className="mt-2 flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-              {/* Dynamic Company Filter Dropdown */}
-              <CompanyFilter
-                companies={uniqueCompanies}
-                totalCount={allProducts.length}
-                selectedCompany={selectedCompany}
-                onSelectCompany={handleCompanyChange}
-              />
+        {/* Global Action Buttons */}
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          {/* Back button when drilled down */}
+          {(isLevel2 || isLevel3 || globalProductSearch) && (
+            <button
+              type="button"
+              onClick={isLevel3 ? () => navigateToCategory(selectedCategory!) : navigateToAllCategories}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-sm font-bold shadow-xs transition-all cursor-pointer"
+            >
+              <FaArrowLeft size={13} />
+              <span>{isLevel3 ? 'All Brands' : 'All Categories'}</span>
+            </button>
+          )}
 
-              {/* Product Search Input */}
-              <div className="relative flex-1 sm:w-72">
-                <FaMagnifyingGlass
-                  size={15}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => handleSearchChange(e.target.value)}
-                  placeholder="Search products, brands..."
-                  className="w-full rounded-xl border border-border bg-background py-2 pl-10 pr-9 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => handleSearchChange('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
-                    title="Clear search"
-                  >
-                    <FaXmark size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
+          <button
+            type="button"
+            onClick={loadData}
+            disabled={loading}
+            title="Reload catalog data"
+            className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground whitespace-nowrap hover:bg-muted transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
+            <FaArrowsRotate size={14} className={loading ? 'animate-spin' : ''} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
 
-            {/* Clear All Filters Button if any filter active */}
-            {isFiltered && (
-              <button
-                onClick={() => {
-                  setSelectedCompany('ALL')
-                  setSearchQuery('')
-                  setPage(0)
-                }}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
-              >
-                <FaXmark size={13} /> Reset Filters
-              </button>
+          <Link
+            href="/admin/products/drafts"
+            className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground whitespace-nowrap hover:bg-muted transition-all shadow-xs active:scale-95"
+          >
+            <FaFileLines size={15} className="text-amber-500" />
+            <span className="hidden sm:inline">Drafts</span>
+            {draftCount > 0 && (
+              <span className="rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-xs font-black border border-amber-500/30">
+                {draftCount}
+              </span>
             )}
+          </Link>
+
+          <Link
+            href={addProductUrl}
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground whitespace-nowrap hover:bg-primary/90 transition-all shadow-sm active:scale-95 cursor-pointer"
+          >
+            <FaPlus size={16} /> <span>Add Product</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Search and Navigation Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-3.5 rounded-2xl border border-border shadow-xs">
+        <div className="relative flex-1 max-w-md">
+          <FaMagnifyingGlass
+            size={15}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => {
+              setSearchQuery(e.target.value)
+              setPage(0)
+            }}
+            placeholder={
+              isLevel3
+                ? `Search ${selectedBrand?.name} products...`
+                : isLevel2
+                ? `Search brands in ${selectedCategory?.name}...`
+                : 'Search categories or products...'
+            }
+            className="w-full rounded-xl border border-border bg-background py-2 pl-10 pr-9 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 cursor-pointer"
+              title="Clear search"
+            >
+              <FaXmark size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Global Product Search Toggle */}
+        {searchQuery.trim().length > 0 && isLevel1 && (
+          <button
+            type="button"
+            onClick={() => setGlobalProductSearch(!globalProductSearch)}
+            className={`text-xs font-bold px-3.5 py-2 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
+              globalProductSearch
+                ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                : 'bg-muted/50 hover:bg-muted text-foreground border-border'
+            }`}
+          >
+            <FaBoxesStacked size={13} />
+            <span>{globalProductSearch ? 'Show Category Cards' : 'Search Across All Products'}</span>
+          </button>
+        )}
+      </div>
+
+      {loadError && (
+        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 text-sm font-semibold">
+          {loadError}
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* LEVEL 1: Category Cards View                                   */}
+      {/* ============================================================== */}
+      {isLevel1 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-2">
+            <h2 className="text-base font-bold text-foreground">Categories ({categories.length})</h2>
+            <span className="text-xs text-muted-foreground">Click a category to browse its brands</span>
           </div>
 
-          {/* Active Filter Indicators */}
-          {selectedCompany !== 'ALL' && (
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/60">
-              <span className="text-xs font-semibold text-muted-foreground">Active Filter:</span>
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary border border-primary/20">
-                <FaFilter size={11} />
-                <span>Company: {selectedCompany} ({companyCountsMap[selectedCompany] || 0})</span>
-                <button
-                  onClick={() => handleCompanyChange('ALL')}
-                  className="ml-1 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
-                  title="Remove company filter"
-                >
-                  <FaXmark size={12} />
-                </button>
-              </div>
-              <button
-                onClick={() => handleCompanyChange('ALL')}
-                className="text-xs font-semibold text-muted-foreground hover:text-foreground underline transition-colors ml-1"
-              >
-                Clear Filter
-              </button>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="h-56 rounded-2xl border border-border bg-card animate-pulse p-6" />
+              ))}
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl border border-border bg-card text-muted-foreground">
+              No categories found. Create categories first in Admin → Categories.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {categories
+                .filter(cat => 
+                  !searchQuery || 
+                  cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (cat.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map(category => {
+                  const count =
+                    categoryProductCountMap[category.id] ||
+                    categoryProductCountMap[category.name.toLowerCase()] ||
+                    0
+                  const IconComp = getCategoryIcon(category.name)
+
+                  return (
+                    <div
+                      key={category.id}
+                      onClick={() => navigateToCategory(category)}
+                      className="group relative flex flex-col items-center justify-between rounded-2xl border border-border bg-card p-6 shadow-xs hover:shadow-xl hover:border-primary/50 hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden text-center"
+                    >
+                      {/* Top Badges / Info */}
+                      <div className="w-full flex justify-end">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          {count} {count === 1 ? 'Product' : 'Products'}
+                        </span>
+                      </div>
+
+                      {/* Category Image / Icon Container */}
+                      <div className="my-4 h-32 w-32 flex items-center justify-center rounded-2xl bg-muted/40 group-hover:bg-primary/5 transition-colors p-3">
+                        {category.imageUrl ? (
+                          <img
+                            src={category.imageUrl}
+                            alt={category.name}
+                            className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-sm"
+                          />
+                        ) : (
+                          <IconComp size={48} className="text-primary/70 group-hover:text-primary transition-colors" />
+                        )}
+                      </div>
+
+                      {/* Category Title & Prompt */}
+                      <div className="w-full">
+                        <h3 className="text-lg font-black text-foreground group-hover:text-primary transition-colors">
+                          {category.name}
+                        </h3>
+                        {category.description && (
+                          <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
+                            {category.description}
+                          </p>
+                        )}
+                        <div className="mt-3 flex items-center justify-center gap-1 text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span>Browse Brands</span>
+                          <FaChevronRight size={10} />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Product List Table */}
-      <div className="mt-6 rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-6 py-4 font-bold">Product</th>
-                <th className="px-6 py-4 font-bold">Brand</th>
-                <th className="px-6 py-4 font-bold">Category</th>
-                <th className="px-6 py-4 font-bold">Price</th>
-                <th className="px-6 py-4 font-bold">Rating</th>
-                <th className="px-6 py-4 font-bold">Status</th>
-                <th className="px-6 py-4 font-bold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {loadError ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <p className="font-semibold text-base text-rose-600 dark:text-rose-400">Could not load products</p>
-                      <p className="max-w-md text-xs text-muted-foreground">{loadError}</p>
-                      <button
-                        onClick={loadProducts}
-                        className="mt-2 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
-                      >
-                        <FaArrowsRotate size={12} /> Retry
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-                      Loading products...
-                    </div>
-                  </td>
-                </tr>
-              ) : paginatedProducts.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <p className="font-semibold text-base">No products found</p>
-                      <p className="text-xs text-muted-foreground">
-                        {isFiltered
-                          ? 'Try adjusting your company filter or search query.'
-                          : 'Click "+ Add Product" to add your first product.'}
-                      </p>
-                      {isFiltered && (
-                        <button
-                          onClick={() => {
-                            setSelectedCompany('ALL')
-                            setSearchQuery('')
-                            setPage(0)
-                          }}
-                          className="mt-2 text-xs font-bold text-primary hover:underline"
-                        >
-                          Clear all filters
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                paginatedProducts.map(product => (
-                  <tr key={product.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        {product.primaryImageUrl ? (
+      {/* ============================================================== */}
+      {/* LEVEL 2: Brands inside Category View                           */}
+      {/* ============================================================== */}
+      {isLevel2 && selectedCategory && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
+            <div>
+              <h2 className="text-xl font-black text-foreground flex items-center gap-2">
+                <span>{selectedCategory.name}</span>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                  {categoryBrands.length} Brands Available
+                </span>
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Click a brand below to view and manage its products in {selectedCategory.name}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={navigateToAllCategories}
+              className="text-xs font-bold text-muted-foreground hover:text-foreground flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+            >
+              <FaArrowLeft size={11} /> All Categories
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="h-44 rounded-2xl border border-border bg-card animate-pulse p-5" />
+              ))}
+            </div>
+          ) : categoryBrands.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl border border-border bg-card space-y-3">
+              <FaBoxesStacked size={36} className="mx-auto text-muted-foreground/40" />
+              <h3 className="text-base font-bold text-foreground">No brands found</h3>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                No brands have products in {selectedCategory.name} yet. You can assign brands to this category in Admin → Brands, or add a new product.
+              </p>
+              <div className="pt-2">
+                <Link
+                  href={`/admin/products/new?categoryId=${encodeURIComponent(selectedCategory.id)}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-xs hover:bg-primary/90"
+                >
+                  <FaPlus size={12} /> Add First Product in {selectedCategory.name}
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+              {categoryBrands
+                .filter(b => 
+                  !searchQuery || 
+                  b.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map(brand => {
+                  const pCount = brandProductCountInCatMap[brand.name] || brandProductCountInCatMap[brand.name.toLowerCase()] || 0
+
+                  return (
+                    <div
+                      key={brand.id}
+                      onClick={() => navigateToBrand(brand)}
+                      className="group relative flex flex-col items-center justify-between rounded-2xl border border-border bg-card p-5 shadow-xs hover:shadow-xl hover:border-primary/50 hover:-translate-y-1 transition-all duration-200 cursor-pointer text-center"
+                    >
+                      {/* Brand Logo Container */}
+                      <div className="h-20 w-full flex items-center justify-center rounded-xl bg-muted/30 group-hover:bg-primary/5 transition-colors p-2">
+                        {brand.logoUrl ? (
                           <img
-                            src={product.primaryImageUrl}
-                            alt={product.name}
-                            className="size-10 rounded-lg bg-muted object-contain p-1 border border-border"
+                            src={brand.logoUrl}
+                            alt={brand.name}
+                            className="max-h-14 max-w-full object-contain dark:invert transition-transform duration-300 group-hover:scale-110"
                           />
                         ) : (
-                          <div className="size-10 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground font-semibold border border-border">
-                            N/A
-                          </div>
-                        )}
-                        <span className="font-bold text-foreground">{product.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-semibold">
-                      <span className="inline-flex items-center rounded-md bg-muted px-2.5 py-1 text-xs font-bold text-foreground">
-                        {product.brandName || 'N/A'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">{product.categoryName}</td>
-                    <td className="px-6 py-4 font-bold">{formatINR(product.startingPrice)}</td>
-                    <td className="px-6 py-4">
-                      {product.avgRating ? (
-                        <span className="inline-flex items-center gap-1 text-sm font-bold">
-                          <FaStar size={14} className="text-amber-500 fill-amber-500" />
-                          {product.avgRating?.toFixed(1)}{' '}
-                          <span className="text-xs text-muted-foreground font-normal">
-                            ({product.totalReviews})
+                          <span className="text-base font-black text-muted-foreground tracking-wider uppercase">
+                            {brand.name}
                           </span>
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">No reviews</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => toggleStatus(product.id, product.status)}
-                        title="Click to toggle status"
-                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
-                          product.status === 'ACTIVE'
-                            ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-500/25'
-                            : 'bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-500/25'
-                        }`}
-                      >
-                        {product.status}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/admin/products/${product.id}/edit`}
-                          className="text-blue-500 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-                          title="Edit"
-                        >
-                          <FaPen size={15} />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(product.id)}
-                          className="text-red-500 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                          title="Delete"
-                        >
-                          <FaTrashCan size={15} />
-                        </button>
+                        )}
                       </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
 
-        {/* Dynamic Pagination Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-border px-6 py-4 text-sm text-muted-foreground gap-3">
-          <span>
-            Showing {filteredProducts.length > 0 ? page * PAGE_SIZE + 1 : 0} to{' '}
-            {Math.min((page + 1) * PAGE_SIZE, filteredProducts.length)} of {filteredProducts.length}{' '}
-            products {isFiltered && `(Filtered from ${allProducts.length})`}
-          </span>
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold">
-              Page {page + 1} of {totalPages}
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage(p => Math.max(0, p - 1))}
-                disabled={page === 0}
-                className="rounded-lg border border-border px-3 py-1.5 font-semibold text-xs disabled:opacity-40 hover:bg-muted transition-colors"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-                className="rounded-lg border border-border px-3 py-1.5 font-semibold text-xs disabled:opacity-40 hover:bg-muted transition-colors"
-              >
-                Next
-              </button>
+                      {/* Brand Info */}
+                      <div className="mt-3 w-full">
+                        <h4 className="font-bold text-base text-foreground group-hover:text-primary transition-colors truncate">
+                          {brand.name}
+                        </h4>
+                        <div className="mt-1 inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60">
+                          {pCount} {pCount === 1 ? 'Product' : 'Products'}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* LEVEL 3: Product List Table View (or Global Search Results)    */}
+      {/* ============================================================== */}
+      {(isLevel3 || globalProductSearch) && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
+            <div>
+              <h2 className="text-xl font-black text-foreground flex items-center gap-2">
+                <span>
+                  {globalProductSearch
+                    ? 'Search Catalog Results'
+                    : `${selectedBrand?.name} (${filteredProducts.length} Products)`}
+                </span>
+                {selectedCategory && (
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                    Category: {selectedCategory.name}
+                  </span>
+                )}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {globalProductSearch
+                  ? `Showing products matching search across the catalog`
+                  : `Manage all products for ${selectedBrand?.name} in ${selectedCategory?.name}`}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground">
+                Showing {filteredProducts.length > 0 ? page * PAGE_SIZE + 1 : 0}–
+                {Math.min((page + 1) * PAGE_SIZE, filteredProducts.length)} of {filteredProducts.length}
+              </span>
             </div>
           </div>
+
+          {/* Product Table Container */}
+          <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                  <tr>
+                    <th className="px-5 py-3.5">Product</th>
+                    <th className="px-5 py-3.5">Brand</th>
+                    <th className="px-5 py-3.5">Category</th>
+                    <th className="px-5 py-3.5">Starting Price</th>
+                    <th className="px-5 py-3.5">Rating</th>
+                    <th className="px-5 py-3.5">Status</th>
+                    <th className="px-5 py-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                        <div className="flex items-center justify-center gap-2 font-semibold">
+                          <span className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+                          Loading products...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : paginatedProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                        <div className="space-y-2">
+                          <p className="font-bold text-foreground">
+                            {searchQuery
+                              ? `No products found matching "${searchQuery}"`
+                              : `No products found for ${selectedBrand?.name || 'this brand'} in ${selectedCategory?.name || 'this category'}.`}
+                          </p>
+                          <p className="text-xs">Click "+ Add Product" above to create one.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedProducts.map(product => {
+                      const isActive = product.status?.toUpperCase() === 'ACTIVE'
+                      return (
+                        <tr key={product.id} className="hover:bg-muted/40 transition-colors">
+                          {/* Product Thumbnail & Name */}
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              {product.primaryImageUrl ? (
+                                <img
+                                  src={product.primaryImageUrl}
+                                  alt={product.name}
+                                  className="h-10 w-10 object-contain rounded-lg border border-border bg-muted/30 shrink-0"
+                                />
+                              ) : (
+                                <div className="h-10 w-10 rounded-lg border border-border bg-muted/40 flex items-center justify-center text-[10px] text-muted-foreground shrink-0 font-bold">
+                                  No Img
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <Link
+                                  href={`/admin/products/${product.id}`}
+                                  className="font-bold text-foreground hover:text-primary transition-colors truncate block max-w-xs"
+                                  title={product.name}
+                                >
+                                  {product.name}
+                                </Link>
+                                <span className="text-[11px] font-mono text-muted-foreground truncate block">
+                                  {product.slug || product.id.slice(0, 8)}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Brand */}
+                          <td className="px-5 py-3.5">
+                            <span className="font-semibold text-foreground text-xs">
+                              {product.brandName || '—'}
+                            </span>
+                          </td>
+
+                          {/* Category */}
+                          <td className="px-5 py-3.5">
+                            <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/80">
+                              {product.categoryName || '—'}
+                            </span>
+                          </td>
+
+                          {/* Price */}
+                          <td className="px-5 py-3.5 font-bold text-foreground">
+                            {formatINR(product.startingPrice || 0)}
+                          </td>
+
+                          {/* Rating */}
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-1 text-xs">
+                              <FaStar className="text-amber-500" size={12} />
+                              <span className="font-bold">{product.avgRating || 0}</span>
+                              <span className="text-[11px] text-muted-foreground">({product.totalReviews || 0})</span>
+                            </div>
+                          </td>
+
+                          {/* Status Toggle */}
+                          <td className="px-5 py-3.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleStatus(product.id, product.status)}
+                              className={`px-2.5 py-1 text-[11px] font-bold rounded-full border transition-all cursor-pointer ${
+                                isActive
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                  : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/30 hover:bg-zinc-500/20'
+                              }`}
+                            >
+                              {isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </button>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-5 py-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Link
+                                href={`/admin/products/${product.id}`}
+                                className="p-2 rounded-lg text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+                                title="Edit Product"
+                              >
+                                <FaPen size={14} />
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(product.id)}
+                                className="p-2 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                title="Delete Product"
+                              >
+                                <FaTrashCan size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Toolbar */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-muted/20 text-xs font-semibold">
+                <button
+                  type="button"
+                  disabled={page === 0}
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Previous
+                </button>
+                <span className="text-muted-foreground">
+                  Page <strong className="text-foreground">{page + 1}</strong> of <strong className="text-foreground">{totalPages}</strong>
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                  className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </>
+      )}
+    </div>
+  )
+}
+
+export default function AdminProductsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
+        </div>
+      }
+    >
+      <ProductsCatalogContent />
+    </Suspense>
   )
 }
