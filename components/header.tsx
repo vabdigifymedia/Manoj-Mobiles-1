@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FaXmark, FaMoon, FaMobileScreen, FaUser, FaBagShopping, FaBars, FaMagnifyingGlass, FaMicrophone, FaLocationDot, FaSun, FaHeart, FaArrowLeft, FaBoxOpen, FaArrowRightFromBracket } from 'react-icons/fa6'
+import { FaXmark, FaMoon, FaMobileScreen, FaUser, FaBagShopping, FaBars, FaMagnifyingGlass, FaMicrophone, FaLocationDot, FaSun, FaHeart, FaArrowLeft, FaBoxOpen, FaArrowRightFromBracket, FaChevronDown, FaGear, FaMapLocationDot } from 'react-icons/fa6'
 import { useTheme } from 'next-themes'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -34,7 +34,7 @@ const nav = [
 export function Header() {
   const pathname = usePathname()
   const { cartCount } = useStore()
-  const { isAuthenticated, logout } = useAuth()
+  const { isAuthenticated, logout, user } = useAuth()
   const { openBulkInquiry } = useBulkInquiry()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -188,7 +188,7 @@ export function Header() {
     ? categories.filter(c => c.name.toLowerCase().includes(debouncedQuery.toLowerCase())).slice(0, 3) 
     : []
 
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/auth') || pathname?.startsWith('/staff-login') || pathname?.startsWith('/account')) {
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/auth') || pathname?.startsWith('/staff-login')) {
     return null
   }
 
@@ -392,29 +392,49 @@ export function Header() {
                 onMouseLeave={() => setIsAccountMenuOpen(false)}
               >
                 <DropdownMenu open={isAccountMenuOpen} onOpenChange={setIsAccountMenuOpen}>
-                  <DropdownMenuTrigger className="hidden md:flex relative items-center rounded-full p-2 text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors outline-none cursor-pointer">
-                    <FaUser size={18} />
+                  <DropdownMenuTrigger className="hidden md:flex relative items-center gap-2 rounded-full border border-slate-200 dark:border-zinc-800 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-[#EAF0F6] hover:text-slate-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors outline-none cursor-pointer">
+                    <div className="size-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0" suppressHydrationWarning>
+                      {user?.name ? user.name.charAt(0).toUpperCase() : <FaUser size={11} />}
+                    </div>
+                    <span className="max-w-[120px] truncate text-xs font-bold" suppressHydrationWarning>
+                      {user?.name ? user.name.split(' ')[0] : 'My Account'}
+                    </span>
+                    <FaChevronDown size={10} className="text-slate-400" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="w-56 font-medium p-2 border-slate-200 dark:border-zinc-800 shadow-xl rounded-xl">
+                  <DropdownMenuContent align="end" className="w-56 font-medium p-2 border-slate-200 dark:border-zinc-800 shadow-xl rounded-2xl bg-white dark:bg-zinc-900">
                     <DropdownMenuGroup>
-                      <DropdownMenuLabel className="text-slate-500 dark:text-zinc-400 font-semibold px-2 py-1.5 text-xs uppercase tracking-wider">My Account</DropdownMenuLabel>
+                      <DropdownMenuLabel className="text-slate-500 dark:text-zinc-400 font-semibold px-2.5 py-1.5 text-xs uppercase tracking-wider" suppressHydrationWarning>
+                        {user?.name || 'My Account'}
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator className="my-1 bg-slate-200 dark:bg-zinc-800" />
                       <Link href="/account" className="w-full">
-                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-lg cursor-pointer flex items-center gap-3 px-2 py-2">
-                          <FaUser className="text-slate-400" size={16} />
-                          Overview
+                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-xl cursor-pointer flex items-center gap-3 px-2.5 py-2 text-sm">
+                          <FaUser className="text-slate-400" size={15} />
+                          My Account
                         </DropdownMenuItem>
                       </Link>
                       <Link href="/account/orders" className="w-full">
-                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-lg cursor-pointer flex items-center gap-3 px-2 py-2">
-                          <FaBoxOpen className="text-slate-400" size={16} />
+                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-xl cursor-pointer flex items-center gap-3 px-2.5 py-2 text-sm">
+                          <FaBoxOpen className="text-slate-400" size={15} />
                           My Orders
                         </DropdownMenuItem>
                       </Link>
                       <Link href="/account/wishlist" className="w-full">
-                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-lg cursor-pointer flex items-center gap-3 px-2 py-2">
-                          <FaHeart className="text-slate-400" size={16} />
+                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-xl cursor-pointer flex items-center gap-3 px-2.5 py-2 text-sm">
+                          <FaHeart className="text-slate-400" size={15} />
                           Wishlist
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href="/account/addresses" className="w-full">
+                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-xl cursor-pointer flex items-center gap-3 px-2.5 py-2 text-sm">
+                          <FaMapLocationDot className="text-slate-400" size={15} />
+                          Addresses
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href="/account/profile" className="w-full">
+                        <DropdownMenuItem className="focus:bg-slate-100 dark:focus:bg-zinc-800 focus:text-slate-900 dark:focus:text-white rounded-xl cursor-pointer flex items-center gap-3 px-2.5 py-2 text-sm">
+                          <FaGear className="text-slate-400" size={15} />
+                          Profile Settings
                         </DropdownMenuItem>
                       </Link>
                       <DropdownMenuSeparator className="my-1 bg-slate-200 dark:bg-zinc-800" />
@@ -423,9 +443,9 @@ export function Header() {
                           logout()
                           router.push('/auth')
                         }}
-                        className="focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-600 dark:focus:text-red-400 text-red-600 dark:text-red-400 rounded-lg cursor-pointer flex items-center gap-3 px-2 py-2"
+                        className="focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-600 dark:focus:text-red-400 text-red-600 dark:text-red-400 rounded-xl cursor-pointer flex items-center gap-3 px-2.5 py-2 text-sm"
                       >
-                        <FaArrowRightFromBracket size={16} />
+                        <FaArrowRightFromBracket size={15} />
                         Logout
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
@@ -539,10 +559,46 @@ export function Header() {
                 Bulk Buy
               </button>
               <hr className="my-1 border-border" />
-              <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">Wishlist</Link>
-              <Link href={mounted && isAuthenticated ? "/account" : "/auth"} onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">
-                {mounted && isAuthenticated ? "My Account" : "Login"}
-              </Link>
+              {mounted && isAuthenticated ? (
+                <>
+                  <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors flex items-center gap-2.5">
+                    <FaUser size={15} className="text-primary" />
+                    <span>My Account ({user?.name ? user.name.split(' ')[0] : 'Customer'})</span>
+                  </Link>
+                  <Link href="/account/orders" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors flex items-center gap-2.5">
+                    <FaBoxOpen size={15} className="text-slate-400" />
+                    <span>My Orders</span>
+                  </Link>
+                  <Link href="/account/wishlist" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors flex items-center gap-2.5">
+                    <FaHeart size={15} className="text-slate-400" />
+                    <span>Wishlist</span>
+                  </Link>
+                  <Link href="/account/addresses" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors flex items-center gap-2.5">
+                    <FaMapLocationDot size={15} className="text-slate-400" />
+                    <span>Addresses</span>
+                  </Link>
+                  <Link href="/account/profile" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors flex items-center gap-2.5">
+                    <FaGear size={15} className="text-slate-400" />
+                    <span>Profile Settings</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false)
+                      logout()
+                      router.push('/auth')
+                    }}
+                    className="p-2.5 hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 rounded-xl transition-colors flex items-center gap-2.5 text-left font-bold"
+                  >
+                    <FaArrowRightFromBracket size={15} />
+                    <span>Logout</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">Wishlist</Link>
+                  <Link href="/auth" onClick={() => setMobileMenuOpen(false)} className="p-2.5 hover:bg-muted rounded-xl transition-colors">Login</Link>
+                </>
+              )}
             </div>
 
             {/* Dark Mode / Light Mode Toggle */}

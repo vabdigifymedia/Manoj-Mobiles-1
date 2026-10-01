@@ -63,8 +63,8 @@ export default function AuthPage() {
     await fetchCart()
     
     const target = typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('redirect') || '/'
-      : '/'
+      ? new URLSearchParams(window.location.search).get('redirect') || '/account'
+      : '/account'
     window.location.href = target
   }
 

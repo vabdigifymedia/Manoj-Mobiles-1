@@ -49,6 +49,9 @@ export default function OrdersPage() {
           </div>
           <h3 className="text-xl font-bold">No orders yet</h3>
           <p className="text-muted-foreground mt-2 max-w-sm">Looks like you haven't made your first purchase. Start shopping to see your orders here.</p>
+          <Link href="/shop" className="mt-5 inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-slate-100 px-5 py-2.5 rounded-full font-bold text-sm transition-colors shadow-xs">
+            Start Shopping
+          </Link>
         </div>
       ) : (
         <div className="grid gap-4">
