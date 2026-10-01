@@ -34,7 +34,8 @@ export default function AddressesPage() {
 
   const fetchAddresses = () => {
     apiClient.getUserAddresses(0, 50)
-      .then(res => setAddresses(res.data.data.content || []))
+      .then(res => setAddresses(res.data?.data?.content || []))
+      .catch(() => setAddresses([]))
       .finally(() => setLoading(false))
   }
 

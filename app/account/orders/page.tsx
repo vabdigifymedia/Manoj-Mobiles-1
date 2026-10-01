@@ -25,7 +25,9 @@ export default function OrdersPage() {
 
   useEffect(() => {
     apiClient.getUserOrders(0, 50).then(res => {
-      setOrders(res.data.data.content || [])
+      setOrders(res.data?.data?.content || [])
+    }).catch(() => {
+      setOrders([])
     }).finally(() => {
       setLoading(false)
     })
