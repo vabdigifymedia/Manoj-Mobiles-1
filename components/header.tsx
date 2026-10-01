@@ -260,6 +260,13 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+            <button
+              type="button"
+              onClick={() => openBulkInquiry(null)}
+              className="text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer whitespace-nowrap"
+            >
+              Bulk Inquiry
+            </button>
           </nav>
           <div ref={searchRef} className="ml-auto hidden max-w-md flex-1 relative md:block">
             <div className="flex items-center gap-3 rounded-full bg-[#EAF0F6] dark:bg-zinc-900 px-4 py-2.5">

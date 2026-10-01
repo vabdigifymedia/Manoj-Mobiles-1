@@ -1,8 +1,9 @@
 import type { AIResponse } from './types'
+import { apiFetch } from '@/lib/apiConfig'
 
 export async function sendMessageToAI(userMessage: string, chatId: string): Promise<AIResponse> {
   try {
-    const res = await fetch('/api/public/ai/chat', {
+    const res = await apiFetch('/api/public/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: userMessage, chatId }),

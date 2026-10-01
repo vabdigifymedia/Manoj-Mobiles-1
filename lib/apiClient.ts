@@ -17,17 +17,17 @@ import {
   SpecTemplateRequestDTO, SpecTemplateResponseDTO,
   ProductFeatureImage
 } from './types'
+import { API_BASE_URL } from './apiConfig'
 
 // ===========================
 // Axios Instance
 // ===========================
-// Uses Next.js rewrites proxy to avoid CORS issues in development.
-// All /api/* requests are proxied server-side to the backend.
-const BASE_URL = ''
+const BASE_URL = API_BASE_URL
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 })
 
 // --- Request Interceptor: Attach Bearer Token ---
@@ -211,12 +211,78 @@ export const apiClient = {
   updateProductStatus: (id: string, status: 'ACTIVE' | 'INACTIVE') =>
     axiosInstance.put<ApiResponse<void>>(`/api/products/${id}/status?status=${status}`),
 
-  // --- Product Feature Images ---
-  getProductFeatureImages: (productId: string) =>
-    axiosInstance.get<ApiResponse<ProductFeatureImage[]>>(`/api/products/${productId}/feature-images`),
+  // --- Product Feature Images (hybrid serverless + client persistence) ---
+  getProductFeatureImages: async (productId: string) => {
+    try {
+      const res = await fetch(`/product-feature-images/${productId}`, { cache: 'no-store' })
+      if (!res.ok) {
+        if (typeof window !== 'undefined') {
+          const localData = localStorage.getItem(`pfi_${productId}`)
+          if (localData) {
+            try {
+              const parsed = JSON.parse(localData)
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                return { data: { success: true, data: parsed } } as any
+              }
+            } catch {}
+          }
+        }
+        return { data: { success: false, data: [] } } as any
+      }
+      const json = await res.json()
+      if (typeof window !== 'undefined') {
+        if (Array.isArray(json?.data) && json.data.length > 0) {
+          try {
+            localStorage.setItem(`pfi_${productId}`, JSON.stringify(json.data))
+          } catch {}
+        } else {
+          // If server returned empty, fallback to client-side cache
+          const localData = localStorage.getItem(`pfi_${productId}`)
+          if (localData) {
+            try {
+              const parsed = JSON.parse(localData)
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                return { data: { success: true, data: parsed } } as any
+              }
+            } catch {}
+          }
+        }
+      }
+      return { data: json } as any
+    } catch {
+      if (typeof window !== 'undefined') {
+        const localData = localStorage.getItem(`pfi_${productId}`)
+        if (localData) {
+          try {
+            const parsed = JSON.parse(localData)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return { data: { success: true, data: parsed } } as any
+            }
+          } catch {}
+        }
+      }
+      return { data: { success: false, data: [] } } as any
+    }
+  },
 
-  saveProductFeatureImages: (productId: string, featureImages: ProductFeatureImage[]) =>
-    axiosInstance.post<ApiResponse<ProductFeatureImage[]>>(`/api/products/${productId}/feature-images`, { featureImages }),
+  saveProductFeatureImages: async (productId: string, featureImages: ProductFeatureImage[]) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`pfi_${productId}`, JSON.stringify(featureImages))
+      } catch {}
+    }
+    try {
+      const res = await fetch(`/product-feature-images/${productId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featureImages }),
+      })
+      const json = await res.json()
+      return { data: json } as any
+    } catch {
+      return { data: { success: false, data: featureImages } } as any
+    }
+  },
 
   // --- Variants ---
   createVariant: (dto: ProductVariantRequestDTO) =>
@@ -502,13 +568,38 @@ export const apiClient = {
   updateAdminStoreSettings: (dto: import('./types').StoreSettingRequestDTO) =>
     axiosInstance.put<ApiResponse<import('./types').StoreSettingResponseDTO>>('/api/admin/settings', dto),
 
-  // --- Common Feature Images (reusable marketing images) ---
-  getPublicFeatureImages: () =>
-    axiosInstance.get<ApiResponse<import('./commonFeatureImages').CommonFeatureImage[]>>('/api/public/feature-images'),
-  getAdminCommonFeatureImages: () =>
-    axiosInstance.get<ApiResponse<import('./commonFeatureImages').CommonFeatureImage[]>>('/api/admin/common-images'),
-  saveAdminCommonFeatureImages: (items: import('./commonFeatureImages').CommonFeatureImage[]) =>
-    axiosInstance.put<ApiResponse<void>>('/api/admin/common-images', items),
+  // --- Common Feature Images (reusable marketing images stored locally) ---
+  getPublicFeatureImages: async () => {
+    try {
+      const res = await fetch('/feature-images', { cache: 'no-store' })
+      const json = await res.json()
+      return { data: json } as any
+    } catch {
+      return { data: { success: false, data: [] } } as any
+    }
+  },
+  getAdminCommonFeatureImages: async () => {
+    try {
+      const res = await fetch('/feature-images-admin', { cache: 'no-store' })
+      const json = await res.json()
+      return { data: json } as any
+    } catch {
+      return { data: { success: false, data: [] } } as any
+    }
+  },
+  saveAdminCommonFeatureImages: async (items: import('./commonFeatureImages').CommonFeatureImage[]) => {
+    try {
+      const res = await fetch('/feature-images-admin', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(items),
+      })
+      const json = await res.json()
+      return { data: json } as any
+    } catch {
+      return { data: { success: false } } as any
+    }
+  },
 
   // --- FAQs ---
   getPublicFaqs: () =>
@@ -637,12 +728,13 @@ export async function serverFetch<T>(
   options?: { revalidate?: number; tags?: string[]; noStore?: boolean }
 ): Promise<T | null> {
   // Server-side fetch needs a full URL (no browser origin available)
-  const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'https://200.141.14.212.nip.io'
+  const serverUrl = API_BASE_URL
   try {
     // `noStore` is used for catalog data so a newly published product is visible
     // on the very next request; product details use a short revalidate + tag.
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`
     const res = await fetch(
-      `${serverUrl}${path}`,
+      `${serverUrl}${normalizedPath}`,
       options?.noStore ? { cache: 'no-store' } : { next: { revalidate: options?.revalidate ?? 30, tags: options?.tags } }
     )
     if (!res.ok) return null

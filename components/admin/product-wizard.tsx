@@ -27,7 +27,7 @@ interface LocalVariant {
   codAvailable: boolean;
   images: string[];
 }
-import { CategoryResponseDTO, BrandResponseDTO, IconName, ProductFeatureImage } from '@/lib/types'
+import { CategoryResponseDTO, BrandResponseDTO, IconName, ProductFeatureImage, ProductRequestDTO } from '@/lib/types'
 import { RichTextEditor } from './rich-text-editor'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -491,13 +491,21 @@ export function ProductWizard({ productId }: { productId?: string }) {
           })))
 
           // Load product feature images for edit mode
-          try {
-            const featRes = await apiClient.getProductFeatureImages(productId)
-            if (featRes.data?.data && Array.isArray(featRes.data.data)) {
-              setFeatureImages(featRes.data.data)
+          let loadedFeatureImages: ProductFeatureImage[] = []
+          if (p.featureImages && Array.isArray(p.featureImages) && p.featureImages.length > 0) {
+            loadedFeatureImages = p.featureImages
+          } else {
+            try {
+              const featRes = await apiClient.getProductFeatureImages(productId)
+              if (featRes.data?.data && Array.isArray(featRes.data.data) && featRes.data.data.length > 0) {
+                loadedFeatureImages = featRes.data.data
+              }
+            } catch (e) {
+              console.error('Failed to load feature images for product', e)
             }
-          } catch (e) {
-            console.error('Failed to load feature images for product', e)
+          }
+          if (loadedFeatureImages.length > 0) {
+            setFeatureImages(loadedFeatureImages)
           }
         }
 
@@ -1261,10 +1269,17 @@ const uploadFilesParallel = async (
     try {
       // 1. Create or Update Product
       let finalProductId = productId
+      const productPayload: ProductRequestDTO = {
+        ...baseInfo,
+        featureImages: featureImages && featureImages.length > 0 ? featureImages : []
+      }
+
+      console.log('[Product Save] featureImages:', productPayload.featureImages)
+
       if (finalProductId) {
-        await apiClient.updateProduct(finalProductId, baseInfo)
+        await apiClient.updateProduct(finalProductId, productPayload)
       } else {
-        const prodRes = await apiClient.createProduct(baseInfo)
+        const prodRes = await apiClient.createProduct(productPayload)
         finalProductId = prodRes.data.data.id
         createdProductId = finalProductId // Saved to delete if subsequent steps fail
       }

@@ -1,6 +1,5 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth-context'
 import { StoreProvider } from '@/components/store-provider'
@@ -15,12 +14,10 @@ import Script from 'next/script'
 
 import { BulkInquiryProvider } from '@/components/bulk-inquiry-provider'
 
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
+const inter = {
+  className: '',
   variable: '--font-inter',
-  fallback: ['Arial', 'sans-serif'],
-})
+}
 
 export const metadata: Metadata = {
   title: 'Manoj Mobiles | Smarter choices, better service',

@@ -626,7 +626,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
       <ProductReviews productId={product.id} />
 
-      <ProductFeatureImages productId={product.id} productName={product.name} />
+      <ProductFeatureImages productId={product.id} productName={product.name} initialImages={product.featureImages} />
 
       <ProductSuggestedPhones product={product} />
 

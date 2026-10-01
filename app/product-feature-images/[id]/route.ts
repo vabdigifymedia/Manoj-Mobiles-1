@@ -15,6 +15,7 @@ export async function GET(
   }
 
   const data = getProductFeatureImages(id)
+  console.log('[Product API] featureImages returned:', data)
   return NextResponse.json({
     success: true,
     message: 'OK',
@@ -40,6 +41,8 @@ export async function POST(
       ? body
       : []
 
+    console.log('[Product API] featureImages received:', images)
+
     // Ensure valid format
     const cleaned = images.map((img, idx) => ({
       id: img.id || `pfi_${Date.now()}_${idx}`,
@@ -48,6 +51,8 @@ export async function POST(
     })).filter(img => Boolean(img.url))
 
     const success = saveProductFeatureImages(id, cleaned)
+    console.log('[Product API] featureImages persisted:', success)
+
     if (!success) {
       return NextResponse.json(
         { success: false, message: 'Failed to write product feature images' },

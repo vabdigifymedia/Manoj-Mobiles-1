@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Search, ZoomIn, ZoomOut } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface ImageWithMagnifierProps {
   src: string
@@ -162,17 +163,21 @@ export function ImageWithMagnifier({
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`group relative overflow-hidden select-none ${
-        isZoomActive ? 'cursor-crosshair ring-2 ring-primary ring-offset-1' : 'cursor-pointer'
-      } ${className}`}
+      className={cn(
+        'group relative overflow-hidden select-none',
+        isZoomActive ? 'cursor-crosshair ring-2 ring-primary ring-offset-1' : 'cursor-pointer',
+        className
+      )}
     >
       {/* Base Image */}
       <img
         src={src}
         alt={alt}
-        className={`block w-full h-full object-contain transition-transform duration-200 ${
-          isZoomActive ? 'scale-100' : 'group-hover:scale-[1.02]'
-        } ${imageClassName}`}
+        className={cn(
+          'block w-full h-full object-contain transition-transform duration-200',
+          isZoomActive ? 'scale-100' : 'group-hover:scale-[1.02]',
+          imageClassName
+        )}
       />
 
       {/* Magnifier Lens (Active Zoom Mode) */}

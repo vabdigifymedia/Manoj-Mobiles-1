@@ -6,8 +6,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || process.env.VITE_API_URL || 'https://api.emistore.in',
+    VITE_API_URL: process.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.emistore.in',
+  },
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://200.141.14.212.nip.io'
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.VITE_API_URL || 'https://api.emistore.in'
     return [
       // Local (Next.js) routes for Feature Images — resolved
       // BEFORE the /api/* backend proxy below so they are never shadowed.
