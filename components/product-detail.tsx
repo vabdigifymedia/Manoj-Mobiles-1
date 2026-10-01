@@ -444,6 +444,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
                 brandName: product.brandName,
                 selectedColor: selectedColor,
                 availableColors: availableColorsForSelectedName.length > 0 ? availableColorsForSelectedName : [selectedColor || 'Standard'],
+                imageUrl: primaryImage,
                 isProductLocked: true
               })}
               className="w-full flex items-center justify-center gap-2 rounded-xl border border-blue-600 bg-blue-600 hover:bg-blue-700 text-white py-3.5 px-4 text-xs md:text-sm font-extrabold transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98] cursor-pointer group/bulk"
