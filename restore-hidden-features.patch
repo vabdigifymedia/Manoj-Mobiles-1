@@ -1,0 +1,132 @@
+diff --git b/app/global-buy/page.tsx a/app/global-buy/page.tsx
+index b1680c3..59c0418 100644
+--- b/app/global-buy/page.tsx
++++ a/app/global-buy/page.tsx
+@@ -1,5 +1,4 @@
+ import { Metadata } from 'next'
+-import { redirect } from 'next/navigation'
+ import { ProductCard as ListProductCard } from '@/components/ui/product-card-1'
+ import { GlobalBuySearch } from '@/components/shop/global-buy-search'
+ import { serverFetch } from '@/lib/apiClient'
+@@ -19,9 +18,6 @@ export const metadata: Metadata = {
+ }
+ 
+ export default async function GlobalBuyPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+-  // TEMPORARILY HIDDEN: Redirect direct visits away from /global-buy to /shop
+-  redirect('/shop')
+-
+   const { q, brand } = await searchParams
+   const searchQuery = typeof q === 'string' ? q.trim() : ''
+   const brandQuery = typeof brand === 'string' ? brand : ''
+diff --git b/app/page.tsx a/app/page.tsx
+index 4e3a529..1ad3e9d 100644
+--- b/app/page.tsx
++++ a/app/page.tsx
+@@ -163,9 +163,8 @@ export default async function HomePage() {
+       {/* Instagram Reels */}
+       <InstagramReels reels={reelsData || []} />
+ 
+-      {/* TEMPORARILY HIDDEN: Bulk Inquiry Section
++      {/* Bulk Inquiry Section — Positioned IMMEDIATELY after Trending Reels */}
+       <BulkInquirySection />
+-      */}
+ 
+       {/* Why Shop With Us */}
+       <section className="bg-muted py-20 border-y border-border">
+diff --git b/components/bulk-inquiry-modal.tsx a/components/bulk-inquiry-modal.tsx
+index 8d1112c..a1492a7 100644
+--- b/components/bulk-inquiry-modal.tsx
++++ a/components/bulk-inquiry-modal.tsx
+@@ -213,8 +213,7 @@ export function BulkInquiryModal({ isOpen, onClose, target }: BulkInquiryModalPr
+     return null
+   }, [target, selectedProductId, productsForSelectedCompany, productList, selectedCompany])
+ 
+-  // TEMPORARILY HIDDEN: Bulk Inquiry Modal disabled on public storefront
+-  return null
++  if (!isOpen) return null
+ 
+   // Progress Completion Checks
+   const isStep1Done = Boolean(selectedCompany && selectedProductName && selectedColor)
+diff --git b/components/footer.tsx a/components/footer.tsx
+index 5dd09e6..4bfc5b8 100644
+--- b/components/footer.tsx
++++ a/components/footer.tsx
+@@ -108,8 +108,7 @@ export function Footer() {
+           <div>
+             <h3 className="font-bold mb-6 tracking-wide">Quick Links</h3>
+             <ul className="space-y-4 text-sm text-muted-foreground">
+-              {/* TEMPORARILY HIDDEN: Global Buy */}
+-              {/* <li><Link href="/global-buy" className="hover:text-primary transition-colors">Global Buy</Link></li> */}
++              <li><Link href="/global-buy" className="hover:text-primary transition-colors">Global Buy</Link></li>
+               <li><Link href="/shop" className="hover:text-primary transition-colors">Shop All Phones</Link></li>
+               <li><Link href="/shop" className="hover:text-primary transition-colors">Apple iPhones</Link></li>
+               <li><Link href="/shop" className="hover:text-primary transition-colors">Samsung Galaxy</Link></li>
+diff --git b/components/header.tsx a/components/header.tsx
+index 4323354..30518a5 100644
+--- b/components/header.tsx
++++ a/components/header.tsx
+@@ -28,8 +28,7 @@ import {
+ const nav = [
+   { key: '/', label: 'Home' },
+   { key: '/shop', label: 'Shop' },
+-  // TEMPORARILY HIDDEN: Global Buy
+-  // { key: '/global-buy', label: 'Global Buy' }
++  { key: '/global-buy', label: 'Global Buy' }
+ ]
+ 
+ export function Header() {
+@@ -261,7 +260,6 @@ export function Header() {
+                 {item.label}
+               </Link>
+             ))}
+-            {/* TEMPORARILY HIDDEN: Bulk Inquiry
+             <button
+               type="button"
+               onClick={() => openBulkInquiry(null)}
+@@ -269,7 +267,6 @@ export function Header() {
+             >
+               Bulk Inquiry
+             </button>
+-            */}
+           </nav>
+           <div ref={searchRef} className="ml-auto hidden max-w-md flex-1 relative md:block">
+             <div className="flex items-center gap-3 rounded-full bg-[#EAF0F6] dark:bg-zinc-900 px-4 py-2.5">
+@@ -549,7 +546,8 @@ export function Header() {
+                   {item.label}
+                 </Link>
+               ))}
+-              {/* TEMPORARILY HIDDEN: Bulk Buy
++              {/* Bulk Buy — placed directly below Global Buy. Opens the existing Bulk Inquiry
++                  (Bulk Buy) flow used by the home page section & product pages. */}
+               <button
+                 type="button"
+                 onClick={() => {
+@@ -560,7 +558,6 @@ export function Header() {
+               >
+                 Bulk Buy
+               </button>
+-              */}
+               <hr className="my-1 border-border" />
+               {mounted && isAuthenticated ? (
+                 <>
+diff --git b/components/product-detail.tsx a/components/product-detail.tsx
+index 32dc8e3..99923f7 100644
+--- b/components/product-detail.tsx
++++ a/components/product-detail.tsx
+@@ -434,7 +434,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
+             </div>
+           )}
+ 
+-          {/* TEMPORARILY HIDDEN: Bulk Inquiry Button
++          {/* Bulk Inquiry Button — Positioned IMMEDIATELY below Colour Selection */}
+           <div className="mt-1 md:mt-2">
+             <button
+               type="button"
+@@ -453,7 +453,6 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
+               <span className="text-white font-extrabold">Bulk Inquiry</span>
+             </button>
+           </div>
+-          */}
+ 
+           <div className="mt-2 hidden lg:flex gap-3">
+             <button 

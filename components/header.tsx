@@ -28,7 +28,8 @@ import {
 const nav = [
   { key: '/', label: 'Home' },
   { key: '/shop', label: 'Shop' },
-  { key: '/global-buy', label: 'Global Buy' }
+  // TEMPORARILY HIDDEN: Global Buy
+  // { key: '/global-buy', label: 'Global Buy' }
 ]
 
 export function Header() {
@@ -260,6 +261,7 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+            {/* TEMPORARILY HIDDEN: Bulk Inquiry
             <button
               type="button"
               onClick={() => openBulkInquiry(null)}
@@ -267,6 +269,7 @@ export function Header() {
             >
               Bulk Inquiry
             </button>
+            */}
           </nav>
           <div ref={searchRef} className="ml-auto hidden max-w-md flex-1 relative md:block">
             <div className="flex items-center gap-3 rounded-full bg-[#EAF0F6] dark:bg-zinc-900 px-4 py-2.5">
@@ -546,8 +549,7 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
-              {/* Bulk Buy — placed directly below Global Buy. Opens the existing Bulk Inquiry
-                  (Bulk Buy) flow used by the home page section & product pages. */}
+              {/* TEMPORARILY HIDDEN: Bulk Buy
               <button
                 type="button"
                 onClick={() => {
@@ -558,6 +560,7 @@ export function Header() {
               >
                 Bulk Buy
               </button>
+              */}
               <hr className="my-1 border-border" />
               {mounted && isAuthenticated ? (
                 <>

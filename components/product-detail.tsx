@@ -434,7 +434,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
             </div>
           )}
 
-          {/* Bulk Inquiry Button — Positioned IMMEDIATELY below Colour Selection */}
+          {/* TEMPORARILY HIDDEN: Bulk Inquiry Button
           <div className="mt-1 md:mt-2">
             <button
               type="button"
@@ -453,6 +453,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
               <span className="text-white font-extrabold">Bulk Inquiry</span>
             </button>
           </div>
+          */}
 
           <div className="mt-2 hidden lg:flex gap-3">
             <button 

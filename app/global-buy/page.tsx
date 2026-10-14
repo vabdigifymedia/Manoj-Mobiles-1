@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { ProductCard as ListProductCard } from '@/components/ui/product-card-1'
 import { GlobalBuySearch } from '@/components/shop/global-buy-search'
 import { serverFetch } from '@/lib/apiClient'
@@ -18,6 +19,9 @@ export const metadata: Metadata = {
 }
 
 export default async function GlobalBuyPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  // TEMPORARILY HIDDEN: Redirect direct visits away from /global-buy to /shop
+  redirect('/shop')
+
   const { q, brand } = await searchParams
   const searchQuery = typeof q === 'string' ? q.trim() : ''
   const brandQuery = typeof brand === 'string' ? brand : ''

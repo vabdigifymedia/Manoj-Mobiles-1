@@ -163,8 +163,9 @@ export default async function HomePage() {
       {/* Instagram Reels */}
       <InstagramReels reels={reelsData || []} />
 
-      {/* Bulk Inquiry Section — Positioned IMMEDIATELY after Trending Reels */}
+      {/* TEMPORARILY HIDDEN: Bulk Inquiry Section
       <BulkInquirySection />
+      */}
 
       {/* Why Shop With Us */}
       <section className="bg-muted py-20 border-y border-border">

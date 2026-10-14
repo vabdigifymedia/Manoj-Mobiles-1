@@ -213,7 +213,8 @@ export function BulkInquiryModal({ isOpen, onClose, target }: BulkInquiryModalPr
     return null
   }, [target, selectedProductId, productsForSelectedCompany, productList, selectedCompany])
 
-  if (!isOpen) return null
+  // TEMPORARILY HIDDEN: Bulk Inquiry Modal disabled on public storefront
+  return null
 
   // Progress Completion Checks
   const isStep1Done = Boolean(selectedCompany && selectedProductName && selectedColor)
