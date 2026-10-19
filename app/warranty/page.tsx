@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Warranty Policy | Manoj Mobiles",
+  title: "Warranty Policy | MANOJ MOBILE RETAIL STORES PVT LTD",
   description:
-    "Read the Warranty Policy of Manoj Mobiles covering manufacturer warranty, warranty claims, exclusions, service and required documents.",
+    "Read the Warranty Policy of MANOJ MOBILE RETAIL STORES PVT LTD covering manufacturer warranty, warranty claims, exclusions, service and required documents.",
 };
 
 const warrantySections = [
@@ -26,7 +26,7 @@ const warrantySections = [
     number: "01",
     title: "Manufacturer Warranty",
     content:
-      "Products sold by Manoj Mobiles may be covered by the manufacturer's warranty applicable to the specific brand and model. The warranty period, coverage and service conditions may vary depending on the product and manufacturer.",
+      "Products sold by MANOJ MOBILE RETAIL STORES PVT LTD may be covered by the manufacturer's warranty applicable to the specific brand and model. The warranty period, coverage and service conditions may vary depending on the product and manufacturer.",
     bullets: [
       "Warranty coverage is subject to the applicable manufacturer's terms.",
       "The warranty period begins according to the manufacturer's applicable purchase or activation terms.",
@@ -41,7 +41,7 @@ const warrantySections = [
     content:
       "A valid purchase invoice may be required when submitting a warranty claim. Customers should retain their original invoice and other purchase documents for the duration of the applicable warranty period.",
     bullets: [
-      "A valid Manoj Mobiles purchase invoice may be required.",
+      "A valid MANOJ MOBILE RETAIL STORES PVT LTD purchase invoice may be required.",
       "The invoice should contain sufficient product and purchase details.",
       "The product's IMEI, serial number or other identification details may be verified.",
       "Warranty service may be subject to successful verification of the purchase.",
@@ -57,7 +57,7 @@ const warrantySections = [
       "Warranty assessment may be performed by the manufacturer's authorized service centre.",
       "Repair or replacement decisions may be made according to the manufacturer's warranty terms.",
       "Service may be provided on a carry-in, pickup, doorstep or other applicable basis depending on the brand.",
-      "Manoj Mobiles may assist customers in understanding the applicable warranty process.",
+      "MANOJ MOBILE RETAIL STORES PVT LTD may assist customers in understanding the applicable warranty process.",
     ],
   },
   {
@@ -214,8 +214,7 @@ export default function WarrantyPage() {
             {/* Description */}
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-500 md:text-lg">
               Understand the warranty coverage, service process, exclusions
-              and requirements applicable to products purchased from Manoj
-              Mobiles.
+              and requirements applicable to products purchased from MANOJ MOBILE RETAIL STORES PVT LTD.
             </p>
 
             {/* Updated */}
@@ -321,7 +320,7 @@ export default function WarrantyPage() {
                   </span>
 
                   <p className="mt-2 text-sm font-medium leading-6 text-slate-700">
-                    Contact Manoj Mobiles support regarding the issue.
+                    Contact MANOJ MOBILE RETAIL STORES PVT LTD support regarding the issue.
                   </p>
                 </div>
 
@@ -362,7 +361,7 @@ export default function WarrantyPage() {
               </h2>
 
               <p className="mt-3 leading-7 text-slate-600">
-                Manoj Mobiles does not independently determine whether a
+                MANOJ MOBILE RETAIL STORES PVT LTD does not independently determine whether a
                 manufacturer's warranty claim is valid. Warranty eligibility,
                 diagnosis, repair, replacement and applicable service
                 decisions may be determined by the respective manufacturer's
@@ -410,8 +409,7 @@ export default function WarrantyPage() {
               </h2>
 
               <p className="mt-3 max-w-2xl leading-7 text-slate-500">
-                If you are facing an issue with a product purchased from Manoj
-                Mobiles, contact our support team with your order or invoice
+                If you are facing an issue with a product purchased from MANOJ MOBILE RETAIL STORES PVT LTD, contact our support team with your order or invoice
                 details so we can guide you through the applicable process.
               </p>
             </div>

@@ -9,9 +9,9 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "Copyright Policy | Manoj Mobiles",
+  title: "Copyright Policy | MANOJ MOBILE RETAIL STORES PVT LTD",
   description:
-    "Copyright Policy governing the content, branding, images, graphics and other materials available on the Manoj Mobiles website.",
+    "Copyright Policy governing the content, branding, images, graphics and other materials available on the MANOJ MOBILE RETAIL STORES PVT LTD website.",
 };
 
 export default function CopyrightPage() {
@@ -40,7 +40,7 @@ export default function CopyrightPage() {
 
             <p className="mt-5 text-lg text-slate-600 leading-8">
               This policy explains the ownership and permitted use of content
-              available on the Manoj Mobiles website.
+              available on the MANOJ MOBILE RETAIL STORES PVT LTD website.
             </p>
 
             <p className="mt-4 text-sm text-slate-500">
@@ -69,10 +69,9 @@ export default function CopyrightPage() {
                 <div className="space-y-4 text-slate-600 leading-7">
                   <p>
                     Unless otherwise stated, the content created specifically
-                    for the Manoj Mobiles website, including website text,
+                    for the MANOJ MOBILE RETAIL STORES PVT LTD website, including website text,
                     graphics, layout, design elements, branding and original
-                    materials, is owned by or used with permission by Manoj
-                    Mobiles.
+                    materials, is owned by or used with permission by MANOJ MOBILE RETAIL STORES PVT LTD.
                   </p>
 
                   <p>
@@ -100,7 +99,7 @@ export default function CopyrightPage() {
 
                 <div className="space-y-4 text-slate-600 leading-7">
                   <p>
-                    Manoj Mobiles and its associated branding, logos, names and
+                    MANOJ MOBILE RETAIL STORES PVT LTD and its associated branding, logos, names and
                     visual identity may be protected by applicable intellectual
                     property laws.
                   </p>
@@ -109,7 +108,7 @@ export default function CopyrightPage() {
                     Product names, manufacturer names, logos and trademarks
                     displayed on this website belong to their respective
                     owners. Their appearance on the website does not imply
-                    ownership by Manoj Mobiles.
+                    ownership by MANOJ MOBILE RETAIL STORES PVT LTD.
                   </p>
                 </div>
               </div>
@@ -183,7 +182,7 @@ export default function CopyrightPage() {
                   <li className="flex gap-3">
                     <span className="text-primary font-bold">•</span>
                     Use website content in a manner that falsely suggests an
-                    association with Manoj Mobiles.
+                    association with MANOJ MOBILE RETAIL STORES PVT LTD.
                   </li>
                 </ul>
               </div>
@@ -210,7 +209,7 @@ export default function CopyrightPage() {
                   </p>
 
                   <p>
-                    Manoj Mobiles reserves the right to take appropriate action
+                    MANOJ MOBILE RETAIL STORES PVT LTD reserves the right to take appropriate action
                     where its own intellectual property rights are infringed,
                     subject to applicable law.
                   </p>
@@ -248,7 +247,7 @@ export default function CopyrightPage() {
             </h2>
 
             <p className="text-slate-600 leading-7">
-              If you believe that material appearing on the Manoj Mobiles
+              If you believe that material appearing on the MANOJ MOBILE RETAIL STORES PVT LTD
               website infringes your copyright or other intellectual property
               rights, please contact us with sufficient information to identify
               the material and explain the basis of your concern.
@@ -258,7 +257,7 @@ export default function CopyrightPage() {
               href="/contact"
               className="inline-flex items-center gap-2 mt-5 text-primary font-semibold hover:underline"
             >
-              Contact Manoj Mobiles
+              Contact MANOJ MOBILE RETAIL STORES PVT LTD
               <ArrowRight className="w-4 h-4" />
             </Link>
           </section>

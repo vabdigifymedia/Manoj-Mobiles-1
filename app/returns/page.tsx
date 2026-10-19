@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Returns & Cancellation Policy | Manoj Mobiles",
+  title: "Returns & Cancellation Policy | MANOJ MOBILE RETAIL STORES PVT LTD",
   description:
-    "Read the Returns and Cancellation Policy of Manoj Mobiles, including order cancellation, return eligibility, replacement and refund conditions.",
+    "Read the Returns and Cancellation Policy of MANOJ MOBILE RETAIL STORES PVT LTD, including order cancellation, return eligibility, replacement and refund conditions.",
 };
 
 const policySections = [
@@ -25,7 +25,7 @@ const policySections = [
     number: "01",
     title: "Return Eligibility",
     content:
-      "Products purchased from Manoj Mobiles may be eligible for return or replacement if they meet the applicable eligibility requirements. The product should be returned in its original condition along with the original packaging, accessories, manuals, invoice and other items supplied with the product.",
+      "Products purchased from MANOJ MOBILE RETAIL STORES PVT LTD may be eligible for return or replacement if they meet the applicable eligibility requirements. The product should be returned in its original condition along with the original packaging, accessories, manuals, invoice and other items supplied with the product.",
     bullets: [
       "The product should be in its original condition.",
       "Original box, accessories, manuals and supplied items should be retained.",
@@ -38,7 +38,7 @@ const policySections = [
     number: "02",
     title: "Return & Replacement Requests",
     content:
-      "If you receive a damaged, defective, incorrect or incomplete product, please contact Manoj Mobiles support as soon as possible after delivery. Our team may request photographs, videos, unboxing evidence or other information to verify the issue.",
+      "If you receive a damaged, defective, incorrect or incomplete product, please contact MANOJ MOBILE RETAIL STORES PVT LTD support as soon as possible after delivery. Our team may request photographs, videos, unboxing evidence or other information to verify the issue.",
     bullets: [
       "The issue may be reviewed before a return or replacement is approved.",
       "Depending on the product and issue, a replacement may be offered instead of a return.",
@@ -76,10 +76,10 @@ const policySections = [
     number: "05",
     title: "Return Pickup & Shipping",
     content:
-      "Where a return is approved, Manoj Mobiles may arrange a return pickup or provide instructions for returning the product. Customers should securely pack the product with its original accessories and documentation.",
+      "Where a return is approved, MANOJ MOBILE RETAIL STORES PVT LTD may arrange a return pickup or provide instructions for returning the product. Customers should securely pack the product with its original accessories and documentation.",
     bullets: [
       "Keep the product safely packed until the return process is completed.",
-      "Do not send products to any address unless instructed by Manoj Mobiles.",
+      "Do not send products to any address unless instructed by MANOJ MOBILE RETAIL STORES PVT LTD.",
       "Return shipping arrangements may vary depending on the reason for return and product category.",
     ],
   },
@@ -195,8 +195,7 @@ export default function ReturnsPage() {
             {/* Description */}
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-500 md:text-lg">
               Please review our return, replacement and order cancellation
-              guidelines before placing or cancelling an order with Manoj
-              Mobiles.
+              guidelines before placing or cancelling an order with MANOJ MOBILE RETAIL STORES PVT LTD.
             </p>
 
             {/* Updated */}
@@ -316,7 +315,7 @@ export default function ReturnsPage() {
               </h2>
 
               <p className="mt-3 leading-7 text-slate-600">
-                Manoj Mobiles may update this Returns & Cancellation Policy
+                MANOJ MOBILE RETAIL STORES PVT LTD may update this Returns & Cancellation Policy
                 from time to time. Any updated version will be published on
                 this page with the revised update date.
               </p>
@@ -334,8 +333,7 @@ export default function ReturnsPage() {
 
               <p className="mt-3 max-w-2xl leading-7 text-slate-500">
                 If you have received a damaged, defective or incorrect product,
-                or need help with an order cancellation, please contact Manoj
-                Mobiles support with your order details.
+                or need help with an order cancellation, please contact MANOJ MOBILE RETAIL STORES PVT LTD support with your order details.
               </p>
             </div>
 

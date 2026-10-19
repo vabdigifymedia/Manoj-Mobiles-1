@@ -39,7 +39,7 @@ export default function AdminLoginPage() {
               <FaMobileScreen size={24} />
             </div>
             <div className="text-left">
-              <h1 className="text-2xl font-black tracking-tight text-foreground">Manoj Mobiles</h1>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">MANOJ MOBILE RETAIL STORES PVT LTD</h1>
               <p className="text-xs font-medium text-muted-foreground">Admin Panel</p>
             </div>
           </div>
@@ -106,7 +106,7 @@ export default function AdminLoginPage() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          &copy; {new Date().getFullYear()} Manoj Mobiles. All rights reserved.
+          &copy; {new Date().getFullYear()} MANOJ MOBILE RETAIL STORES PVT LTD. All Rights Reserved.
         </p>
       </div>
     </div>

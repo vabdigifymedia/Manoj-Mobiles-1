@@ -3,8 +3,8 @@ import type { FaqResponseDTO } from '@/lib/types'
 import { FaCircleQuestion } from 'react-icons/fa6'
 
 export const metadata = {
-  title: 'FAQs | Manoj Mobiles',
-  description: 'Frequently asked questions about Manoj Mobiles products, orders, payments, delivery, returns and warranty.',
+  title: 'FAQs | MANOJ MOBILE RETAIL STORES PVT LTD',
+  description: 'Frequently asked questions about MANOJ MOBILE RETAIL STORES PVT LTD products, orders, payments, delivery, returns and warranty.',
 }
 
 export default async function FAQPage() {

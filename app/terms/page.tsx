@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "Terms of Service | Manoj Mobiles",
+  title: "Terms of Service | MANOJ MOBILE RETAIL STORES PVT LTD",
   description:
-    "Terms of Service governing the use of the Manoj Mobiles website, products, orders, payments, delivery and related services.",
+    "Terms of Service governing the use of the MANOJ MOBILE RETAIL STORES PVT LTD website, products, orders, payments, delivery and related services.",
 };
 
 const termsSections = [
@@ -28,7 +28,7 @@ const termsSections = [
     content: (
       <>
         <p>
-          Welcome to Manoj Mobiles. By accessing, browsing, registering on, or
+          Welcome to MANOJ MOBILE RETAIL STORES PVT LTD. By accessing, browsing, registering on, or
           purchasing products through this website, you agree to be bound by
           these Terms of Service and the policies referenced on this website.
         </p>
@@ -46,7 +46,7 @@ const termsSections = [
     content: (
       <>
         <p>
-          Manoj Mobiles provides an online platform for browsing, comparing and
+          MANOJ MOBILE RETAIL STORES PVT LTD provides an online platform for browsing, comparing and
           purchasing mobile phones, electronics, accessories and related
           products.
         </p>
@@ -111,7 +111,7 @@ const termsSections = [
         <p>
           Placing an order on the website constitutes a request to purchase the
           selected product. An order is not necessarily accepted until it has
-          been confirmed by Manoj Mobiles.
+          been confirmed by MANOJ MOBILE RETAIL STORES PVT LTD.
         </p>
         <p>
           We may refuse or cancel an order in situations including product
@@ -139,7 +139,7 @@ const termsSections = [
         </p>
         <p>
           Payment processing may be handled through third-party payment
-          gateways. Manoj Mobiles does not store complete card details unless
+          gateways. MANOJ MOBILE RETAIL STORES PVT LTD does not store complete card details unless
           expressly stated in the applicable payment process.
         </p>
         <p>
@@ -286,7 +286,7 @@ const termsSections = [
         <p>
           Unless otherwise stated, the website and its content, including
           branding, logos, text, graphics, images, layout and other materials,
-          are owned by or licensed to Manoj Mobiles and are protected by
+          are owned by or licensed to MANOJ MOBILE RETAIL STORES PVT LTD and are protected by
           applicable intellectual property laws.
         </p>
         <p>
@@ -310,7 +310,7 @@ const termsSections = [
         </p>
         <p>
           Such third-party services may have their own terms and privacy
-          policies. Manoj Mobiles is not responsible for the independent
+          policies. MANOJ MOBILE RETAIL STORES PVT LTD is not responsible for the independent
           policies or practices of third-party providers.
         </p>
       </>
@@ -323,13 +323,13 @@ const termsSections = [
     content: (
       <>
         <p>
-          Manoj Mobiles will take reasonable steps to provide accurate product
+          MANOJ MOBILE RETAIL STORES PVT LTD will take reasonable steps to provide accurate product
           information and reliable website services. However, we do not
           guarantee that the website will always be uninterrupted, error-free or
           completely secure.
         </p>
         <p>
-          To the extent permitted by applicable law, Manoj Mobiles shall not be
+          To the extent permitted by applicable law, MANOJ MOBILE RETAIL STORES PVT LTD shall not be
           responsible for indirect or consequential losses arising from the use
           of the website, delays caused by third parties, or circumstances
           beyond our reasonable control.
@@ -462,7 +462,7 @@ export default function TermsPage() {
 
             <p className="mt-5 text-lg text-slate-600 leading-8">
               These terms explain the rules and conditions that apply when you
-              use the Manoj Mobiles website, browse products or place an order.
+              use the MANOJ MOBILE RETAIL STORES PVT LTD website, browse products or place an order.
             </p>
 
             <p className="mt-4 text-sm text-slate-500">
@@ -570,7 +570,7 @@ export default function TermsPage() {
 
             <p className="text-sm text-slate-600 leading-6">
               These Terms of Service are intended to explain the general terms
-              governing use of the Manoj Mobiles website. They should be read
+              governing use of the MANOJ MOBILE RETAIL STORES PVT LTD website. They should be read
               together with the Privacy Policy, Return & Cancellation Policy,
               Refund Policy and Warranty Policy. In case of conflict with
               mandatory applicable law or statutory consumer rights, the

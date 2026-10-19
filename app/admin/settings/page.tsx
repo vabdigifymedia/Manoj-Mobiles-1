@@ -9,7 +9,7 @@ import { StoreLocationPicker } from '@/components/admin/StoreLocationPicker'
 
 const DEFAULT_SETTINGS: StoreSettingResponseDTO = {
   id: '1',
-  storeName: 'Manoj Mobiles',
+  storeName: 'MANOJ MOBILE RETAIL STORES PVT LTD',
   logoUrl: '',
   storeLogo: '',
   storeLogoUrl: '',
@@ -78,7 +78,7 @@ export default function AdminSettingsPage() {
     try {
       const activeLogo = settings.logoUrl || settings.storeLogo || settings.storeLogoUrl || settings.logo || ''
       const dto: StoreSettingRequestDTO = {
-        storeName: settings.storeName || 'Manoj Mobiles',
+        storeName: settings.storeName || 'MANOJ MOBILE RETAIL STORES PVT LTD',
         logoUrl: activeLogo,
         storeLogo: activeLogo,
         storeLogoUrl: activeLogo,

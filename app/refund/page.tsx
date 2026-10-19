@@ -10,9 +10,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Refund Policy | Manoj Mobiles",
+  title: "Refund Policy | MANOJ MOBILE RETAIL STORES PVT LTD",
   description:
-    "Read the Refund Policy of Manoj Mobiles covering refund eligibility, processing, payment methods and refund timelines.",
+    "Read the Refund Policy of MANOJ MOBILE RETAIL STORES PVT LTD covering refund eligibility, processing, payment methods and refund timelines.",
 };
 
 export default function RefundPage() {
@@ -34,7 +34,7 @@ export default function RefundPage() {
             </h1>
 
             <p className="mt-5 max-w-2xl text-base leading-7 text-blue-100 sm:text-lg">
-              At Manoj Mobiles, we aim to make the refund process simple,
+              At MANOJ MOBILE RETAIL STORES PVT LTD, we aim to make the refund process simple,
               transparent and convenient for our customers.
             </p>
 
@@ -85,7 +85,7 @@ export default function RefundPage() {
           >
             <p>
               Refunds may be issued for eligible orders where a refund has
-              been approved by Manoj Mobiles in accordance with the applicable
+              been approved by MANOJ MOBILE RETAIL STORES PVT LTD in accordance with the applicable
               order and product conditions.
             </p>
 
@@ -123,7 +123,7 @@ export default function RefundPage() {
               </Bullet>
 
               <Bullet>
-                Manoj Mobiles is unable to fulfil an eligible order and the
+                MANOJ MOBILE RETAIL STORES PVT LTD is unable to fulfil an eligible order and the
                 customer is entitled to a refund.
               </Bullet>
 
@@ -147,7 +147,7 @@ export default function RefundPage() {
             <p>
               If a customer receives a product that is damaged, defective or
               different from the product ordered, the issue should be reported
-              to Manoj Mobiles as soon as possible.
+              to MANOJ MOBILE RETAIL STORES PVT LTD as soon as possible.
             </p>
 
             <p>
@@ -214,7 +214,7 @@ export default function RefundPage() {
             title="Refund Processing Time"
           >
             <p>
-              Once a refund has been approved and initiated by Manoj Mobiles,
+              Once a refund has been approved and initiated by MANOJ MOBILE RETAIL STORES PVT LTD,
               the amount may take additional time to reflect in the customer's
               bank account, card account or payment wallet.
             </p>
@@ -230,7 +230,7 @@ export default function RefundPage() {
 
                   <p className="mt-1 text-sm leading-6 text-blue-900/80">
                     Refund processing and bank crediting are separate stages.
-                    Once Manoj Mobiles initiates the refund, the final credit
+                    Once MANOJ MOBILE RETAIL STORES PVT LTD initiates the refund, the final credit
                     time may depend on the relevant bank, card issuer,
                     payment gateway or financial institution.
                   </p>
@@ -297,7 +297,7 @@ export default function RefundPage() {
             title="Refund Verification"
           >
             <p>
-              Manoj Mobiles may verify an order, payment, customer details,
+              MANOJ MOBILE RETAIL STORES PVT LTD may verify an order, payment, customer details,
               product information and other relevant information before
               approving a refund.
             </p>
@@ -323,7 +323,7 @@ export default function RefundPage() {
 
             <p>
               If the amount still does not appear after the applicable
-              processing period, you may contact Manoj Mobiles with your order
+              processing period, you may contact MANOJ MOBILE RETAIL STORES PVT LTD with your order
               number and refund details so that our team can assist you.
             </p>
           </PolicySection>
@@ -334,7 +334,7 @@ export default function RefundPage() {
             title="Changes to the Refund Policy"
           >
             <p>
-              Manoj Mobiles may update or modify this Refund Policy from time
+              MANOJ MOBILE RETAIL STORES PVT LTD may update or modify this Refund Policy from time
               to time to reflect changes in our services, payment processes,
               business practices or applicable requirements.
             </p>
@@ -359,8 +359,7 @@ export default function RefundPage() {
 
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   If you have questions regarding a refund or need assistance
-                  with an existing refund request, please contact Manoj
-                  Mobiles customer support with your order details.
+                  with an existing refund request, please contact MANOJ MOBILE RETAIL STORES PVT LTD customer support with your order details.
                 </p>
 
                 <p className="mt-4 text-sm font-medium text-blue-700">
@@ -376,7 +375,7 @@ export default function RefundPage() {
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
 
             <p className="text-sm leading-6 text-amber-900">
-              This Refund Policy should be read together with Manoj Mobiles'
+              This Refund Policy should be read together with MANOJ MOBILE RETAIL STORES PVT LTD's
               Terms of Service and Returns & Cancellation Policy. In case of
               any conflict between policies, the terms specifically applicable
               to the relevant order or transaction may apply.

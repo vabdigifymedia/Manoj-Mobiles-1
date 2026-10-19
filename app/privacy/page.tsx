@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Manoj Mobiles",
+  title: "Privacy Policy | MANOJ MOBILE RETAIL STORES PVT LTD",
   description:
-    "Read the Privacy Policy of Manoj Mobiles to understand how we collect, use, protect and manage your information.",
+    "Read the Privacy Policy of MANOJ MOBILE RETAIL STORES PVT LTD to understand how we collect, use, protect and manage your information.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -14,7 +14,7 @@ export default function PrivacyPolicyPage() {
         <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-blue-600">
-              Manoj Mobiles
+              MANOJ MOBILE RETAIL STORES PVT LTD
             </p>
 
             <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
 
             <p className="mt-4 text-base leading-7 text-gray-600">
               Your privacy matters to us. This Privacy Policy explains how
-              Manoj Mobiles collects, uses, stores and protects information
+              MANOJ MOBILE RETAIL STORES PVT LTD collects, uses, stores and protects information
               when you use our website, services and place orders with us.
             </p>
 
@@ -46,7 +46,7 @@ export default function PrivacyPolicyPage() {
               </h2>
 
               <p className="mt-3 leading-7 text-gray-600">
-                When you use Manoj Mobiles services, we may collect information
+                When you use MANOJ MOBILE RETAIL STORES PVT LTD services, we may collect information
                 that you provide directly to us, such as your name, mobile
                 number, email address, delivery address and account details.
               </p>
@@ -86,7 +86,7 @@ export default function PrivacyPolicyPage() {
               </h2>
 
               <p className="mt-3 leading-7 text-gray-600">
-                If you create an account with Manoj Mobiles, we may store the
+                If you create an account with MANOJ MOBILE RETAIL STORES PVT LTD, we may store the
                 information required to maintain your account and provide
                 account-related services. You are responsible for keeping your
                 account credentials secure and for the activity carried out
@@ -108,7 +108,7 @@ export default function PrivacyPolicyPage() {
 
               <p className="mt-3 leading-7 text-gray-600">
                 Payment transactions may be processed through third-party
-                payment service providers. Manoj Mobiles does not need to
+                payment service providers. MANOJ MOBILE RETAIL STORES PVT LTD does not need to
                 directly store sensitive payment credentials such as your
                 complete card details when payment processing is handled by
                 an authorised payment provider.
@@ -192,7 +192,7 @@ export default function PrivacyPolicyPage() {
               <p className="mt-3 leading-7 text-gray-600">
                 Depending on applicable law, you may have rights relating to
                 the personal information we hold about you. You may contact
-                Manoj Mobiles regarding questions, corrections or requests
+                MANOJ MOBILE RETAIL STORES PVT LTD regarding questions, corrections or requests
                 concerning your personal information.
               </p>
             </section>
@@ -218,7 +218,7 @@ export default function PrivacyPolicyPage() {
               </h2>
 
               <p className="mt-3 leading-7 text-gray-600">
-                Manoj Mobiles may update this Privacy Policy from time to time
+                MANOJ MOBILE RETAIL STORES PVT LTD may update this Privacy Policy from time to time
                 to reflect changes in our services, website functionality or
                 applicable requirements. Any updated version will be published
                 on this page.
@@ -234,7 +234,7 @@ export default function PrivacyPolicyPage() {
               <p className="mt-3 leading-7 text-gray-600">
                 If you have questions or concerns regarding this Privacy
                 Policy or the handling of your information, please contact
-                Manoj Mobiles through the contact details provided on our
+                MANOJ MOBILE RETAIL STORES PVT LTD through the contact details provided on our
                 website.
               </p>
             </section>

@@ -57,8 +57,9 @@ export function Footer() {
     return null
   }
 
+  const companyName = 'MANOJ MOBILE RETAIL STORES PVT LTD'
   const logoUrl = storeSettings?.logoUrl || storeSettings?.storeLogo || storeSettings?.storeLogoUrl || storeSettings?.logo
-  const storeName = storeSettings?.storeName || 'Manoj Mobiles'
+  const storeName = !storeSettings?.storeName || storeSettings.storeName === 'Manoj Mobiles' ? companyName : storeSettings.storeName
   const storeAddress = storeSettings?.storeAddress || '123 Tech Park, Electronic City, Bangalore, 560100'
   const supportPhone = storeSettings?.supportPhone || '+91 98765 43210'
   const supportEmail = storeSettings?.supportEmail || 'support@manojmobiles.com'
@@ -79,7 +80,7 @@ export function Footer() {
               ) : (
                 <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground font-black">M</span>
               )}
-              <span className="text-2xl font-black tracking-tight">{storeName}</span>
+              <span className="text-xl sm:text-2xl font-black tracking-tight">{storeName}</span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-sm">
               Your trusted partner for genuine smartphones, accessories, and tech gadgets. We believe in transparency, fast delivery, and excellent customer service.
@@ -158,7 +159,7 @@ export function Footer() {
             href="/copyright"
             className="hover:text-primary transition-colors"
           >
-            © {new Date().getFullYear()} {storeName}. All rights reserved.
+            © {new Date().getFullYear()} MANOJ MOBILE RETAIL STORES PVT LTD. All Rights Reserved.
           </Link>
           <div className="flex gap-6">
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>

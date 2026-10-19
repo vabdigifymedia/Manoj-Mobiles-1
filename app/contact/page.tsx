@@ -108,7 +108,9 @@ export default function ContactPage() {
     storeSettings?.logo
 
   const storeName =
-    storeSettings?.storeName || 'Manoj Mobiles'
+    !storeSettings?.storeName || storeSettings.storeName === 'Manoj Mobiles'
+      ? 'MANOJ MOBILE RETAIL STORES PVT LTD'
+      : storeSettings.storeName
 
   const storeAddress =
     storeSettings?.storeAddress ||
