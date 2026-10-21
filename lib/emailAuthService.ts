@@ -56,11 +56,6 @@ export const emailAuthService = {
     } catch (err: any) {
       const status = err?.response?.status
       const backendMessage = err?.response?.data?.message
-
-      if (status === 404 && backendMessage?.includes('API Endpoint not found')) {
-        throw new Error('Backend deployment in progress: Email OTP endpoint not yet active. Please retry in a few moments.')
-      }
-
       throw new Error(backendMessage || err?.message || 'Failed to send OTP to email.')
     }
   },

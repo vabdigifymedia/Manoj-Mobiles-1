@@ -60,7 +60,6 @@ export default function AuthPage() {
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const [resendTimer, setResendTimer] = useState(30)
   const [isResending, setIsResending] = useState(false)
-  const [receivedOtpHint, setReceivedOtpHint] = useState<string | null>(null)
 
   // Feedback & Loading States
   const [loading, setLoading] = useState(false)
@@ -92,7 +91,6 @@ export default function AuthPage() {
     setStep('form')
     setError('')
     setIsUserNotFound(false)
-    setReceivedOtpHint(null)
     setOtp(Array(6).fill(''))
   }
 
@@ -159,10 +157,7 @@ export default function AuthPage() {
 
     setLoading(true)
     try {
-      const res = await emailAuthService.sendEmailOtp(cleanEmail)
-      if (res.data) {
-        setReceivedOtpHint(res.data)
-      }
+      await emailAuthService.sendEmailOtp(cleanEmail)
 
       setStep('otp')
       setResendTimer(30)
@@ -291,12 +286,9 @@ export default function AuthPage() {
     setError('')
     setIsUserNotFound(false)
     try {
-      const res = await emailAuthService.sendEmailOtp(email.trim())
+      await emailAuthService.sendEmailOtp(email.trim())
       setResendTimer(30)
       setOtp(Array(6).fill(''))
-      if (res.data) {
-        setReceivedOtpHint(res.data)
-      }
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
     } catch (err: any) {
       setError(err?.message || 'Failed to resend code. Please try again.')
@@ -534,13 +526,6 @@ export default function AuthPage() {
                     Change
                   </button>
                 </div>
-
-                {/* Dev OTP Helper */}
-                {receivedOtpHint && (
-                  <div className="mt-2.5 inline-block bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded text-[11px] font-mono text-blue-600 dark:text-blue-400">
-                    Code: {receivedOtpHint}
-                  </div>
-                )}
 
                 {/* 6 OTP Input Boxes */}
                 <div className="flex justify-center gap-2 mt-5" onPaste={handlePaste}>
