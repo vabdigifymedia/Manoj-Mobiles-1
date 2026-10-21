@@ -29,6 +29,23 @@ export interface ServiceResponse<T> {
 
 export const emailAuthService = {
   /**
+   * Check if email is already registered
+   * POST /api/auth/check-email
+   */
+  async checkEmail(email: string): Promise<boolean | null> {
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) return false
+
+    try {
+      const response = await apiClient.checkEmail(cleanEmail)
+      return response.data?.data === true
+    } catch {
+      // Return null if endpoint is not available so frontend can fallback gracefully
+      return null
+    }
+  },
+
+  /**
    * 1. Send OTP to Email
    * POST /api/auth/send-email-otp
    */

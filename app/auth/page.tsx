@@ -2,23 +2,23 @@
 
 /**
  * ============================================================================
- * MANOJ MOBILES - CUSTOMER AUTHENTICATION (EMAIL OTP)
+ * MANOJ MOBILES - SMART UNIFIED CUSTOMER AUTHENTICATION (EMAIL OTP)
  * ============================================================================
  * 
- * Flows:
- * 1. Customer Login:
- *    - Enter Email Address
- *    - POST /api/auth/send-email-otp -> { email }
- *    - Enter 6-digit OTP
- *    - POST /api/auth/login-email-otp -> { email, otp }
- *    - Save JWT access & refresh tokens -> redirect to account
+ * Flow:
+ * 1. Step 'email':
+ *    - User enters Email -> Clicks Continue
+ *    - Calls checkEmail:
+ *      - If user exists -> Sends OTP -> Directly moves to 'otp' (Login)
+ *      - If user is new -> Moves to 'register_details' (asks Name & Phone)
  * 
- * 2. Customer Sign Up:
- *    - Enter Name, Email Address, and Phone Number (10 digits)
- *    - POST /api/auth/send-email-otp -> { email }
- *    - Enter 6-digit OTP
- *    - POST /api/auth/register-email-otp -> { name, email, phone, otp }
- *    - Save JWT access & refresh tokens -> redirect to account
+ * 2. Step 'register_details':
+ *    - User enters Name & 10-digit Phone -> Clicks Continue
+ *    - Sends OTP -> Moves to 'otp' (Register)
+ * 
+ * 3. Step 'otp':
+ *    - 6-digit OTP input (no code hint on screen, no emojis, non-scrollable)
+ *    - Verifies and authenticates session
  * ============================================================================
  */
 
@@ -37,21 +37,22 @@ import {
   RotateCw,
   AlertCircle,
   ArrowRight,
-  Check
+  Check,
+  Pencil
 } from 'lucide-react'
 
 export default function AuthPage() {
   const { fetchCart } = useStore()
 
-  // Authentication Mode: 'login' | 'signup'
+  // Steps: 'email' -> 'register_details' (for new users) -> 'otp' -> 'success'
+  const [step, setStep] = useState<'email' | 'register_details' | 'otp' | 'success'>('email')
+
+  // Flow mode: 'login' (existing user) | 'signup' (new user)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
 
-  // Step: 'form' (enter details & send OTP) | 'otp' (verify 6-digit code) | 'success' (logged in)
-  const [step, setStep] = useState<'form' | 'otp' | 'success'>('form')
-
   // Form Fields
-  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [termsAgreed, setTermsAgreed] = useState(true)
 
@@ -64,7 +65,6 @@ export default function AuthPage() {
   // Feedback & Loading States
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isUserNotFound, setIsUserNotFound] = useState(false)
   const [userNameGreeting, setUserNameGreeting] = useState('')
 
   // Resend OTP Countdown Timer
@@ -83,15 +83,6 @@ export default function AuthPage() {
   // Email format validator
   const isValidEmail = (str: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim())
-  }
-
-  // Switch between Login and Signup
-  const handleSwitchMode = (mode: 'login' | 'signup') => {
-    setAuthMode(mode)
-    setStep('form')
-    setError('')
-    setIsUserNotFound(false)
-    setOtp(Array(6).fill(''))
   }
 
   /**
@@ -120,16 +111,13 @@ export default function AuthPage() {
   }
 
   /**
-   * Step 1: Send OTP to Email (POST /api/auth/send-email-otp)
+   * Step 1: Submit Email (Smart Check: Existing vs New User)
    */
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setIsUserNotFound(false)
 
-    const cleanEmail = email.trim()
-
-    // Validation
+    const cleanEmail = email.trim().toLowerCase()
     if (!cleanEmail) {
       setError('Please enter your email address.')
       return
@@ -139,39 +127,78 @@ export default function AuthPage() {
       return
     }
 
-    if (authMode === 'signup') {
-      if (!name.trim()) {
-        setError('Please enter your full name.')
-        return
-      }
-      const cleanPhone = phone.replace(/\D/g, '')
-      if (!cleanPhone || cleanPhone.length !== 10) {
-        setError('Please enter a valid 10-digit mobile number.')
-        return
-      }
-      if (!termsAgreed) {
-        setError('Please agree to the Terms of Service to continue.')
-        return
-      }
-    }
-
     setLoading(true)
     try {
-      await emailAuthService.sendEmailOtp(cleanEmail)
+      // Check if email already has an account
+      const exists = await emailAuthService.checkEmail(cleanEmail)
 
-      setStep('otp')
-      setResendTimer(30)
-      setOtp(Array(6).fill(''))
-      setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
+      if (exists === true) {
+        // Existing user -> Send OTP and proceed straight to login
+        setAuthMode('login')
+        await emailAuthService.sendEmailOtp(cleanEmail)
+        setStep('otp')
+        setResendTimer(30)
+        setOtp(Array(6).fill(''))
+        setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
+      } else if (exists === false) {
+        // New user -> Show details step (Name + Phone) before sending OTP
+        setAuthMode('signup')
+        setStep('register_details')
+      } else {
+        // Fallback if check endpoint unavailable -> Send OTP directly
+        setAuthMode('login')
+        await emailAuthService.sendEmailOtp(cleanEmail)
+        setStep('otp')
+        setResendTimer(30)
+        setOtp(Array(6).fill(''))
+        setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
+      }
     } catch (err: any) {
-      setError(err?.message || 'Failed to send OTP. Please try again.')
+      setError(err?.message || 'Failed to continue. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   /**
-   * Step 2: Verify OTP
+   * Step 2 (New Users Only): Submit Name and Phone, then send OTP
+   */
+  const handleRegisterDetailsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    const cleanName = name.trim()
+    const cleanPhone = phone.replace(/\D/g, '')
+
+    if (!cleanName) {
+      setError('Please enter your full name.')
+      return
+    }
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setError('Please enter a valid 10-digit mobile number.')
+      return
+    }
+    if (!termsAgreed) {
+      setError('Please agree to the Terms of Service to continue.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      await emailAuthService.sendEmailOtp(email.trim().toLowerCase())
+      setStep('otp')
+      setResendTimer(30)
+      setOtp(Array(6).fill(''))
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send verification code. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
+   * Step 3: Verify OTP (Handles both Login and Registration)
    */
   const handleVerifyOtp = async (otpString?: string) => {
     const code = otpString || otp.join('')
@@ -182,11 +209,10 @@ export default function AuthPage() {
 
     setLoading(true)
     setError('')
-    setIsUserNotFound(false)
 
     try {
       if (authMode === 'login') {
-        const res = await emailAuthService.loginWithEmailOtp(email.trim(), code)
+        const res = await emailAuthService.loginWithEmailOtp(email.trim().toLowerCase(), code)
         if (res.data) {
           setUserNameGreeting(res.data.name)
           setStep('success')
@@ -196,7 +222,7 @@ export default function AuthPage() {
         const cleanPhone = phone.replace(/\D/g, '')
         const res = await emailAuthService.registerWithEmailOtp({
           name: name.trim(),
-          email: email.trim(),
+          email: email.trim().toLowerCase(),
           phone: cleanPhone,
           otp: code
         })
@@ -207,8 +233,12 @@ export default function AuthPage() {
         }
       }
     } catch (err: any) {
-      if (err?.isNotFound || err?.status === 404) {
-        setIsUserNotFound(true)
+      // If login returned 404 (user does not exist), seamlessly switch to complete profile
+      if (authMode === 'login' && (err?.isNotFound || err?.status === 404)) {
+        setAuthMode('signup')
+        setStep('register_details')
+        setError('No account found with this email. Please complete your name and phone number to sign up.')
+        return
       }
       setError(err?.message || 'Invalid OTP. Please check and try again.')
     } finally {
@@ -217,7 +247,7 @@ export default function AuthPage() {
   }
 
   /**
-   * Handle Single Digit OTP Change
+   * Handle Single Digit OTP Input
    */
   const handleOtpChange = (index: number, value: string) => {
     const cleanValue = value.replace(/\D/g, '')
@@ -284,9 +314,8 @@ export default function AuthPage() {
     if (resendTimer > 0 || isResending) return
     setIsResending(true)
     setError('')
-    setIsUserNotFound(false)
     try {
-      await emailAuthService.sendEmailOtp(email.trim())
+      await emailAuthService.sendEmailOtp(email.trim().toLowerCase())
       setResendTimer(30)
       setOtp(Array(6).fill(''))
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100)
@@ -298,12 +327,11 @@ export default function AuthPage() {
   }
 
   /**
-   * Return to form to edit details
+   * Change Email / Return to start
    */
   const handleChangeEmail = () => {
-    setStep('form')
+    setStep('email')
     setError('')
-    setIsUserNotFound(false)
     setOtp(Array(6).fill(''))
   }
 
@@ -322,73 +350,34 @@ export default function AuthPage() {
       <div className="w-full h-full flex overflow-hidden">
         
         {/* ========================================================
-            LEFT SECTION: AUTHENTICATION FORM (COMPACT, NO SCROLL)
+            LEFT SECTION: UNIFIED AUTHENTICATION (NO SCROLL, NO EMOJIS)
            ======================================================== */}
         <div className="w-full lg:w-1/2 h-full flex flex-col justify-center items-center px-6 sm:px-12 relative overflow-hidden bg-[var(--login-color-surface)]">
           <div className="w-full max-w-sm mx-auto">
 
             {/* Error Banner */}
             {error && (
-              <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2.5 text-xs font-medium text-red-600 dark:text-red-400 flex flex-col gap-1.5 animate-in fade-in">
-                <div className="flex items-center gap-2">
-                  <AlertCircle size={14} className="shrink-0" />
-                  <span className="leading-tight">{error}</span>
-                </div>
-                {isUserNotFound && authMode === 'login' && (
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchMode('signup')}
-                    className="self-start text-[11px] font-semibold underline text-blue-600 dark:text-blue-400 cursor-pointer"
-                  >
-                    Create a new account now
-                  </button>
-                )}
+              <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2.5 text-xs font-medium text-red-600 dark:text-red-400 flex items-start gap-2 animate-in fade-in">
+                <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                <span className="leading-tight">{error}</span>
               </div>
             )}
 
             {/* ====================================================
-                VIEW 1: FORM (LOGIN / SIGNUP) -> SENDS OTP
+                STEP 1: EMAIL ENTRY (UNIFIED ENTRY POINT)
                ==================================================== */}
-            {step === 'form' && (
+            {step === 'email' && (
               <div className="w-full animate-in fade-in duration-200">
-                
-                {/* Form Header */}
                 <div className="mb-5">
                   <h1 className="text-xl font-bold text-[var(--login-color-heading)] tracking-tight">
-                    {authMode === 'login' ? 'Sign In' : 'Create an Account'}
+                    Welcome
                   </h1>
                   <p className="text-xs text-[var(--login-color-text-secondary)] mt-1">
-                    {authMode === 'login'
-                      ? 'Enter your email to receive a 6-digit verification code.'
-                      : 'Register with your details to receive a verification code.'}
+                    Enter your email address to sign in or create an account.
                   </p>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSendOtp} className="space-y-3.5">
-                  
-                  {/* Signup Only: Full Name Field */}
-                  {authMode === 'signup' && (
-                    <div>
-                      <label className="block text-xs font-semibold text-[var(--login-color-heading)] mb-1">
-                        Full Name
-                      </label>
-                      <div className="relative">
-                        <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--login-color-text-secondary)] pointer-events-none" />
-                        <input
-                          type="text"
-                          placeholder="e.g. Rahul Sharma"
-                          value={name}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                          className="w-full h-10 pl-9 pr-3 rounded-lg border border-[var(--login-color-border)] bg-[var(--login-color-bg)] text-xs text-[var(--login-color-heading)] placeholder:text-[var(--login-color-text-secondary)] focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
-                          required
-                          autoFocus={authMode === 'signup'}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Email Field */}
+                <form onSubmit={handleEmailSubmit} className="space-y-3.5">
                   <div>
                     <label className="block text-xs font-semibold text-[var(--login-color-heading)] mb-1">
                       Email Address
@@ -402,114 +391,136 @@ export default function AuthPage() {
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                           setEmail(e.target.value)
                           if (error) setError('')
-                          setIsUserNotFound(false)
                         }}
                         className="w-full h-10 pl-9 pr-3 rounded-lg border border-[var(--login-color-border)] bg-[var(--login-color-bg)] text-xs text-[var(--login-color-heading)] placeholder:text-[var(--login-color-text-secondary)] focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
                         required
-                        autoFocus={authMode === 'login'}
+                        autoFocus
                       />
                     </div>
                   </div>
 
-                  {/* Signup Only: Phone Field */}
-                  {authMode === 'signup' && (
-                    <div>
-                      <label className="block text-xs font-semibold text-[var(--login-color-heading)] mb-1">
-                        Mobile Number
-                      </label>
-                      <div className="relative">
-                        <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--login-color-text-secondary)] pointer-events-none" />
-                        <input
-                          type="tel"
-                          placeholder="9876543210"
-                          maxLength={10}
-                          value={phone}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            const val = e.target.value.replace(/\D/g, '').slice(0, 10)
-                            setPhone(val)
-                            if (error) setError('')
-                          }}
-                          className="w-full h-10 pl-9 pr-3 rounded-lg border border-[var(--login-color-border)] bg-[var(--login-color-bg)] text-xs text-[var(--login-color-heading)] placeholder:text-[var(--login-color-text-secondary)] focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
-                          required
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Terms for Signup */}
-                  {authMode === 'signup' && (
-                    <div className="pt-0.5">
-                      <label className="flex items-start gap-2 text-[11px] text-[var(--login-color-text-secondary)] cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={termsAgreed}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTermsAgreed(e.target.checked)}
-                          className="size-3.5 mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600 shrink-0"
-                        />
-                        <span>
-                          I agree to the{' '}
-                          <Link href="/terms" target="_blank" className="text-blue-600 dark:text-blue-400 hover:underline">
-                            Terms of Service
-                          </Link>{' '}
-                          and{' '}
-                          <Link href="/privacy" target="_blank" className="text-blue-600 dark:text-blue-400 hover:underline">
-                            Privacy Policy
-                          </Link>.
-                        </span>
-                      </label>
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <div className="pt-1.5">
+                  <div className="pt-1">
                     <button
                       type="submit"
                       disabled={loading}
                       className="w-full h-10 inline-flex justify-center items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 text-xs font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                     >
-                      <span>{loading ? 'Sending code...' : 'Continue'}</span>
+                      <span>{loading ? 'Continuing...' : 'Continue'}</span>
                       {!loading && <ArrowRight size={14} />}
                     </button>
                   </div>
+
+                  <p className="text-[11px] text-center text-[var(--login-color-text-secondary)] pt-1">
+                    We will send a 6-digit verification code to your email.
+                  </p>
                 </form>
-
-                {/* Footer Switcher */}
-                <div className="mt-5 pt-4 border-t border-[var(--login-color-border)] text-center text-xs text-[var(--login-color-text-secondary)]">
-                  {authMode === 'login' ? (
-                    <p>
-                      New customer?{' '}
-                      <button
-                        type="button"
-                        onClick={() => handleSwitchMode('signup')}
-                        className="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                      >
-                        Create an account
-                      </button>
-                    </p>
-                  ) : (
-                    <p>
-                      Already have an account?{' '}
-                      <button
-                        type="button"
-                        onClick={() => handleSwitchMode('login')}
-                        className="font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                      >
-                        Sign in
-                      </button>
-                    </p>
-                  )}
-                </div>
-
               </div>
             )}
 
             {/* ====================================================
-                VIEW 2: 6-DIGIT EMAIL OTP VERIFICATION
+                STEP 2: NEW USER DETAILS (NAME & PHONE)
+               ==================================================== */}
+            {step === 'register_details' && (
+              <div className="w-full animate-in fade-in duration-200">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between">
+                    <h1 className="text-xl font-bold text-[var(--login-color-heading)] tracking-tight">
+                      Complete Profile
+                    </h1>
+                    <button
+                      type="button"
+                      onClick={handleChangeEmail}
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                    >
+                      <Pencil size={11} /> <span>Change</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--login-color-text-secondary)] mt-1">
+                    Enter your details to create an account for <span className="font-semibold text-[var(--login-color-heading)]">{email}</span>.
+                  </p>
+                </div>
+
+                <form onSubmit={handleRegisterDetailsSubmit} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--login-color-heading)] mb-1">
+                      Full Name
+                    </label>
+                    <div className="relative">
+                      <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--login-color-text-secondary)] pointer-events-none" />
+                      <input
+                        type="text"
+                        placeholder="e.g. Rahul Sharma"
+                        value={name}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                        className="w-full h-10 pl-9 pr-3 rounded-lg border border-[var(--login-color-border)] bg-[var(--login-color-bg)] text-xs text-[var(--login-color-heading)] placeholder:text-[var(--login-color-text-secondary)] focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
+                        required
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--login-color-heading)] mb-1">
+                      Mobile Number
+                    </label>
+                    <div className="relative">
+                      <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--login-color-text-secondary)] pointer-events-none" />
+                      <input
+                        type="tel"
+                        placeholder="9876543210"
+                        maxLength={10}
+                        value={phone}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 10)
+                          setPhone(val)
+                          if (error) setError('')
+                        }}
+                        className="w-full h-10 pl-9 pr-3 rounded-lg border border-[var(--login-color-border)] bg-[var(--login-color-bg)] text-xs text-[var(--login-color-heading)] placeholder:text-[var(--login-color-text-secondary)] focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-0.5">
+                    <label className="flex items-start gap-2 text-[11px] text-[var(--login-color-text-secondary)] cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={termsAgreed}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTermsAgreed(e.target.checked)}
+                        className="size-3.5 mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600 shrink-0"
+                      />
+                      <span>
+                        I agree to the{' '}
+                        <Link href="/terms" target="_blank" className="text-blue-600 dark:text-blue-400 hover:underline">
+                          Terms of Service
+                        </Link>{' '}
+                        and{' '}
+                        <Link href="/privacy" target="_blank" className="text-blue-600 dark:text-blue-400 hover:underline">
+                          Privacy Policy
+                        </Link>.
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="pt-1">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full h-10 inline-flex justify-center items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 text-xs font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                    >
+                      <span>{loading ? 'Sending code...' : 'Send Verification Code'}</span>
+                      {!loading && <ArrowRight size={14} />}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* ====================================================
+                STEP 3: 6-DIGIT EMAIL OTP VERIFICATION
                ==================================================== */}
             {step === 'otp' && (
               <div className="w-full text-center animate-in fade-in duration-200">
-                
-                {/* Title */}
                 <h1 className="text-xl font-bold text-[var(--login-color-heading)] tracking-tight">
                   Enter Verification Code
                 </h1>
@@ -527,7 +538,7 @@ export default function AuthPage() {
                   </button>
                 </div>
 
-                {/* 6 OTP Input Boxes */}
+                {/* 6 OTP Input Boxes (No code hint displayed) */}
                 <div className="flex justify-center gap-2 mt-5" onPaste={handlePaste}>
                   {otp.map((digit: string, index: number) => (
                     <input
@@ -583,15 +594,14 @@ export default function AuthPage() {
                     onClick={handleChangeEmail}
                     className="text-[11px] text-[var(--login-color-text-secondary)] hover:text-[var(--login-color-heading)] hover:underline cursor-pointer mt-1"
                   >
-                    Back
+                    Back to email
                   </button>
                 </div>
-
               </div>
             )}
 
             {/* ====================================================
-                VIEW 3: SUCCESS STATE
+                STEP 4: SUCCESS STATE
                ==================================================== */}
             {step === 'success' && (
               <div className="w-full text-center py-4 animate-in fade-in duration-200">

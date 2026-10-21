@@ -429,6 +429,9 @@ export const apiClient = {
     axiosInstance.post<ApiResponse<import('./types').AuthResponseDTO>>('/api/auth/register', { name, phone }),
 
   // --- Customer Auth (Email OTP - Pine Labs Approval) ---
+  checkEmail: (email: string) =>
+    axiosInstance.post<ApiResponse<boolean>>('/api/auth/check-email', { email }),
+
   sendEmailOtp: (email: string) =>
     axiosInstance.post<ApiResponse<string>>('/api/auth/send-email-otp', { email }),
 
