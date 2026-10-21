@@ -15,7 +15,7 @@ import { apiClient } from './apiClient'
 export interface EmailAuthResult {
   token: string
   refreshToken: string
-  userId: string
+  userId?: string
   name: string
   role: string
   email?: string
