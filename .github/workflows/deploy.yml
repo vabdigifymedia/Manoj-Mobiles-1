@@ -40,13 +40,9 @@ jobs:
             echo "📦 Installing npm dependencies..."
             npm install --include=optional
 
-            echo "🔍 Verifying CSS compiler native binaries..."
-            if ! node -e "require('lightningcss')" 2>/dev/null; then
-              echo "🔧 Fixing lightningcss binaries..."
-              npm install lightningcss-linux-x64-gnu@1.32.0 --no-save --force
-              mkdir -p node_modules/lightningcss
-              cp -f node_modules/lightningcss-linux-x64-gnu/*.node node_modules/lightningcss/ 2>/dev/null || true
-            fi
+            # Ensure native node binary is directly inside lightningcss
+            mkdir -p node_modules/lightningcss
+            cp -f node_modules/lightningcss-linux-x64-gnu/*.node node_modules/lightningcss/ 2>/dev/null || true
 
             echo "🏗️ Building Next.js Standalone Application..."
             npm run build
