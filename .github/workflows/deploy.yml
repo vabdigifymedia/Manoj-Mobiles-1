@@ -26,6 +26,10 @@ jobs:
           script: |
             set -e
 
+            # Ensure PATH and Node/NVM environment are loaded for non-interactive SSH
+            export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+            [ -s "$HOME/.nvm/nvm.sh" ] && \. "$HOME/.nvm/nvm.sh" || true
+
             echo "🚀 Starting Deployment for Manoj Mobiles..."
             cd /var/www/manoj-mobiles
 
