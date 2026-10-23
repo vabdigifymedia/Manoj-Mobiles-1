@@ -38,7 +38,7 @@ jobs:
             git reset --hard origin/main
 
             echo "📦 Installing npm dependencies..."
-            npm install --omit=optional
+            npm install --include=optional
 
             echo "🏗️ Building Next.js Standalone Application..."
             npm run build
