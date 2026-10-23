@@ -39,6 +39,10 @@ jobs:
 
             echo "📦 Installing npm dependencies..."
             npm install --include=optional
+            if [ ! -d "node_modules/lightningcss-linux-x64-gnu" ]; then
+              echo "🔧 Installing lightningcss-linux-x64-gnu binary..."
+              npm install lightningcss-linux-x64-gnu@1.32.0 --no-save
+            fi
 
             echo "🏗️ Building Next.js Standalone Application..."
             npm run build
