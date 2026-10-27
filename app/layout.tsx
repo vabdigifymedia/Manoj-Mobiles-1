@@ -14,6 +14,10 @@ import Script from 'next/script'
 
 import { BulkInquiryProvider } from '@/components/bulk-inquiry-provider'
 
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || 'GTM-MM2KZX59'
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-TQ1H3FXHFQ'
+const GSC_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || ''
+
 const inter = {
   className: '',
   variable: '--font-inter',
@@ -24,6 +28,13 @@ export const metadata: Metadata = {
   description: 'Shop genuine smartphones, accessories, and local mobile service from Manoj Mobiles.',
   generator: 'v0.app',
   manifest: '/manifest.json',
+  ...(GSC_VERIFICATION
+    ? {
+        verification: {
+          google: GSC_VERIFICATION,
+        },
+      }
+    : {}),
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -61,7 +72,50 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <head>
+        {/* Google Search Console verification */}
+        <meta
+          name="google-site-verification"
+          content={GSC_VERIFICATION}
+        />
+
+        {/* Google Tag Manager */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${GTM_ID}');`,
+          }}
+        />
+
+        {/* Google Analytics (gtag.js) */}
+        <script
+          async
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}');
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.className} font-sans antialiased flex min-h-screen flex-col bg-background pb-[env(safe-area-inset-bottom)]`} suppressHydrationWarning>
+        {/* Google Tag Manager (noscript) */}
+        <noscript>
+          <iframe
+            src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
         <ScrollbarManager />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
