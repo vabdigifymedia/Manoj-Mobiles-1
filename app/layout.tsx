@@ -16,7 +16,7 @@ import { BulkInquiryProvider } from '@/components/bulk-inquiry-provider'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || 'GTM-MM2KZX59'
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-TQ1H3FXHFQ'
-const GSC_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || ''
+const GSC_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'Ps9IJo4sAROCqcloOgV7is3lpXl5RlBlGv6ZHUjWHMA'
 
 const inter = {
   className: '',
