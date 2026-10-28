@@ -26,10 +26,37 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://emistore.in'),
   title: 'Manoj Mobiles | Smarter choices, better service',
   description: 'Shop genuine smartphones, accessories, and local mobile service from Manoj Mobiles.',
   generator: 'v0.app',
   manifest: '/manifest.json',
+  alternates: {
+    canonical: 'https://emistore.in',
+  },
+  openGraph: {
+    title: 'Manoj Mobiles | Smarter choices, better service',
+    description: 'Shop genuine smartphones, accessories, and local mobile service from Manoj Mobiles.',
+    url: 'https://emistore.in',
+    siteName: 'EMIStore',
+    locale: 'en_IN',
+    type: 'website',
+    images: [
+      {
+        url: 'https://emistore.in/ogimage.png',
+        width: 1672,
+        height: 940,
+        alt: 'EMIStore - Your Dream Phone on Easy EMIs',
+        type: 'image/png',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Manoj Mobiles | Smarter choices, better service',
+    description: 'Shop genuine smartphones, accessories, and local mobile service from Manoj Mobiles.',
+    images: ['https://emistore.in/ogimage.png'],
+  },
   ...(GSC_VERIFICATION
     ? {
         verification: {
@@ -40,24 +67,22 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Manoj Mobiles',
+    title: 'EMIStore',
   },
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
+        url: '/logo.png',
       },
     ],
-    apple: '/apple-icon.png',
+    shortcut: '/logo.png',
+    apple: [
+      {
+        url: '/logo.png',
+        sizes: '180x180',
+        type: 'image/png',
+      },
+    ],
   },
 }
 

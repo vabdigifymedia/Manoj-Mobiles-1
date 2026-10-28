@@ -32,7 +32,7 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
 
         <div className="flex items-center gap-2">
           <Link
-            href="/shop"
+            href="/brands"
             className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:opacity-80 transition-opacity mr-1"
           >
             View All <FaArrowRight size={16} />

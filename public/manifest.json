@@ -1,6 +1,6 @@
 {
-  "name": "Manoj Mobiles — Smarter Choices",
-  "short_name": "Manoj Mobiles",
+  "name": "EMIStore — Smarter Choices",
+  "short_name": "EMIStore",
   "description": "Shop genuine smartphones, accessories, and local mobile service.",
   "start_url": "/",
   "display": "standalone",
@@ -9,9 +9,9 @@
   "theme_color": "#000000",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "/logo.png",
       "sizes": "any",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {

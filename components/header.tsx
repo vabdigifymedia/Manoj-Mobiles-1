@@ -29,6 +29,7 @@ import {
 const nav = [
   { key: '/', label: 'Home' },
   { key: '/shop', label: 'Shop' },
+  { key: '/brands', label: 'Brands' },
   { key: '/emi-eligibility', label: 'EMI Eligibility' },
   { key: '/contact', label: 'Contact Us' },
   // TEMPORARILY HIDDEN: Global Buy
