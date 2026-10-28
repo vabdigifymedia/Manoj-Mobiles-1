@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FaXmark, FaMoon, FaMobileScreen, FaUser, FaBagShopping, FaBars, FaMagnifyingGlass, FaMicrophone, FaLocationDot, FaSun, FaHeart, FaArrowLeft, FaBoxOpen, FaArrowRightFromBracket, FaChevronDown, FaGear, FaMapLocationDot } from 'react-icons/fa6'
+import { FaXmark, FaMoon, FaMobileScreen, FaUser, FaBagShopping, FaBars, FaMagnifyingGlass, FaMicrophone, FaLocationDot, FaSun, FaHeart, FaArrowLeft, FaBoxOpen, FaArrowRightFromBracket, FaChevronDown, FaGear, FaMapLocationDot, FaArrowTrendUp } from 'react-icons/fa6'
 import { useTheme } from 'next-themes'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -10,6 +10,7 @@ import { useStore } from './store-provider'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/apiClient'
 import type { ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO, StoreSettingResponseDTO } from '@/lib/types'
+import { type SearchSuggestionItem, POPULAR_SEARCH_SUGGESTIONS } from '@/lib/smartSearch'
 import { SearchOverlay } from './search-overlay'
 import { ManojAIChatbot } from './ai/manoj-ai-chatbot'
 import { useBulkInquiry } from './bulk-inquiry-provider'
@@ -45,6 +46,9 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [searchResults, setSearchResults] = useState<ProductListResponseDTO[]>([])
+  const [smartSuggestions, setSmartSuggestions] = useState<SearchSuggestionItem[]>(POPULAR_SEARCH_SUGGESTIONS.slice(0, 5))
+  const [smartBrands, setSmartBrands] = useState<BrandResponseDTO[]>([])
+  const [smartCategories, setSmartCategories] = useState<CategoryResponseDTO[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
   const [showMobileSearch, setShowMobileSearch] = useState(false)
@@ -139,16 +143,25 @@ export function Header() {
   }, [searchQuery])
 
   useEffect(() => {
-    if (debouncedQuery.trim().length > 1) {
+    if (debouncedQuery.trim().length > 0) {
       setIsSearching(true)
-      apiClient.searchProducts(debouncedQuery, 0, 5)
-        .then(res => {
-          setSearchResults(res.data.data.content)
+      fetch(`/api/smart-search?q=${encodeURIComponent(debouncedQuery.trim())}&limit=5`)
+        .then(res => res.json())
+        .then(data => {
+          if (data) {
+            setSearchResults(data.products || [])
+            setSmartSuggestions(data.suggestions || [])
+            setSmartBrands(data.brands || [])
+            setSmartCategories(data.categories || [])
+          }
           setIsSearching(false)
         })
         .catch(() => setIsSearching(false))
     } else {
       setSearchResults([])
+      setSmartSuggestions(POPULAR_SEARCH_SUGGESTIONS.slice(0, 5))
+      setSmartBrands([])
+      setSmartCategories([])
     }
   }, [debouncedQuery])
 
@@ -283,79 +296,136 @@ export function Header() {
                 }}
               />
             </div>
-            {showSearchDropdown && searchQuery.trim().length > 1 && (
+            {showSearchDropdown && (
               <div className="absolute top-full mt-2 w-full bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50 flex flex-col">
                 {isSearching ? (
-                  <div className="p-4 text-center text-sm text-muted-foreground font-medium">Searching...</div>
-                ) : (searchResults.length > 0 || matchedBrands.length > 0 || matchedCategories.length > 0) ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground font-medium flex items-center justify-center gap-2">
+                    <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <span>Searching...</span>
+                  </div>
+                ) : (smartSuggestions.length > 0 || searchResults.length > 0 || smartBrands.length > 0 || smartCategories.length > 0) ? (
                   <>
-                    <div className="max-h-[400px] overflow-y-auto pb-2">
-                      {matchedCategories.length > 0 && (
-                        <div className="px-3 pt-3 pb-1">
+                    <div className="max-h-[420px] overflow-y-auto pb-2 divide-y divide-border/40">
+                      {/* Smart Suggestions */}
+                      {smartSuggestions.length > 0 && (
+                        <div className="px-3 pt-3 pb-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-2">
+                            {searchQuery.trim() ? 'Suggested Searches' : 'Popular Searches'}
+                          </p>
+                          {smartSuggestions.map((item, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setShowSearchDropdown(false)
+                                setSearchQuery(item.query)
+                                router.push(`/shop?q=${encodeURIComponent(item.query)}`)
+                              }}
+                              className="w-full text-left flex items-center justify-between gap-3 p-2 hover:bg-muted/60 rounded-xl transition-colors group"
+                            >
+                              <div className="flex items-center gap-2.5 overflow-hidden">
+                                <div className="grid size-7 place-items-center rounded-lg bg-muted text-muted-foreground group-hover:text-primary transition-colors shrink-0">
+                                  <FaArrowTrendUp size={12} />
+                                </div>
+                                <span className="text-sm font-semibold truncate text-foreground group-hover:text-primary transition-colors">
+                                  {item.title}
+                                </span>
+                              </div>
+                              {item.badge && (
+                                <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Matching Categories */}
+                      {smartCategories.length > 0 && (
+                        <div className="px-3 pt-3 pb-2">
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-2">Categories</p>
-                          {matchedCategories.map(c => (
+                          {smartCategories.map(c => (
                             <button 
                               key={c.id} 
-                              onClick={() => { setShowSearchDropdown(false); router.push(`/shop?q=${encodeURIComponent(c.name)}`) }}
-                              className="w-full text-left flex items-center gap-3 p-2 hover:bg-muted/50 rounded-lg transition-colors"
+                              onClick={() => { setShowSearchDropdown(false); router.push(`/shop?category=${c.slug}`) }}
+                              className="w-full text-left flex items-center gap-3 p-2 hover:bg-muted/60 rounded-xl transition-colors"
                             >
-                              <div className="grid size-8 place-items-center rounded-md bg-muted text-muted-foreground">
-                                <FaMagnifyingGlass size={14} />
+                              <div className="grid size-8 place-items-center rounded-lg bg-muted text-muted-foreground">
+                                <FaMagnifyingGlass size={13} />
                               </div>
-                              <span className="text-sm font-semibold">{c.name}</span>
+                              <span className="text-sm font-semibold text-foreground">{c.name}</span>
                             </button>
                           ))}
                         </div>
                       )}
 
-                      {matchedBrands.length > 0 && (
-                        <div className="px-3 pt-3 pb-1">
+                      {/* Matching Brands */}
+                      {smartBrands.length > 0 && (
+                        <div className="px-3 pt-3 pb-2">
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-2">Brands</p>
-                          {matchedBrands.map(b => (
+                          {smartBrands.map(b => (
                             <button 
                               key={b.id} 
-                              onClick={() => { setShowSearchDropdown(false); router.push(`/shop?q=${encodeURIComponent(b.name)}`) }}
-                              className="w-full text-left flex items-center gap-3 p-2 hover:bg-muted/50 rounded-lg transition-colors"
+                              onClick={() => { setShowSearchDropdown(false); router.push(`/shop?brand=${b.slug}`) }}
+                              className="w-full text-left flex items-center gap-3 p-2 hover:bg-muted/60 rounded-xl transition-colors"
                             >
-                              <img src={b.logoUrl || '/placeholder.png'} alt={b.name} className="size-8 object-contain bg-background rounded-md p-1 mix-blend-multiply dark:mix-blend-normal" />
-                              <span className="text-sm font-semibold">{b.name}</span>
+                              {b.logoUrl ? (
+                                <img src={b.logoUrl} alt={b.name} className="size-8 object-contain bg-background rounded-lg p-1 border border-border" />
+                              ) : (
+                                <div className="grid size-8 place-items-center rounded-lg bg-muted text-muted-foreground font-black text-xs">
+                                  {b.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                              <span className="text-sm font-semibold text-foreground">{b.name}</span>
                             </button>
                           ))}
                         </div>
                       )}
 
+                      {/* Matching Products */}
                       {searchResults.length > 0 && (
-                        <div className="px-3 pt-3 pb-1">
+                        <div className="px-3 pt-3 pb-2">
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-2">Products</p>
-                          {searchResults.map(product => (
-                            <Link 
-                              key={product.id} 
-                              href={`/product/${product.id}`}
-                              onClick={() => { setShowSearchDropdown(false); setSearchQuery(''); }}
-                              className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-lg transition-colors"
-                            >
-                              <img src={product.primaryImageUrl || '/placeholder.png'} alt={product.name} className="size-10 object-contain bg-background rounded-md p-1 mix-blend-multiply dark:mix-blend-normal" />
-                              <div className="flex-1 overflow-hidden">
-                                <p className="text-sm font-bold truncate">{product.name}</p>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{product.brandName}</p>
-                              </div>
-                            </Link>
-                          ))}
+                          {searchResults.map(product => {
+                            const priceVal = (product as any).sellingPrice || (product as any).price || (product as any).startingPrice
+                            return (
+                              <Link 
+                                key={product.id} 
+                                href={`/product/${product.id}`}
+                                onClick={() => { setShowSearchDropdown(false); setSearchQuery(''); }}
+                                className="flex items-center gap-3 p-2 hover:bg-muted/60 rounded-xl transition-colors group"
+                              >
+                                <img src={product.primaryImageUrl || '/placeholder.png'} alt={product.name} className="size-10 object-contain bg-background rounded-lg p-1 border border-border shrink-0" />
+                                <div className="flex-1 overflow-hidden min-w-0">
+                                  <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{product.name}</p>
+                                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{product.brandName}</p>
+                                </div>
+                                {priceVal ? (
+                                  <div className="text-right shrink-0">
+                                    <span className="text-xs font-black text-foreground">₹{Number(priceVal).toLocaleString('en-IN')}</span>
+                                  </div>
+                                ) : null}
+                              </Link>
+                            )
+                          })}
                         </div>
                       )}
                     </div>
-                    <button 
-                      onClick={() => {
-                        setShowSearchDropdown(false)
-                        router.push(`/shop?q=${encodeURIComponent(searchQuery.trim())}`)
-                      }}
-                      className="w-full p-3 bg-muted/30 text-xs font-bold text-primary hover:bg-muted/50 transition-colors border-t border-border"
-                    >
-                      View all results
-                    </button>
+                    {searchQuery.trim() && (
+                      <button 
+                        onClick={() => {
+                          setShowSearchDropdown(false)
+                          router.push(`/shop?q=${encodeURIComponent(searchQuery.trim())}`)
+                        }}
+                        className="w-full p-3 bg-muted/40 text-xs font-bold text-primary hover:bg-muted transition-colors border-t border-border flex items-center justify-center gap-1.5"
+                      >
+                        <FaMagnifyingGlass size={12} />
+                        <span>View all results for &ldquo;{searchQuery.trim()}&rdquo;</span>
+                      </button>
+                    )}
                   </>
                 ) : (
-                  <div className="p-4 text-center text-sm text-muted-foreground font-medium">No matches found</div>
+                  <div className="p-6 text-center text-sm text-muted-foreground font-medium">No matches found for &ldquo;{searchQuery}&rdquo;</div>
                 )}
               </div>
             )}

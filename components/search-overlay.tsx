@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { FaXmark, FaArrowLeft, FaMagnifyingGlass } from 'react-icons/fa6'
+import { FaXmark, FaArrowLeft, FaMagnifyingGlass, FaArrowTrendUp } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import type { ProductListResponseDTO, BrandResponseDTO, CategoryResponseDTO } from '@/lib/types'
+import { type SearchSuggestionItem, POPULAR_SEARCH_SUGGESTIONS } from '@/lib/smartSearch'
 import Link from 'next/link'
 
 interface SearchOverlayProps {
@@ -19,6 +20,9 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [results, setResults] = useState<ProductListResponseDTO[]>([])
+  const [smartSuggestions, setSmartSuggestions] = useState<SearchSuggestionItem[]>(POPULAR_SEARCH_SUGGESTIONS)
+  const [smartBrands, setSmartBrands] = useState<BrandResponseDTO[]>([])
+  const [smartCategories, setSmartCategories] = useState<CategoryResponseDTO[]>([])
   const [brands, setBrands] = useState<BrandResponseDTO[]>([])
   const [categories, setCategories] = useState<CategoryResponseDTO[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -39,15 +43,27 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     return () => clearTimeout(timer)
   }, [query])
 
-  // Fetch search results
+  // Fetch search results via smart search API
   useEffect(() => {
-    if (debouncedQuery.trim().length > 1) {
+    if (debouncedQuery.trim().length > 0) {
       setIsSearching(true)
-      apiClient.searchProducts(debouncedQuery, 0, 8)
-        .then(res => { setResults(res.data.data.content); setIsSearching(false) })
+      fetch(`/api/smart-search?q=${encodeURIComponent(debouncedQuery.trim())}&limit=8`)
+        .then(res => res.json())
+        .then(data => {
+          if (data) {
+            setResults(data.products || [])
+            setSmartSuggestions(data.suggestions || [])
+            setSmartBrands(data.brands || [])
+            setSmartCategories(data.categories || [])
+          }
+          setIsSearching(false)
+        })
         .catch(() => setIsSearching(false))
     } else {
       setResults([])
+      setSmartSuggestions(POPULAR_SEARCH_SUGGESTIONS)
+      setSmartBrands([])
+      setSmartCategories([])
     }
   }, [debouncedQuery])
 
@@ -57,14 +73,6 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     if (open) document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [open, onClose])
-
-  // Filter matching brands & categories
-  const matchedBrands = debouncedQuery.trim().length > 1
-    ? brands.filter(b => b.name.toLowerCase().includes(debouncedQuery.toLowerCase())).slice(0, 3)
-    : []
-  const matchedCategories = debouncedQuery.trim().length > 1
-    ? categories.filter(c => c.name.toLowerCase().includes(debouncedQuery.toLowerCase())).slice(0, 3)
-    : []
 
   const handleNavigate = (url: string) => {
     onClose()
@@ -109,32 +117,55 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
 
       {/* Results */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
-        {query.trim().length <= 1 ? (
-          // Popular categories when no query
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Popular Categories</p>
-            <div className="flex flex-wrap gap-2">
-              {categories.slice(0, 8).map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => handleNavigate(`/shop?category=${c.slug}`)}
-                  className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
-                >
-                  {c.name}
-                </button>
-              ))}
+        {query.trim().length === 0 ? (
+          <div className="space-y-6">
+            {/* Popular Searches */}
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Popular Searches</p>
+              <div className="flex flex-wrap gap-2">
+                {POPULAR_SEARCH_SUGGESTIONS.map((s, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleNavigate(`/shop?q=${encodeURIComponent(s.query)}`)}
+                    className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold text-foreground hover:border-primary/50 hover:text-primary transition-colors active:scale-95"
+                  >
+                    <FaArrowTrendUp size={11} className="text-primary/70 shrink-0" />
+                    <span>{s.title}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 mt-6">Top Brands</p>
-            <div className="flex flex-wrap gap-2">
-              {brands.slice(0, 8).map(b => (
-                <button
-                  key={b.id}
-                  onClick={() => handleNavigate(`/shop?brand=${b.slug}`)}
-                  className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
-                >
-                  {b.name}
-                </button>
-              ))}
+
+            {/* Top Brands */}
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Top Brands</p>
+              <div className="flex flex-wrap gap-2">
+                {brands.slice(0, 8).map(b => (
+                  <button
+                    key={b.id}
+                    onClick={() => handleNavigate(`/shop?brand=${b.slug}`)}
+                    className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
+                  >
+                    {b.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Popular Categories */}
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Popular Categories</p>
+              <div className="flex flex-wrap gap-2">
+                {categories.slice(0, 8).map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => handleNavigate(`/shop?category=${c.slug}`)}
+                    className="rounded-full border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         ) : isSearching ? (
@@ -143,11 +174,39 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Suggestions */}
+            {smartSuggestions.length > 0 && (
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Suggestions</p>
+                <div className="space-y-1">
+                  {smartSuggestions.map((s, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleNavigate(`/shop?q=${encodeURIComponent(s.query)}`)}
+                      className="w-full flex items-center justify-between gap-3 p-2.5 rounded-xl hover:bg-muted transition-colors active:scale-[.98]"
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="grid size-8 place-items-center rounded-lg bg-muted text-muted-foreground shrink-0">
+                          <FaArrowTrendUp size={13} />
+                        </div>
+                        <span className="text-sm font-semibold truncate text-left">{s.title}</span>
+                      </div>
+                      {s.badge && (
+                        <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          {s.badge}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Matched Categories */}
-            {matchedCategories.length > 0 && (
+            {smartCategories.length > 0 && (
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Categories</p>
-                {matchedCategories.map(c => (
+                {smartCategories.map(c => (
                   <button
                     key={c.id}
                     onClick={() => handleNavigate(`/shop?category=${c.slug}`)}
@@ -163,10 +222,10 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             )}
 
             {/* Matched Brands */}
-            {matchedBrands.length > 0 && (
+            {smartBrands.length > 0 && (
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Brands</p>
-                {matchedBrands.map(b => (
+                {smartBrands.map(b => (
                   <button
                     key={b.id}
                     onClick={() => handleNavigate(`/shop?brand=${b.slug}`)}
@@ -189,41 +248,50 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             {results.length > 0 && (
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Products</p>
-                {results.map(product => (
-                  <Link
-                    key={product.id}
-                    href={`/product/${product.id}`}
-                    onClick={() => { onClose(); setQuery('') }}
-                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted transition-colors active:scale-[.98]"
-                  >
-                    <img
-                      src={product.primaryImageUrl || '/placeholder.png'}
-                      alt={product.name}
-                      className="size-12 object-contain bg-background rounded-lg p-1 mix-blend-multiply dark:mix-blend-normal"
-                    />
-                    <div className="flex-1 overflow-hidden">
-                      <p className="text-sm font-bold truncate">{product.name}</p>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{product.brandName}</p>
-                    </div>
-                  </Link>
-                ))}
+                {results.map(product => {
+                  const priceVal = (product as any).sellingPrice || (product as any).price || (product as any).startingPrice
+                  return (
+                    <Link
+                      key={product.id}
+                      href={`/product/${product.id}`}
+                      onClick={() => { onClose(); setQuery('') }}
+                      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted transition-colors active:scale-[.98]"
+                    >
+                      <img
+                        src={product.primaryImageUrl || '/placeholder.png'}
+                        alt={product.name}
+                        className="size-12 object-contain bg-background rounded-lg p-1 border border-border shrink-0"
+                      />
+                      <div className="flex-1 overflow-hidden min-w-0">
+                        <p className="text-sm font-bold truncate">{product.name}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{product.brandName}</p>
+                      </div>
+                      {priceVal ? (
+                        <div className="text-right shrink-0">
+                          <span className="text-xs font-black text-foreground">₹{Number(priceVal).toLocaleString('en-IN')}</span>
+                        </div>
+                      ) : null}
+                    </Link>
+                  )
+                })}
               </div>
             )}
 
             {/* No results */}
-            {results.length === 0 && matchedBrands.length === 0 && matchedCategories.length === 0 && (
+            {results.length === 0 && smartBrands.length === 0 && smartCategories.length === 0 && smartSuggestions.length === 0 && (
               <div className="py-12 text-center">
                 <p className="text-sm font-bold text-muted-foreground">No results for &ldquo;{query}&rdquo;</p>
               </div>
             )}
 
             {/* View All */}
-            {(results.length > 0 || matchedBrands.length > 0) && (
+            {query.trim() && (
               <button
                 onClick={() => handleNavigate(`/shop?q=${encodeURIComponent(query.trim())}`)}
-                className="w-full text-center py-3 text-xs font-bold text-primary hover:underline"
+                className="w-full text-center py-3 text-xs font-bold text-primary hover:underline flex items-center justify-center gap-1.5"
               >
-                View all results for &ldquo;{query}&rdquo;
+                <FaMagnifyingGlass size={12} />
+                <span>View all results for &ldquo;{query}&rdquo;</span>
               </button>
             )}
           </div>
