@@ -407,3 +407,98 @@ export function selectByCategory(catalog: CatalogProduct[], category?: CategoryL
   if (!category) return []
   return selectVisible(catalog).filter(product => matchesCategory(product, category))
 }
+
+export interface ActiveCategorySection {
+  category: {
+    id: string
+    name: string
+    slug: string
+    description?: string
+    imageUrl?: string
+  }
+  products: CatalogProduct[]
+}
+
+/**
+ * Discovers and groups catalog products into active category sections.
+ * - Deduplicates categories by normalized id, name and slug.
+ * - Hides categories with 0 active visible products.
+ * - Discovers categories both from category master data and from active products in the catalog.
+ */
+export function selectActiveCategorySections(
+  categories: CategoryLike[],
+  catalog: CatalogProduct[],
+  limitPerCategory = 8
+): ActiveCategorySection[] {
+  const visible = selectVisible(catalog)
+  const sections: ActiveCategorySection[] = []
+  const seenKeys = new Set<string>()
+
+  // 1. Process known categories from master data first
+  for (const cat of categories) {
+    if (!cat) continue
+    const name = toText(cat.name)
+    const slug = toText(cat.slug) || normalizeKey(name)
+    const id = toText(cat.id) || slug
+    if (!name && !slug) continue
+
+    const nameKey = normalizeKey(name)
+    const slugKey = normalizeKey(slug)
+    const idKey = normalizeKey(id)
+
+    if (seenKeys.has(nameKey) || seenKeys.has(slugKey) || (idKey && seenKeys.has(idKey))) {
+      continue
+    }
+
+    const matchingProducts = visible.filter(p => matchesCategory(p, cat))
+    if (matchingProducts.length === 0) {
+      continue
+    }
+
+    seenKeys.add(nameKey)
+    seenKeys.add(slugKey)
+    if (idKey) seenKeys.add(idKey)
+
+    sections.push({
+      category: {
+        id,
+        name,
+        slug,
+        description: (cat as any).description,
+        imageUrl: (cat as any).imageUrl,
+      },
+      products: matchingProducts.slice(0, limitPerCategory),
+    })
+  }
+
+  // 2. Discover any additional categories present in catalog products
+  for (const prod of visible) {
+    const pCatName = toText(prod.categoryName)
+    const pCatId = toText(prod.categoryId)
+    if (!pCatName) continue
+
+    const nameKey = normalizeKey(pCatName)
+    const idKey = normalizeKey(pCatId)
+
+    if (seenKeys.has(nameKey) || (idKey && seenKeys.has(idKey))) {
+      continue
+    }
+
+    const matchingProducts = visible.filter(p => matchesCategory(p, { name: pCatName, id: pCatId }))
+    if (matchingProducts.length === 0) continue
+
+    seenKeys.add(nameKey)
+    if (idKey) seenKeys.add(idKey)
+
+    sections.push({
+      category: {
+        id: pCatId || nameKey,
+        name: pCatName,
+        slug: nameKey.replace(/\s+/g, '-'),
+      },
+      products: matchingProducts.slice(0, limitPerCategory),
+    })
+  }
+
+  return sections
+}

@@ -18,7 +18,7 @@ export function isProductMutation(url?: string, method?: string): boolean {
   if (!url) return false
   const verb = (method || 'get').toLowerCase()
   if (verb === 'get' || verb === 'head' || verb === 'options') return false
-  return /\/api\/products(\/|$|\?)/.test(url)
+  return /\/api\/(products|categories)(\/|$|\?)/.test(url)
 }
 
 export function notifyProductCatalogChanged(): void {

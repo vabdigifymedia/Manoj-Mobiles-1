@@ -9,6 +9,7 @@ import {
   selectBudgetPicks,
   selectByBrand,
   selectNewArrivals,
+  selectActiveCategorySections,
 } from '@/lib/productCatalog'
 import type { BannerResponseDTO, StoreSettingResponseDTO, FaqResponseDTO, BrandResponseDTO, CategoryResponseDTO, PageResponse, InstagramReelResponseDTO } from '@/lib/types'
 import { HeroCarousel } from '@/components/home/hero-carousel'
@@ -20,9 +21,13 @@ import { QuickFeatures } from '@/components/home/quick-features'
 import { BankOffers } from '@/components/home/bank-offers'
 import { BrandSpotlight } from '@/components/home/brand-spotlight'
 import { BudgetPhones } from '@/components/home/budget-phones'
+import { CategoryProductSection } from '@/components/home/category-section'
 import { FeaturesCarousel } from '@/components/home/features-carousel'
 import { InstagramReels } from '@/components/home/instagram-reels'
 import { BulkInquirySection } from '@/components/home/bulk-inquiry-section'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function HomePage() {
   // Parallel SSR data fetching for all home page sections.
@@ -34,7 +39,7 @@ export default async function HomePage() {
     serverFetch<StoreSettingResponseDTO>('/api/public/settings'),
     serverFetch<FaqResponseDTO[]>('/api/public/faqs'),
     serverFetch<PageResponse<BrandResponseDTO>>('/api/public/brands?page=0&size=20'),
-    serverFetch<CategoryResponseDTO[]>('/api/public/categories'),
+    serverFetch<CategoryResponseDTO[]>('/api/public/categories', { noStore: true }),
     // Master catalog (every page of the public API, normalized)
     fetchCatalogServer(),
     // Newest-first ordering comes from the API (`createdAt` is not in the list DTO)
@@ -63,6 +68,11 @@ export default async function HomePage() {
   // existing `startingPrice` field) — the API cannot sort by `startingPrice`
   // server-side (it responds HTTP 500), so the ordering happens in the shared layer.
   const budgetPhoneProducts = selectBudgetPicks(catalog, 8)
+
+  // ---- Dynamic Category Sections ----
+  // Discovers all categories with at least 1 active, valid product and prepares sections.
+  // Empty categories are excluded automatically with 0 DOM footprint.
+  const categorySections = selectActiveCategorySections(categoryList, catalog, 8)
 
   return (
     <>
@@ -156,6 +166,15 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Dynamic Category Sections for all active categories */}
+      {categorySections.map(sec => (
+        <CategoryProductSection
+          key={sec.category.id || sec.category.slug}
+          category={sec.category}
+          products={sec.products}
+        />
+      ))}
 
       {/* Tabbed Product Showcase */}
       <ProductTabs newArrivals={newProducts} bestSellers={bestProducts} budgetPicks={budgetPhoneProducts} />
