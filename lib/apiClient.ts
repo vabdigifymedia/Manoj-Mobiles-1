@@ -361,7 +361,7 @@ export const apiClient = {
     const params = folder ? `?folder=${encodeURIComponent(folder)}` : ''
     return axiosInstance.post<ApiResponse<string>>(`/api/admin/upload${params}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (progressEvent) => {
+      onUploadProgress: (progressEvent: any) => {
         if (progressEvent.total) {
           const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
           onProgress(percent)
@@ -418,7 +418,7 @@ export const apiClient = {
   clearCart: () =>
     axiosInstance.delete<ApiResponse<void>>('/api/user/cart/items'),
 
-  // --- Customer Auth ---
+  // --- Customer Auth (Phone SMS OTP) ---
   sendOtp: (phone: string) =>
     axiosInstance.post<ApiResponse<string>>('/api/auth/send-otp', { phone }),
 
@@ -427,6 +427,19 @@ export const apiClient = {
 
   customerRegister: (name: string, phone: string) =>
     axiosInstance.post<ApiResponse<import('./types').AuthResponseDTO>>('/api/auth/register', { name, phone }),
+
+  // --- Customer Auth (Email OTP - Pine Labs Approval) ---
+  checkEmail: (email: string) =>
+    axiosInstance.post<ApiResponse<boolean>>('/api/auth/check-email', { email }),
+
+  sendEmailOtp: (email: string) =>
+    axiosInstance.post<ApiResponse<string>>('/api/auth/send-email-otp', { email }),
+
+  loginWithEmailOtp: (email: string, otp: string) =>
+    axiosInstance.post<ApiResponse<import('./types').AuthResponseDTO>>('/api/auth/login-email-otp', { email, otp }),
+
+  registerWithEmailOtp: (dto: { name: string; email: string; phone: string; otp: string }) =>
+    axiosInstance.post<ApiResponse<import('./types').AuthResponseDTO>>('/api/auth/register-email-otp', dto),
 
   customerLogout: (userId: string, refreshToken: string) =>
     axiosInstance.post<ApiResponse<void>>('/api/auth/logout', { userId, refreshToken }),
@@ -843,10 +856,10 @@ export async function serverFetch<T>(
     // `noStore` is used for catalog data so a newly published product is visible
     // on the very next request; product details use a short revalidate + tag.
     const normalizedPath = path.startsWith('/') ? path : `/${path}`
-    const res = await fetch(
-      `${serverUrl}${normalizedPath}`,
-      options?.noStore ? { cache: 'no-store' } : { next: { revalidate: options?.revalidate ?? 30, tags: options?.tags } }
-    )
+    const fetchOptions: any = options?.noStore
+      ? { cache: 'no-store' }
+      : { next: { revalidate: options?.revalidate ?? 30, tags: options?.tags } }
+    const res = await fetch(`${serverUrl}${normalizedPath}`, fetchOptions)
     if (!res.ok) return null
     const json = await res.json()
     return json.data as T

@@ -1,0 +1,64 @@
+name: Deploy to Production VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Execute remote SSH deployment commands
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+
+            # Ensure PATH and Node/NVM environment are loaded for non-interactive SSH
+            export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+            [ -s "$HOME/.nvm/nvm.sh" ] && \. "$HOME/.nvm/nvm.sh" || true
+
+            echo "🚀 Starting Deployment for Manoj Mobiles..."
+            cd /var/www/manoj-mobiles
+
+            echo "📥 Fetching latest code from GitHub..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "📦 Installing npm dependencies..."
+            npm install --include=optional
+
+            # Ensure native node binary is directly inside lightningcss
+            mkdir -p node_modules/lightningcss
+            cp -f node_modules/lightningcss-linux-x64-gnu/*.node node_modules/lightningcss/ 2>/dev/null || true
+
+            echo "🏗️ Building Next.js Standalone Application..."
+            npm run build
+
+            echo "📂 Syncing static assets and public files to standalone..."
+            mkdir -p .next/standalone/.next
+            cp -r .next/static .next/standalone/.next/
+            cp -r public .next/standalone/
+            # Ensure .env exists in standalone directory as well if present
+            [ -f .env ] && cp .env .next/standalone/ || true
+            [ -f .env.production ] && cp .env.production .next/standalone/ || true
+            [ -f .env.local ] && cp .env.local .next/standalone/ || true
+
+            echo "🔄 Reloading PM2 process..."
+            mkdir -p logs
+            pm2 reload ecosystem.config.cjs --update-env || pm2 start ecosystem.config.cjs
+            pm2 save
+
+            echo "✅ Deployment completed successfully!"

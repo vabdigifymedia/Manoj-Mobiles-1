@@ -16,3 +16,6 @@ node_modules
 .DS_Store
 api-docs.json
 scripts/scrape-flipkart.mjs
+.env
+logs/
+*.log

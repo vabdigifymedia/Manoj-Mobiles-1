@@ -1,48 +1,24 @@
+import { apiClient } from './apiClient'
+
 /**
  * ============================================================================
- * EMAIL + PASSWORD AUTHENTICATION SERVICE (FRONTEND MOCK / BACKEND READY)
+ * EMAIL OTP AUTHENTICATION SERVICE (PINE LABS APPROVAL)
  * ============================================================================
  * 
- * This service handles Email + Password login, signup, and 6-digit email OTP
- * verification flows.
- * 
- * NOTE FOR BACKEND DEVELOPERS:
- * All methods below currently run a realistic demo flow (with simulated network latency).
- * To connect to real backend APIs, replace the mock returns with the commented
- * axios/fetch API calls marked with `TODO: Connect to backend API endpoint`.
+ * Endpoints:
+ * 1. POST /api/auth/send-email-otp -> { email }
+ * 2. POST /api/auth/login-email-otp -> { email, otp }
+ * 3. POST /api/auth/register-email-otp -> { name, email, phone, otp }
  * ============================================================================
  */
-
-export interface EmailLoginRequest {
-  email: string
-  password: string
-}
-
-export interface EmailSignupRequest {
-  name?: string
-  email: string
-  password: string
-}
-
-export interface VerifyEmailOtpRequest {
-  email: string
-  otp: string
-  type: 'login' | 'signup'
-  name?: string
-}
-
-export interface ResendEmailOtpRequest {
-  email: string
-  type: 'login' | 'signup'
-}
 
 export interface EmailAuthResult {
   token: string
   refreshToken: string
-  userId: string
+  userId?: string
   name: string
   role: string
-  email: string
+  email?: string
 }
 
 export interface ServiceResponse<T> {
@@ -51,150 +27,164 @@ export interface ServiceResponse<T> {
   data?: T
 }
 
-// Demo default OTP (can also accept any 6-digit number in mock mode if needed)
-export const DEMO_OTP = '123456'
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
 export const emailAuthService = {
   /**
-   * Request OTP for Email Login
-   * Verifies credentials and sends 6-digit OTP to user's registered email
+   * Check if email is already registered
+   * POST /api/auth/check-email
    */
-  async requestLoginOtp(req: EmailLoginRequest): Promise<ServiceResponse<{ email: string; demoOtp?: string }>> {
-    // Simulated network latency
-    await sleep(650)
+  async checkEmail(email: string): Promise<boolean | null> {
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) return false
 
-    // TODO: Connect to backend API endpoint:
-    // const res = await axiosInstance.post<ApiResponse<any>>('/api/auth/email/login-otp', req)
-    // return res.data
-
-    if (!req.email || !req.password) {
-      throw new Error('Please enter both email and password.')
-    }
-
-    if (req.password.length < 6) {
-      throw new Error('Password must be at least 6 characters.')
-    }
-
-    // Mock validation success
-    return {
-      success: true,
-      message: `A 6-digit verification code has been sent to ${req.email}.`,
-      data: {
-        email: req.email.toLowerCase().trim(),
-        demoOtp: DEMO_OTP
-      }
+    try {
+      const response = await apiClient.checkEmail(cleanEmail)
+      return response.data?.data === true
+    } catch {
+      // Return null if endpoint is not available so frontend can fallback gracefully
+      return null
     }
   },
 
   /**
-   * Request OTP for Email Signup
-   * Validates registration info and sends 6-digit OTP to verify email ownership
+   * 1. Send OTP to Email
+   * POST /api/auth/send-email-otp
    */
-  async requestSignupOtp(req: EmailSignupRequest): Promise<ServiceResponse<{ email: string; demoOtp?: string }>> {
-    // Simulated network latency
-    await sleep(650)
-
-    // TODO: Connect to backend API endpoint:
-    // const res = await axiosInstance.post<ApiResponse<any>>('/api/auth/email/signup-otp', req)
-    // return res.data
-
-    if (!req.email || !req.password) {
-      throw new Error('Please fill in all required fields.')
+  async sendEmailOtp(email: string): Promise<ServiceResponse<string>> {
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) {
+      throw new Error('Please enter a valid email address.')
     }
 
-    if (req.password.length < 6) {
-      throw new Error('Password must be at least 6 characters.')
-    }
+    try {
+      const response = await apiClient.sendEmailOtp(cleanEmail)
+      const data = response.data
+      const receivedOtp = data.data
 
-    return {
-      success: true,
-      message: `A 6-digit verification code has been sent to ${req.email}.`,
-      data: {
-        email: req.email.toLowerCase().trim(),
-        demoOtp: DEMO_OTP
+      // Log OTP to console for dev/testing as requested
+      if (receivedOtp) {
+        console.log(`[Email OTP] Verification code for ${cleanEmail}: ${receivedOtp}`)
       }
+
+      return {
+        success: data.success,
+        message: data.message || `OTP sent to ${cleanEmail} successfully`,
+        data: receivedOtp
+      }
+    } catch (err: any) {
+      const status = err?.response?.status
+      const backendMessage = err?.response?.data?.message
+      throw new Error(backendMessage || err?.message || 'Failed to send OTP to email.')
     }
   },
 
   /**
-   * Verify Email OTP (for Login or Signup)
-   * Validates 6-digit code and returns authentication tokens and user profile
+   * 2. Customer Login with Email OTP
+   * POST /api/auth/login-email-otp
    */
-  async verifyEmailOtp(req: VerifyEmailOtpRequest): Promise<ServiceResponse<EmailAuthResult>> {
-    // Simulated network latency
-    await sleep(750)
+  async loginWithEmailOtp(email: string, otp: string): Promise<ServiceResponse<EmailAuthResult>> {
+    const cleanEmail = email.trim().toLowerCase()
+    const cleanOtp = otp.trim()
 
-    // TODO: Connect to backend API endpoint:
-    // const res = await axiosInstance.post<ApiResponse<AuthResponseDTO>>('/api/auth/email/verify-otp', req)
-    // return res.data
-
-    const cleanOtp = req.otp.trim()
-
-    if (cleanOtp.length !== 6) {
+    if (!cleanEmail) {
+      throw new Error('Please enter your email address.')
+    }
+    if (!cleanOtp || cleanOtp.length !== 6) {
       throw new Error('Please enter a valid 6-digit OTP.')
     }
 
-    // In demo mode: accept '123456' or any 6-digit sequence except known failure test
-    if (cleanOtp === '000000') {
-      throw new Error('Incorrect or expired verification code. Please check your email or resend.')
-    }
+    try {
+      const response = await apiClient.loginWithEmailOtp(cleanEmail, cleanOtp)
+      const resData = response.data
 
-    // Extract display name from provided name or email username
-    const emailName = req.name?.trim() || req.email.split('@')[0].replace(/[._-]/g, ' ')
-    const capitalizedName = emailName
-      ? emailName.charAt(0).toUpperCase() + emailName.slice(1)
-      : 'Customer'
-
-    const mockAuthResult: EmailAuthResult = {
-      token: 'mock-jwt-access-token-' + Math.random().toString(36).substring(2, 15),
-      refreshToken: 'mock-jwt-refresh-token-' + Math.random().toString(36).substring(2, 15),
-      userId: 'usr_' + Math.random().toString(36).substring(2, 10),
-      name: capitalizedName,
-      role: 'CUSTOMER',
-      email: req.email.toLowerCase().trim()
-    }
-
-    return {
-      success: true,
-      message: req.type === 'signup' ? 'Account created successfully!' : 'Login successful!',
-      data: mockAuthResult
-    }
-  },
-
-  /**
-   * Resend Email OTP
-   */
-  async resendOtp(req: ResendEmailOtpRequest): Promise<ServiceResponse<{ email: string; demoOtp?: string }>> {
-    await sleep(500)
-
-    // TODO: Connect to backend API endpoint:
-    // const res = await axiosInstance.post<ApiResponse<any>>('/api/auth/email/resend-otp', req)
-    // return res.data
-
-    return {
-      success: true,
-      message: `A fresh 6-digit code has been resent to ${req.email}.`,
-      data: {
-        email: req.email.toLowerCase().trim(),
-        demoOtp: DEMO_OTP
+      return {
+        success: resData.success,
+        message: resData.message || 'Login successful',
+        data: {
+          token: resData.data.token,
+          refreshToken: resData.data.refreshToken,
+          userId: resData.data.userId,
+          name: resData.data.name,
+          role: resData.data.role,
+          email: cleanEmail
+        }
       }
+    } catch (err: any) {
+      const status = err?.response?.status
+      const backendMessage = err?.response?.data?.message
+
+      if (status === 404) {
+        const error = new Error(backendMessage || `No account found with email: ${cleanEmail}. Please sign up first.`)
+        ;(error as any).status = 404
+        ;(error as any).isNotFound = true
+        throw error
+      }
+
+      if (status === 400) {
+        throw new Error(backendMessage || 'Invalid OTP. Please check and try again.')
+      }
+
+      throw new Error(backendMessage || err?.message || 'Login failed. Please try again.')
     }
   },
 
   /**
-   * Mock Forgot Password request
+   * 3. Customer Sign Up / Register with Email OTP
+   * POST /api/auth/register-email-otp
    */
-  async forgotPassword(email: string): Promise<ServiceResponse<void>> {
-    await sleep(600)
+  async registerWithEmailOtp(dto: {
+    name: string
+    email: string
+    phone: string
+    otp: string
+  }): Promise<ServiceResponse<EmailAuthResult>> {
+    const cleanName = dto.name.trim()
+    const cleanEmail = dto.email.trim().toLowerCase()
+    const cleanPhone = dto.phone.replace(/\D/g, '')
+    const cleanOtp = dto.otp.trim()
 
-    // TODO: Connect to backend API endpoint:
-    // await axiosInstance.post('/api/auth/email/forgot-password', { email })
+    if (!cleanName) {
+      throw new Error('Please enter your full name.')
+    }
+    if (!cleanEmail) {
+      throw new Error('Please enter a valid email address.')
+    }
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      throw new Error('Please enter a valid 10-digit mobile number.')
+    }
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      throw new Error('Please enter a valid 6-digit OTP.')
+    }
 
-    return {
-      success: true,
-      message: `Password reset instructions have been sent to ${email}.`
+    try {
+      const response = await apiClient.registerWithEmailOtp({
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
+        otp: cleanOtp
+      })
+      const resData = response.data
+
+      return {
+        success: resData.success,
+        message: resData.message || 'User registered successfully',
+        data: {
+          token: resData.data.token,
+          refreshToken: resData.data.refreshToken,
+          userId: resData.data.userId,
+          name: resData.data.name,
+          role: resData.data.role,
+          email: cleanEmail
+        }
+      }
+    } catch (err: any) {
+      const status = err?.response?.status
+      const backendMessage = err?.response?.data?.message
+
+      if (status === 400) {
+        throw new Error(backendMessage || 'Invalid OTP. Please check and try again.')
+      }
+
+      throw new Error(backendMessage || err?.message || 'Registration failed. Please try again.')
     }
   }
 }
