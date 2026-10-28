@@ -48,6 +48,7 @@ import { Pencil } from 'lucide-react'
 const availableIcons = { Settings: FaGear, Camera: FaCamera, Cpu: FaMicrochip, Zap: FaBolt, Battery: FaBatteryFull, Bluetooth: FaBluetooth, MemoryStick: FaMemory, Microchip: FaMicrochip, Star: FaStar, Wifi: FaWifi, CheckCircle: FaCircleCheck, Truck: FaTruckFast, Smartphone: FaMobileScreen, HardDrive: FaHardDrive, ShieldCheck: FaShieldHalved }
 
 import { parseRamRomFromText } from '@/lib/utils'
+import { isValidImageFile, normalizeImageFile, extractFilesFromEvent } from '@/lib/imageValidation'
 
 function getColorDotStyle(color: string): React.CSSProperties {
   const name = color.toLowerCase().trim()
@@ -274,8 +275,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
   }
 
   const handleAddScreenshots = (files: FileList | File[]) => {
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    const fileArray = Array.from(files).filter(f => validTypes.includes(f.type) || f.name.match(/\.(jpg|jpeg|png|webp)$/i))
+    const rawFiles = extractFilesFromEvent(files)
+    const fileArray = rawFiles.filter(isValidImageFile).map(normalizeImageFile)
     if (fileArray.length === 0) {
       toast.error('Please select valid JPG, JPEG, PNG, or WEBP image files.')
       return
@@ -1514,6 +1515,45 @@ const uploadFilesParallel = async (
     throw error
   }
 }
+
+  const handleProcessAndUploadImages = async (
+    eventOrFiles: React.DragEvent | React.ChangeEvent<HTMLInputElement> | FileList | File[],
+    target: string,
+    onSuccess: (urls: string[]) => void
+  ) => {
+    const rawFiles = extractFilesFromEvent(eventOrFiles)
+    if (rawFiles.length === 0) {
+      toast.error('Please enter valid image files. Supported formats: JPG, JPEG, PNG, WEBP, and GIF.')
+      return
+    }
+
+    const validFiles: File[] = []
+    let invalidCount = 0
+
+    for (const file of rawFiles) {
+      if (isValidImageFile(file)) {
+        validFiles.push(normalizeImageFile(file))
+      } else {
+        invalidCount++
+      }
+    }
+
+    if (validFiles.length === 0) {
+      toast.error('Please enter valid image files. Supported formats: JPG, JPEG, PNG, WEBP, and GIF.')
+      return
+    }
+
+    if (invalidCount > 0) {
+      toast.warning(`Skipped ${invalidCount} non-image file(s). Uploading ${validFiles.length} valid image(s).`)
+    }
+
+    try {
+      await uploadFilesParallel(validFiles, target, onSuccess)
+    } catch (err: any) {
+      console.error('Image upload failed:', err)
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
+    }
+  }
 
 
 
@@ -2953,37 +2993,20 @@ const uploadFilesParallel = async (
                 e.stopPropagation()
                 setDragActiveColor(null)
 
-                const files = Array.from(e.dataTransfer.files || [])
-                  .filter(file => file.type.startsWith('image/'))
-
-                if (files.length === 0) {
-                  toast.error('Please drop valid image files.')
-                  return
-                }
-
                 if (variants.length === 0) {
                   toast.warning('Please create at least one product variant in Step 3 before uploading variant images.')
                   return
                 }
 
-                try {
-                  await uploadFilesParallel(
-                    files,
-                    'global',
-                    (urls) => {
-                      setVariants(prev =>
-                        prev.map(varItem => ({
-                          ...varItem,
-                          images: [...(varItem.images || []), ...urls]
-                        }))
-                      )
-                      toast.success(`Successfully added ${urls.length} image(s) to all colors!`)
-                    }
+                await handleProcessAndUploadImages(e, 'global', (urls) => {
+                  setVariants(prev =>
+                    prev.map(varItem => ({
+                      ...varItem,
+                      images: [...(varItem.images || []), ...urls]
+                    }))
                   )
-                } catch (err: any) {
-                  console.error(err)
-                  toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
-                }
+                  toast.success(`Successfully added ${urls.length} image(s) to all colors!`)
+                })
               }}
             >
               <div>
@@ -3013,37 +3036,26 @@ const uploadFilesParallel = async (
                 )}
                 <input 
                   type="file" 
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/*"
                   multiple
                   className="hidden"
                   disabled={uploadProgress.some(item => item.target === 'global')}
                   onChange={async (e) => {
-                    const files = Array.from(e.target.files || [])
-                    if (files.length === 0) return
                     if (variants.length === 0) {
                       toast.warning('Please create at least one product variant in Step 3 before uploading variant images.')
                       e.target.value = ''
                       return
                     }
-                    try {
-                      await uploadFilesParallel(
-                        files,
-                        'global',
-                        (urls) => {
-                          setVariants(prev =>
-                            prev.map(varItem => ({
-                              ...varItem,
-                              images: [...(varItem.images || []), ...urls]
-                            }))
-                          )
-                          toast.success(`Successfully added ${urls.length} image(s) to all colors!`)
-                        }
+                    await handleProcessAndUploadImages(e, 'global', (urls) => {
+                      setVariants(prev =>
+                        prev.map(varItem => ({
+                          ...varItem,
+                          images: [...(varItem.images || []), ...urls]
+                        }))
                       )
-                    } catch (err: any) {
-                      toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
-                    } finally {
-                      e.target.value = ''
-                    }
+                      toast.success(`Successfully added ${urls.length} image(s) to all colors!`)
+                    })
+                    e.target.value = ''
                   }}
                 />
               </label>
@@ -3097,61 +3109,36 @@ const uploadFilesParallel = async (
                   e.stopPropagation()
                   setDragActiveColor(null)
 
-                  const files = Array.from(e.dataTransfer.files || []).filter(file => file.type.startsWith('image/'))
-                  if (files.length === 0) {
-                    toast.error('Please drop valid image files.')
-                    return
-                  }
-
-                  try {
-                    await uploadFilesParallel(
-                      files,
-                      'feature-images',
-                      (urls) => {
-                        const newItems: ProductFeatureImage[] = urls.map((url, idx) => ({
-                          id: `pfi_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
-                          url,
-                          caption: ''
-                        }))
-                        setFeatureImages(prev => [...prev, ...newItems])
-                        toast.success(`Successfully uploaded ${urls.length} feature image(s)!`)
-                      }
-                    )
-                  } catch (err: any) {
-                    toast.error(err?.response?.data?.message || err?.message || 'Failed to upload feature image(s)')
-                  }
+                  await handleProcessAndUploadImages(e, 'feature-images', (urls) => {
+                    const newItems: ProductFeatureImage[] = urls.map((url, idx) => ({
+                      id: `pfi_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+                      url,
+                      caption: ''
+                    }))
+                    setFeatureImages(prev => [...prev, ...newItems])
+                    toast.success(`Successfully uploaded ${urls.length} feature image(s)!`)
+                  })
                 }}
                 onClick={() => featureFileInputRef.current?.click()}
               >
                 <input
                   ref={featureFileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/*"
                   multiple
                   className="hidden"
                   disabled={uploadProgress.some(item => item.target === 'feature-images')}
                   onChange={async (e) => {
-                    const files = Array.from(e.target.files || [])
-                    if (files.length === 0) return
-                    try {
-                      await uploadFilesParallel(
-                        files,
-                        'feature-images',
-                        (urls) => {
-                          const newItems: ProductFeatureImage[] = urls.map((url, idx) => ({
-                            id: `pfi_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
-                            url,
-                            caption: ''
-                          }))
-                          setFeatureImages(prev => [...prev, ...newItems])
-                          toast.success(`Successfully uploaded ${urls.length} feature image(s)!`)
-                        }
-                      )
-                    } catch (err: any) {
-                      toast.error(err?.response?.data?.message || err?.message || 'Failed to upload feature image(s)')
-                    } finally {
-                      e.target.value = ''
-                    }
+                    await handleProcessAndUploadImages(e, 'feature-images', (urls) => {
+                      const newItems: ProductFeatureImage[] = urls.map((url, idx) => ({
+                        id: `pfi_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+                        url,
+                        caption: ''
+                      }))
+                      setFeatureImages(prev => [...prev, ...newItems])
+                      toast.success(`Successfully uploaded ${urls.length} feature image(s)!`)
+                    })
+                    e.target.value = ''
                   }}
                 />
 
@@ -3319,38 +3306,21 @@ const uploadFilesParallel = async (
   onDrop={async (e) => {
     e.preventDefault()
     e.stopPropagation()
-
     setDragActiveColor(null)
 
-    const files = Array.from(e.dataTransfer.files || [])
-      .filter(file => file.type.startsWith('image/'))
-
-    if (files.length === 0) {
-      toast.error('Please drop valid image files.')
-      return
-    }
-
-    try {
-      await uploadFilesParallel(
-        files,
-        color,
-        (urls) => {
-          setVariants(prev =>
-            prev.map(varItem =>
-              (varItem.color || 'Default Color') === color
-                ? {
-                    ...varItem,
-                    images: [...(varItem.images || []), ...urls]
-                  }
-                : varItem
-            )
-          )
-          toast.success(`Successfully added ${urls.length} image(s) to ${color}!`)
-        }
+    await handleProcessAndUploadImages(e, color, (urls) => {
+      setVariants(prev =>
+        prev.map(varItem =>
+          (varItem.color || 'Default Color') === color
+            ? {
+                ...varItem,
+                images: [...(varItem.images || []), ...urls]
+              }
+            : varItem
+        )
       )
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
-    }
+      toast.success(`Successfully added ${urls.length} image(s) to ${color}!`)
+    })
   }}
 >
 <div className="flex items-center justify-between border-b border-border pb-2">
@@ -3439,30 +3409,22 @@ const uploadFilesParallel = async (
                             e.preventDefault()
                             e.stopPropagation()
 
-                            const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'))
-                            if (files.length > 0) {
+                            const extracted = extractFilesFromEvent(e)
+                            if (extracted.length > 0) {
                               setDragActiveColor(null)
-                              try {
-                                await uploadFilesParallel(
-                                  files,
-                                  color,
-                                  (urls) => {
-                                    setVariants(prev =>
-                                      prev.map(varItem =>
-                                        (varItem.color || 'Default Color') === color
-                                          ? {
-                                              ...varItem,
-                                              images: [...(varItem.images || []), ...urls]
-                                            }
-                                          : varItem
-                                      )
-                                    )
-                                    toast.success(`Successfully added ${urls.length} image(s) to ${color}!`)
-                                  }
+                              await handleProcessAndUploadImages(extracted, color, (urls) => {
+                                setVariants(prev =>
+                                  prev.map(varItem =>
+                                    (varItem.color || 'Default Color') === color
+                                      ? {
+                                          ...varItem,
+                                          images: [...(varItem.images || []), ...urls]
+                                        }
+                                      : varItem
+                                  )
                                 )
-                              } catch (err: any) {
-                                toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
-                              }
+                                toast.success(`Successfully added ${urls.length} image(s) to ${color}!`)
+                              })
                               return
                             }
 
@@ -3604,29 +3566,17 @@ const uploadFilesParallel = async (
                           e.preventDefault();
                           e.stopPropagation();
                           setDragActiveColor(null);
-                          const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
-                          if (files.length === 0) {
-                            toast.error('Please drop valid image files.');
-                            return;
-                          }
-                          try {
-                            await uploadFilesParallel(
-                              files,
-                              color,
-                              (urls) => {
-                                setVariants(prev =>
-                                  prev.map(varItem =>
-                                    (varItem.color || 'Default Color') === color
-                                      ? { ...varItem, images: [...(varItem.images || []), ...urls] }
-                                      : varItem
-                                  )
-                                );
-                                toast.success(`Successfully added ${urls.length} image(s) to ${color}!`);
-                              }
+
+                          await handleProcessAndUploadImages(e, color, (urls) => {
+                            setVariants(prev =>
+                              prev.map(varItem =>
+                                (varItem.color || 'Default Color') === color
+                                  ? { ...varItem, images: [...(varItem.images || []), ...urls] }
+                                  : varItem
+                              )
                             );
-                          } catch (err: any) {
-                            toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)');
-                          }
+                            toast.success(`Successfully added ${urls.length} image(s) to ${color}!`);
+                          });
                         }}
                       >
                         {uploadProgress.some(item => item.target === color) ? (
@@ -3642,37 +3592,25 @@ const uploadFilesParallel = async (
                         )}
                         <input 
                           type="file" 
-                          accept="image/*" 
+                          accept="image/jpeg,image/png,image/webp,image/gif,image/*" 
                           multiple
                           disabled={uploadProgress.some(item => item.target === color)}
                           className="hidden" 
                           onChange={async (e) => {
-                            const files = Array.from(e.target.files || [])
-                            if (files.length === 0) return
-
-                            try {
-                              await uploadFilesParallel(
-                                files,
-                                color,
-                                (urls) => {
-                                  setVariants(prev =>
-                                    prev.map(varItem =>
-                                      (varItem.color || 'Default Color') === color
-                                        ? {
-                                            ...varItem,
-                                            images: [...(varItem.images || []), ...urls]
-                                          }
-                                        : varItem
-                                    )
-                                  )
-                                  toast.success(`Successfully added ${urls.length} image(s) to ${color}!`)
-                                }
+                            await handleProcessAndUploadImages(e, color, (urls) => {
+                              setVariants(prev =>
+                                prev.map(varItem =>
+                                  (varItem.color || 'Default Color') === color
+                                    ? {
+                                        ...varItem,
+                                        images: [...(varItem.images || []), ...urls]
+                                      }
+                                    : varItem
+                                )
                               )
-                            } catch (err: any) {
-                              toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
-                            } finally {
-                              e.target.value = ''
-                            }
+                              toast.success(`Successfully added ${urls.length} image(s) to ${color}!`)
+                            })
+                            e.target.value = ''
                           }}
                         />
                       </label>

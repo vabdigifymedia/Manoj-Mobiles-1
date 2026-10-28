@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import Cookies from 'js-cookie'
 import imageCompression from 'browser-image-compression'
+import { normalizeImageFile } from './imageValidation'
 import { isProductMutation, notifyProductCatalogChanged } from './productCatalogSync'
 import {
   ApiResponse, PageResponse,
@@ -316,16 +317,16 @@ export const apiClient = {
   folder?: string,
   onProgress?: (progress: number) => void
 ) => {
-    let fileToUpload = file;
+    let fileToUpload = normalizeImageFile(file);
     // Compress images larger than 800KB
-    if (file.type.startsWith('image/') && file.size > 800 * 1024) {
+    if (fileToUpload.type.startsWith('image/') && fileToUpload.size > 800 * 1024) {
       try {
-        fileToUpload = await imageCompression(file, {
+        fileToUpload = await imageCompression(fileToUpload, {
           maxSizeMB: 0.8,
           maxWidthOrHeight: 1920,
           useWebWorker: true,
           // Convert huge pngs to jpeg to save space (preserves transparency if possible but limits size)
-          fileType: file.type === 'image/png' && file.size > 2 * 1024 * 1024 ? 'image/jpeg' : undefined
+          fileType: fileToUpload.type === 'image/png' && fileToUpload.size > 2 * 1024 * 1024 ? 'image/jpeg' : undefined
         });
       } catch (err) {
         console.error('Image compression failed', err);
@@ -347,15 +348,15 @@ export const apiClient = {
   },
 
   uploadImageWithProgress: async (file: File, onProgress: (percent: number) => void, folder?: string) => {
-    let fileToUpload = file;
+    let fileToUpload = normalizeImageFile(file);
     // Compress images larger than 800KB
-    if (file.type.startsWith('image/') && file.size > 800 * 1024) {
+    if (fileToUpload.type.startsWith('image/') && fileToUpload.size > 800 * 1024) {
       try {
-        fileToUpload = await imageCompression(file, {
+        fileToUpload = await imageCompression(fileToUpload, {
           maxSizeMB: 0.8,
           maxWidthOrHeight: 1920,
           useWebWorker: true,
-          fileType: file.type === 'image/png' && file.size > 2 * 1024 * 1024 ? 'image/jpeg' : undefined
+          fileType: fileToUpload.type === 'image/png' && fileToUpload.size > 2 * 1024 * 1024 ? 'image/jpeg' : undefined
         });
       } catch (err) {
         console.error('Image compression failed', err);
