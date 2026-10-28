@@ -354,6 +354,16 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const [categories, setCategories] = useState<CategoryResponseDTO[]>([])
   const [brands, setBrands] = useState<BrandResponseDTO[]>([])
 
+  // Determine if the current product brand is Apple
+  const selectedBrand = brands.find(b => b.id === baseInfo.brandId)
+  const isAppleBrand = Boolean(
+    selectedBrand?.name?.toLowerCase().trim() === 'apple' ||
+    selectedBrand?.slug?.toLowerCase().trim() === 'apple' ||
+    baseInfo.brandId?.toLowerCase() === 'apple' ||
+    baseInfo.name?.toLowerCase().startsWith('apple') ||
+    baseInfo.name?.toLowerCase().startsWith('iphone')
+  )
+
   // Comprehensive centralized Draft Restorer
   const restoreDraftToProductForm = (draft: ProductDraft): boolean => {
     if (!draft) return false
@@ -505,7 +515,22 @@ export function ProductWizard({ productId }: { productId?: string }) {
             }
 
             // Fallback for Mobiles/Tablets: parse RAM and Storage from variantName if missing
-            if (!attrs['RAM'] || !attrs['Storage']) {
+            const isAppleProd = Boolean(
+              p.brandName?.toLowerCase().trim() === 'apple' ||
+              p.name?.toLowerCase().includes('iphone') ||
+              p.name?.toLowerCase().startsWith('apple')
+            )
+
+            if (isAppleProd) {
+              delete attrs['RAM']
+              delete attrs['ram']
+              if (!attrs['Storage']) {
+                const parsed = parseRamRomFromText(v.variantName)
+                if (parsed.rom) {
+                  attrs['Storage'] = parsed.rom.replace(/\s*ROM/i, '').trim()
+                }
+              }
+            } else if (!attrs['RAM'] || !attrs['Storage']) {
               const parsed = parseRamRomFromText(v.variantName)
               if (parsed.ram && !attrs['RAM']) {
                 attrs['RAM'] = parsed.ram.replace(/\s*RAM/i, '').trim()
@@ -696,6 +721,10 @@ export function ProductWizard({ productId }: { productId?: string }) {
         if (parsed.rom && !romVal) romVal = parsed.rom
         if (ramVal && romVal) break
       }
+    }
+
+    if (isAppleBrand) {
+      ramVal = ''
     }
 
     if (ramVal || romVal) {
@@ -892,11 +921,15 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
       if (fieldKey.startsWith('variant_attr_')) {
         const fieldName = fieldKey.replace('variant_attr_', '')
-        const fieldDef = activeVariantTemplate?.fields?.find(f => f.name === fieldName)
-        if (fieldDef?.required && (!value || String(value).trim() === '')) {
-          copy[fieldKey] = `${fieldDef.label || fieldName} is required.`
-        } else {
+        if (isAppleBrand && (fieldName.toLowerCase() === 'ram' || fieldName.toLowerCase().includes('ram'))) {
           delete copy[fieldKey]
+        } else {
+          const fieldDef = activeVariantTemplate?.fields?.find(f => f.name === fieldName)
+          if (fieldDef?.required && (!value || String(value).trim() === '')) {
+            copy[fieldKey] = `${fieldDef.label || fieldName} is required.`
+          } else {
+            delete copy[fieldKey]
+          }
         }
       }
 
@@ -922,6 +955,9 @@ export function ProductWizard({ productId }: { productId?: string }) {
     // Validate Category-Specific Template Fields
     if (activeVariantTemplate && activeVariantTemplate.fields) {
       for (const f of activeVariantTemplate.fields) {
+        if (isAppleBrand && (f.name.toLowerCase() === 'ram' || f.id.toLowerCase().includes('ram'))) {
+          continue // RAM is not required for Apple products
+        }
         if (f.required) {
           const val = variantForm.attributes?.[f.name]
           if (val === undefined || val === null || String(val).trim() === '') {
@@ -1076,6 +1112,10 @@ export function ProductWizard({ productId }: { productId?: string }) {
       ...variantForm.attributes,
       [fieldName]: value
     }
+    if (isAppleBrand) {
+      delete updatedAttrs['RAM']
+      delete updatedAttrs['ram']
+    }
 
     // Auto-generate suggested variantName
     let updatedVariantName = variantForm.variantName
@@ -1109,6 +1149,12 @@ export function ProductWizard({ productId }: { productId?: string }) {
       return
     }
 
+    const finalAttrs = { ...(variantForm.attributes || {}) }
+    if (isAppleBrand) {
+      delete finalAttrs['RAM']
+      delete finalAttrs['ram']
+    }
+
     const finalSku = (variantForm.sku.trim() || generateUniqueSku(variantForm.variantName, variantForm.color, editingVariantId)).toUpperCase()
     if (editingVariantId) {
       setVariants(variants.map(v => v.id === editingVariantId ? {
@@ -1121,7 +1167,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
         gstPercent: Number(variantForm.gstPercent),
         stockQty: Number(variantForm.stockQty),
         codAvailable: variantForm.codAvailable,
-        attributes: variantForm.attributes
+        attributes: finalAttrs
       } : v))
       setEditingVariantId(null)
     } else {
@@ -1136,7 +1182,7 @@ export function ProductWizard({ productId }: { productId?: string }) {
         stockQty: Number(variantForm.stockQty),
         codAvailable: variantForm.codAvailable,
         images: [],
-        attributes: variantForm.attributes
+        attributes: finalAttrs
       }])
     }
     setShowVariantForm(false)
@@ -1146,7 +1192,10 @@ export function ProductWizard({ productId }: { productId?: string }) {
 
   const handleEditVariantClick = (v: LocalVariant) => {
     const existingAttrs = { ...(v.attributes || {}) }
-    if (activeVariantTemplate) {
+    if (isAppleBrand) {
+      delete existingAttrs['RAM']
+      delete existingAttrs['ram']
+    } else if (activeVariantTemplate) {
       if (activeVariantTemplate.id === 'mobiles' || activeVariantTemplate.id === 'tablets') {
         if (!existingAttrs['RAM'] || !existingAttrs['Storage']) {
           const parsed = parseRamRomFromText(v.variantName)
@@ -1213,12 +1262,19 @@ export function ProductWizard({ productId }: { productId?: string }) {
     const initialAttrs: Record<string, any> = {}
     if (activeVariantTemplate) {
       for (const field of activeVariantTemplate.fields) {
+        if (isAppleBrand && (field.name.toLowerCase() === 'ram' || field.id.toLowerCase().includes('ram'))) {
+          continue
+        }
         if (variants.length > 0 && variants[variants.length - 1].attributes?.[field.name]) {
           initialAttrs[field.name] = variants[variants.length - 1].attributes![field.name]
         } else if (field.defaultValue) {
           initialAttrs[field.name] = field.defaultValue
         }
       }
+    }
+    if (isAppleBrand) {
+      delete initialAttrs['RAM']
+      delete initialAttrs['ram']
     }
 
     const autoSku = generateUniqueSku(initialVName, '', null)
@@ -1401,12 +1457,12 @@ const uploadFilesParallel = async (
   target: string,
   onComplete: (urls: string[]) => void
 ) => {
-  if (!files.length) return
+  if (!files.length) return []
 
   const uploadItems = files.map(file => ({
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     fileName: file.name,
-    progress: 0,
+    progress: 5,
     target,
   }))
 
@@ -1422,7 +1478,7 @@ const uploadFilesParallel = async (
             setUploadProgress(prev =>
               prev.map(item =>
                 item.id === uploadItems[index].id
-                  ? { ...item, progress }
+                  ? { ...item, progress: Math.max(5, Math.min(100, progress)) }
                   : item
               )
             )
@@ -1431,19 +1487,21 @@ const uploadFilesParallel = async (
       )
     )
 
-    const urls = results.map(res => res.data.data)
+    const urls = results.map(res => (res?.data?.data !== undefined ? res.data.data : (res as any)?.data)).filter(Boolean) as string[]
+
+    if (urls.length === 0) {
+      throw new Error('Upload server did not return valid image URLs')
+    }
 
     onComplete(urls)
 
-    // 100% hone ke baad thoda visible rakho,
-    // phir progress row remove
     setTimeout(() => {
       setUploadProgress(prev =>
         prev.filter(
           item => !uploadItems.some(upload => upload.id === item.id)
         )
       )
-    }, 400)
+    }, 600)
 
     return urls
   } catch (error) {
@@ -1758,6 +1816,26 @@ const uploadFilesParallel = async (
                     const selected = val || ''
                     setBaseInfo({...baseInfo, brandId: selected})
                     validateField('baseInfo_brandId', selected)
+                    const chosenBrand = brands.find(b => b.id === selected)
+                    const isNowApple = Boolean(
+                      chosenBrand?.name?.toLowerCase().trim() === 'apple' ||
+                      chosenBrand?.slug?.toLowerCase().trim() === 'apple' ||
+                      selected.toLowerCase() === 'apple'
+                    )
+                    if (isNowApple) {
+                      setFormErrors(prev => {
+                        const copy = { ...prev }
+                        delete copy['variant_attr_RAM']
+                        delete copy['variant_attr_ram']
+                        return copy
+                      })
+                      setVariantForm(prev => {
+                        const copyAttrs = { ...(prev.attributes || {}) }
+                        delete copyAttrs['RAM']
+                        delete copyAttrs['ram']
+                        return { ...prev, attributes: copyAttrs }
+                      })
+                    }
                   }}
                 >
                   <SelectTrigger className={`w-full h-10 rounded-xl border ${
@@ -1930,7 +2008,9 @@ const uploadFilesParallel = async (
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {activeVariantTemplate.fields.map((field) => {
+                      {activeVariantTemplate.fields
+                        .filter(field => !(isAppleBrand && (field.name.toLowerCase() === 'ram' || field.id.toLowerCase().includes('ram'))))
+                        .map((field) => {
                         const fieldKey = `variant_attr_${field.name}`
                         const errorMsg = formErrors[fieldKey]
                         const currentValue = variantForm.attributes?.[field.name] ?? ''
@@ -2881,6 +2961,11 @@ const uploadFilesParallel = async (
                   return
                 }
 
+                if (variants.length === 0) {
+                  toast.warning('Please create at least one product variant in Step 3 before uploading variant images.')
+                  return
+                }
+
                 try {
                   await uploadFilesParallel(
                     files,
@@ -2892,12 +2977,12 @@ const uploadFilesParallel = async (
                           images: [...(varItem.images || []), ...urls]
                         }))
                       )
-                      toast.success(`Added ${urls.length} image(s) to all colors!`)
+                      toast.success(`Successfully added ${urls.length} image(s) to all colors!`)
                     }
                   )
-                } catch (err) {
+                } catch (err: any) {
                   console.error(err)
-                  toast.error('Failed to upload image(s)')
+                  toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
                 }
               }}
             >
@@ -2908,24 +2993,38 @@ const uploadFilesParallel = async (
               
               <label 
                 className={`shrink-0 h-10 px-4 flex items-center justify-center gap-2 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
+                  uploadProgress.some(item => item.target === 'global') ? 'opacity-70 pointer-events-none' : ''
                 } ${
                   dragActiveColor === 'global' 
                     ? 'border-primary bg-primary/20' 
                     : 'border-primary/40 hover:bg-primary/10'
                 }`}
               >
-                <FaPlus size={16} className="text-primary" />
-                <span className="text-xs font-bold text-primary">{dragActiveColor === 'global' ? 'Drop Images Here' : 'Upload to All Colors'}</span>
+                {uploadProgress.some(item => item.target === 'global') ? (
+                  <div className="flex items-center gap-2">
+                    <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-bold text-primary animate-pulse">Uploading to all colors...</span>
+                  </div>
+                ) : (
+                  <>
+                    <FaPlus size={16} className="text-primary" />
+                    <span className="text-xs font-bold text-primary">{dragActiveColor === 'global' ? 'Drop Images Here' : 'Upload to All Colors'}</span>
+                  </>
+                )}
                 <input 
                   type="file" 
                   accept="image/*"
                   multiple
                   className="hidden"
-                  disabled={loading}
+                  disabled={uploadProgress.some(item => item.target === 'global')}
                   onChange={async (e) => {
                     const files = Array.from(e.target.files || [])
                     if (files.length === 0) return
+                    if (variants.length === 0) {
+                      toast.warning('Please create at least one product variant in Step 3 before uploading variant images.')
+                      e.target.value = ''
+                      return
+                    }
                     try {
                       await uploadFilesParallel(
                         files,
@@ -2937,11 +3036,11 @@ const uploadFilesParallel = async (
                               images: [...(varItem.images || []), ...urls]
                             }))
                           )
-                          toast.success(`Added ${urls.length} image(s) to all colors!`)
+                          toast.success(`Successfully added ${urls.length} image(s) to all colors!`)
                         }
                       )
-                    } catch {
-                      toast.error('Failed to upload image(s)')
+                    } catch (err: any) {
+                      toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
                     } finally {
                       e.target.value = ''
                     }
@@ -2974,6 +3073,10 @@ const uploadFilesParallel = async (
                   dragActiveColor === 'feature-images'
                     ? 'border-primary bg-primary/15 ring-2 ring-primary/30 scale-[1.01]'
                     : 'border-primary/40 hover:border-primary/70 hover:bg-primary/5 bg-card/50'
+                } ${
+                  uploadProgress.some(item => item.target === 'feature-images')
+                    ? 'pointer-events-none opacity-80'
+                    : ''
                 }`}
                 onDragOver={(e) => {
                   e.preventDefault()
@@ -3011,11 +3114,11 @@ const uploadFilesParallel = async (
                           caption: ''
                         }))
                         setFeatureImages(prev => [...prev, ...newItems])
-                        toast.success(`Added ${urls.length} feature image(s)!`)
+                        toast.success(`Successfully uploaded ${urls.length} feature image(s)!`)
                       }
                     )
-                  } catch {
-                    toast.error('Failed to upload feature image(s)')
+                  } catch (err: any) {
+                    toast.error(err?.response?.data?.message || err?.message || 'Failed to upload feature image(s)')
                   }
                 }}
                 onClick={() => featureFileInputRef.current?.click()}
@@ -3026,7 +3129,7 @@ const uploadFilesParallel = async (
                   accept="image/*"
                   multiple
                   className="hidden"
-                  disabled={loading}
+                  disabled={uploadProgress.some(item => item.target === 'feature-images')}
                   onChange={async (e) => {
                     const files = Array.from(e.target.files || [])
                     if (files.length === 0) return
@@ -3041,26 +3144,42 @@ const uploadFilesParallel = async (
                             caption: ''
                           }))
                           setFeatureImages(prev => [...prev, ...newItems])
-                          toast.success(`Added ${urls.length} feature image(s)!`)
+                          toast.success(`Successfully uploaded ${urls.length} feature image(s)!`)
                         }
                       )
-                    } catch {
-                      toast.error('Failed to upload feature image(s)')
+                    } catch (err: any) {
+                      toast.error(err?.response?.data?.message || err?.message || 'Failed to upload feature image(s)')
                     } finally {
                       e.target.value = ''
                     }
                   }}
                 />
 
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-2.5">
-                  <FaPlus size={20} />
-                </div>
-                <p className="text-sm font-bold text-foreground">
-                  {dragActiveColor === 'feature-images' ? 'Drop Feature Images Here' : '+ Add Feature Images'}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Drag & drop images anywhere inside this box, or click to browse (parallel uploads supported)
-                </p>
+                {uploadProgress.some(item => item.target === 'feature-images') ? (
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-2.5 animate-spin">
+                      <FaSpinner size={22} />
+                    </div>
+                    <p className="text-sm font-bold text-foreground">
+                      Uploading Feature Images...
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Please wait while your image files are being uploaded
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-2.5">
+                      <FaPlus size={20} />
+                    </div>
+                    <p className="text-sm font-bold text-foreground">
+                      {dragActiveColor === 'feature-images' ? 'Drop Feature Images Here' : '+ Add Feature Images'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Drag & drop images anywhere inside this box, or click to browse (multiple files supported)
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Uploaded Feature Images Grid */}
@@ -3114,44 +3233,54 @@ const uploadFilesParallel = async (
             </div>
 
             {uploadProgress.length > 0 && (
-            <div className="space-y-2 mt-4">
-              {uploadProgress.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-border bg-card p-3 shadow-sm"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">
-                        {item.fileName}
-                      </p>
+              <div className="space-y-2.5 mt-4">
+                <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground px-1">
+                  <span className="flex items-center gap-1.5">
+                    <FaSpinner className="animate-spin text-primary size-3.5" />
+                    Uploading ({uploadProgress.length} file{uploadProgress.length === 1 ? '' : 's'})...
+                  </span>
+                  <span>Please do not close the window</span>
+                </div>
+                {uploadProgress.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-primary/20 bg-primary/5 p-3 shadow-sm transition-all"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex items-center gap-2.5">
+                        <FaSpinner className="size-3.5 animate-spin text-primary shrink-0" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {item.fileName}
+                          </p>
 
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {item.target === 'global'
-                          ? 'Uploading to all colors...'
-                          : item.target === 'feature-images'
-                          ? 'Uploading Feature Image...'
-                          : `Uploading to ${item.target}...`}
-                      </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {item.target === 'global'
+                              ? 'Uploading to all colors...'
+                              : item.target === 'feature-images'
+                              ? 'Uploading Feature Image...'
+                              : `Uploading to ${item.target}...`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span className="shrink-0 text-xs font-bold text-primary font-mono">
+                        {item.progress}%
+                      </span>
                     </div>
 
-                    <span className="shrink-0 text-xs font-bold text-primary">
-                      {item.progress}%
-                    </span>
+                    <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-primary/20">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all duration-200"
+                        style={{
+                          width: `${item.progress}%`
+                        }}
+                      />
+                    </div>
                   </div>
-
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-200"
-                      style={{
-                        width: `${item.progress}%`
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
 
 
 
@@ -3196,7 +3325,10 @@ const uploadFilesParallel = async (
     const files = Array.from(e.dataTransfer.files || [])
       .filter(file => file.type.startsWith('image/'))
 
-    if (files.length === 0) return
+    if (files.length === 0) {
+      toast.error('Please drop valid image files.')
+      return
+    }
 
     try {
       await uploadFilesParallel(
@@ -3213,10 +3345,11 @@ const uploadFilesParallel = async (
                 : varItem
             )
           )
+          toast.success(`Successfully added ${urls.length} image(s) to ${color}!`)
         }
       )
-    } catch {
-      toast.error('Failed to upload image(s)')
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
     }
   }}
 >
@@ -3302,8 +3435,37 @@ const uploadFilesParallel = async (
                           onDragOver={(e) => {
                             e.preventDefault()
                           }}
-                          onDrop={(e) => {
+                          onDrop={async (e) => {
                             e.preventDefault()
+                            e.stopPropagation()
+
+                            const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'))
+                            if (files.length > 0) {
+                              setDragActiveColor(null)
+                              try {
+                                await uploadFilesParallel(
+                                  files,
+                                  color,
+                                  (urls) => {
+                                    setVariants(prev =>
+                                      prev.map(varItem =>
+                                        (varItem.color || 'Default Color') === color
+                                          ? {
+                                              ...varItem,
+                                              images: [...(varItem.images || []), ...urls]
+                                            }
+                                          : varItem
+                                      )
+                                    )
+                                    toast.success(`Successfully added ${urls.length} image(s) to ${color}!`)
+                                  }
+                                )
+                              } catch (err: any) {
+                                toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
+                              }
+                              return
+                            }
+
                             if (draggedImage && draggedImage.color === color && draggedImage.index !== imgIdx) {
                               handleMoveImage(color, draggedImage.index, imgIdx)
                               setDraggedImage(null)
@@ -3419,7 +3581,11 @@ const uploadFilesParallel = async (
                       ))}
                       
                       <label 
-                        className={`shrink-0 w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                        className={`shrink-0 w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer transition-colors relative ${
+                          uploadProgress.some(item => item.target === color)
+                            ? 'opacity-80 pointer-events-none'
+                            : ''
+                        } ${
                           dragActiveColor === color 
                             ? 'border-primary bg-primary/10' 
                             : 'border-border hover:bg-muted/50'
@@ -3438,30 +3604,47 @@ const uploadFilesParallel = async (
                           e.preventDefault();
                           e.stopPropagation();
                           setDragActiveColor(null);
-                          const file = e.dataTransfer.files?.[0];
-                          if (!file) return;
+                          const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+                          if (files.length === 0) {
+                            toast.error('Please drop valid image files.');
+                            return;
+                          }
                           try {
-                            setLoading(true);
-                            const res = await apiClient.uploadImage(file, 'products');
-                            const url = res.data.data;
-                            setVariants(variants.map(varItem => 
-                              (varItem.color || 'Default Color') === color 
-                                ? { ...varItem, images: [...(varItem.images || []), url] } 
-                                : varItem
-                            ));
-                          } catch (err) {
-                            toast.error('Failed to upload image');
-                          } finally {
-                            setLoading(false);
+                            await uploadFilesParallel(
+                              files,
+                              color,
+                              (urls) => {
+                                setVariants(prev =>
+                                  prev.map(varItem =>
+                                    (varItem.color || 'Default Color') === color
+                                      ? { ...varItem, images: [...(varItem.images || []), ...urls] }
+                                      : varItem
+                                  )
+                                );
+                                toast.success(`Successfully added ${urls.length} image(s) to ${color}!`);
+                              }
+                            );
+                          } catch (err: any) {
+                            toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)');
                           }
                         }}
                       >
-                        <FaPlus size={24} className="text-muted-foreground" />
-                        <span className="text-[10px] font-semibold text-muted-foreground mt-1 text-center leading-tight">Add<br/>Image</span>
+                        {uploadProgress.some(item => item.target === color) ? (
+                          <div className="flex flex-col items-center justify-center p-1 text-center">
+                            <FaSpinner size={18} className="animate-spin text-primary mb-1" />
+                            <span className="text-[10px] font-bold text-primary leading-tight">Uploading...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <FaPlus size={24} className="text-muted-foreground" />
+                            <span className="text-[10px] font-semibold text-muted-foreground mt-1 text-center leading-tight">Add<br/>Image</span>
+                          </>
+                        )}
                         <input 
                           type="file" 
                           accept="image/*" 
                           multiple
+                          disabled={uploadProgress.some(item => item.target === color)}
                           className="hidden" 
                           onChange={async (e) => {
                             const files = Array.from(e.target.files || [])
@@ -3482,12 +3665,11 @@ const uploadFilesParallel = async (
                                         : varItem
                                     )
                                   )
-                                  toast.success(`Added ${urls.length} image(s) to ${color}!`)
+                                  toast.success(`Successfully added ${urls.length} image(s) to ${color}!`)
                                 }
                               )
-                            } catch (err) {
-                              console.error(err)
-                              toast.error('Failed to upload image(s)')
+                            } catch (err: any) {
+                              toast.error(err?.response?.data?.message || err?.message || 'Failed to upload image(s)')
                             } finally {
                               e.target.value = ''
                             }

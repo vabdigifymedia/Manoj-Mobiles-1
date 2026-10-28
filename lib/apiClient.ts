@@ -337,6 +337,12 @@ export const apiClient = {
     const params = folder ? `?folder=${encodeURIComponent(folder)}` : ''
     return axiosInstance.post<ApiResponse<string>>(`/api/admin/upload${params}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent: any) => {
+        if (progressEvent.total && onProgress) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          onProgress(percent)
+        }
+      }
     })
   },
 
