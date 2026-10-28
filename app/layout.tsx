@@ -1,5 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth-context'
 import { StoreProvider } from '@/components/store-provider'
@@ -18,10 +19,11 @@ const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || 'GTM-MM2KZX59'
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-TQ1H3FXHFQ'
 const GSC_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'Ps9IJo4sAROCqcloOgV7is3lpXl5RlBlGv6ZHUjWHMA'
 
-const inter = {
-  className: '',
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
   variable: '--font-inter',
-}
+})
 
 export const metadata: Metadata = {
   title: 'Manoj Mobiles | Smarter choices, better service',

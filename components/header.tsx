@@ -215,17 +215,12 @@ export function Header() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 lg:px-8">
           {/* MOBILE TOP HEADER BRANDING (md:hidden) */}
           <div className="flex md:hidden items-center justify-between w-full min-h-[40px]">
-            <Link href="/" className="flex items-center gap-2 text-left">
-              {logoUrl && (
-                <img
-                  src={logoUrl}
-                  alt="ManojMobiles Logo"
-                  className="max-h-8 max-w-[100px] w-auto h-auto object-contain shrink-0"
-                />
-              )}
-              <span className="text-xl font-black tracking-tight text-zinc-900 dark:text-white font-sans">
-                Manoj<span className="text-blue-600 dark:text-blue-400 font-black">Mobiles</span>
-              </span>
+            <Link href="/" className="flex items-center text-left group select-none py-1">
+              <img
+                src="/logo.png"
+                alt="EMIStore"
+                className="h-9 sm:h-10 w-auto object-contain shrink-0 dark:[filter:drop-shadow(0_0_1px_rgba(255,255,255,0.85))]"
+              />
             </Link>
 
             <button 
@@ -239,17 +234,12 @@ export function Header() {
 
           {/* DESKTOP TOP HEADER BRANDING (hidden md:flex) */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2.5 text-left">
-              {logoUrl && (
-                <img
-                  src={logoUrl}
-                  alt="ManojMobiles Logo"
-                  className="max-h-9 max-w-[120px] w-auto h-auto object-contain shrink-0"
-                />
-              )}
-              <span className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white font-sans">
-                Manoj<span className="text-blue-600 dark:text-blue-400 font-black">Mobiles</span>
-              </span>
+            <Link href="/" className="flex items-center text-left group select-none py-1">
+              <img
+                src="/logo.png"
+                alt="EMIStore"
+                className="h-10 lg:h-11 w-auto object-contain shrink-0 dark:[filter:drop-shadow(0_0_1px_rgba(255,255,255,0.85))]"
+              />
             </Link>
           </div>
           <nav className="hidden items-center gap-7 text-sm font-bold lg:flex ml-4">
@@ -522,17 +512,12 @@ export function Header() {
             
             {/* Single Unified Drawer Header */}
             <div className="p-4 border-b border-border flex items-center justify-between shrink-0 bg-background">
-              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
-                {storeSettings?.logoUrl && (
-                  <img
-                    src={storeSettings.logoUrl}
-                    alt="ManojMobiles Logo"
-                    className="max-h-7 max-w-[90px] w-auto h-auto object-contain shrink-0"
-                  />
-                )}
-                <span className="block text-xl font-black tracking-tight text-zinc-900 dark:text-white font-sans">
-                  Manoj<span className="text-blue-600 dark:text-blue-400 font-black">Mobiles</span>
-                </span>
+              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center text-left group select-none">
+                <img
+                  src="/logo.png"
+                  alt="EMIStore"
+                  className="h-9 w-auto object-contain shrink-0 dark:[filter:drop-shadow(0_0_1px_rgba(255,255,255,0.85))]"
+                />
               </Link>
               <button 
                 onClick={() => setMobileMenuOpen(false)} 
