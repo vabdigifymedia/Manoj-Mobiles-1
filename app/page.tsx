@@ -21,6 +21,7 @@ import { QuickFeatures } from '@/components/home/quick-features'
 import { BankOffers } from '@/components/home/bank-offers'
 import { BrandSpotlight } from '@/components/home/brand-spotlight'
 import { BudgetPhones } from '@/components/home/budget-phones'
+import { EmiEligibilityBanner } from '@/components/home/emi-eligibility-banner'
 import { CategoryProductSection } from '@/components/home/category-section'
 import { FeaturesCarousel } from '@/components/home/features-carousel'
 import { InstagramReels } from '@/components/home/instagram-reels'
@@ -98,6 +99,9 @@ export default async function HomePage() {
 
       {/* Deal of the Day */}
       <DealOfTheDay banner={activeDeal} />
+
+      {/* EMI Eligibility Section */}
+      <EmiEligibilityBanner />
 
       {/* Budget Phones Section */}
       <BudgetPhones products={budgetPhoneProducts} />

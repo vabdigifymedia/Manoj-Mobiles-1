@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { FaAward, FaXmark, FaImage, FaBox, FaUsers, FaUserPlus, FaCircleQuestion, FaGear, FaTableColumns, FaTag, FaBagShopping, FaBars, FaRightFromBracket, FaChartSimple, FaInstagram, FaListCheck, FaBoxesPacking, FaMapLocationDot, FaMotorcycle } from 'react-icons/fa6'
+import { FaAward, FaXmark, FaImage, FaBox, FaUsers, FaUserPlus, FaCircleQuestion, FaGear, FaTableColumns, FaTag, FaBagShopping, FaBars, FaRightFromBracket, FaChartSimple, FaInstagram, FaListCheck, FaBoxesPacking, FaMapLocationDot, FaMotorcycle, FaCreditCard } from 'react-icons/fa6'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { bulkInquiryService } from '@/lib/bulkInquiryService'
 
@@ -12,6 +12,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [pendingInquiryCount, setPendingInquiryCount] = useState(0)
+  const [pendingEmiCount, setPendingEmiCount] = useState(0)
   const { isAuthenticated, user, logout, loading } = useAuth()
 
   useEffect(() => {
@@ -20,6 +21,15 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
         bulkInquiryService.getBulkInquiries(0, 1, 'PENDING')
           .then(res => setPendingInquiryCount(res.totalElements))
           .catch(console.error)
+
+        fetch('/api/admin/emi-enquiries?status=NEW')
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && typeof data.total === 'number') {
+              setPendingEmiCount(data.total)
+            }
+          })
+          .catch(() => {})
       }
     }
 
@@ -106,6 +116,7 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
               { label: 'Overview', icon: FaChartSimple, href: '/admin', exact: true }, 
               { label: 'Products', icon: FaBox, href: '/admin/products', exact: false }, 
               { label: 'Bulk Inquiry', icon: FaBoxesPacking, href: '/admin/bulk-inquiries', exact: false, badge: pendingInquiryCount },
+              { label: 'EMI Enquiries', icon: FaCreditCard, href: '/admin/emi-enquiries', exact: false, badge: pendingEmiCount },
               { label: 'Categories', icon: FaTag, href: '/admin/categories', exact: false },
               { label: 'Variant Templates', icon: FaTableColumns, href: '/admin/variant-templates', exact: false },
               { label: 'Spec Templates', icon: FaListCheck, href: '/admin/spec-templates', exact: false },

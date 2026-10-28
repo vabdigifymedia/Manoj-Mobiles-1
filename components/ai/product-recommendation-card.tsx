@@ -3,7 +3,7 @@ import { formatINR } from '@/lib/apiClient'
 import type { ChatProductSuggestion } from './types'
 
 /**
- * Future-ready product recommendation card for Manoj AI responses.
+ * Future-ready product recommendation card for EMIStore AI responses.
  *
  * Styled to match the existing Manoj Mobiles product cards (rounded
  * borders, clean surfaces, brand accent) and links straight into the

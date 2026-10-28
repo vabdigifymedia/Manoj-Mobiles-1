@@ -111,6 +111,7 @@ export function Footer() {
             <ul className="space-y-4 text-sm text-muted-foreground">
               {/* TEMPORARILY HIDDEN: Global Buy */}
               {/* <li><Link href="/global-buy" className="hover:text-primary transition-colors">Global Buy</Link></li> */}
+              <li><Link href="/emi-eligibility" className="hover:text-primary transition-colors font-semibold text-primary">Check EMI Eligibility</Link></li>
               <li><Link href="/shop" className="hover:text-primary transition-colors">Shop All Phones</Link></li>
               <li><Link href="/shop" className="hover:text-primary transition-colors">Apple iPhones</Link></li>
               <li><Link href="/shop" className="hover:text-primary transition-colors">Samsung Galaxy</Link></li>

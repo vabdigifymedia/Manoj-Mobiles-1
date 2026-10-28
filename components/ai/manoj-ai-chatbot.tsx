@@ -8,10 +8,10 @@ import { sendMessageToAI } from './ai-service'
 import type { ChatMessage } from './types'
 
 const WELCOME_MESSAGE: ChatMessage = {
-  id: 'manoj-ai-welcome',
+  id: 'emistore-ai-welcome',
   role: 'assistant',
   content:
-    "Hi! 👋 I'm Manoj AI.\n\nI can help you find the right mobile, compare phones, check specifications, and answer questions about Manoj Mobiles.",
+    "Hi! 👋 I'm EMIStore AI.\n\nI can help you find the right mobile, compare phones, check specifications, and answer questions about EMIStore.",
   createdAt: 0,
 }
 
@@ -23,7 +23,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   { label: 'Help Me Choose', prompt: 'Help me choose the right phone' },
 ]
 
-// ── Automatic "Ask Manoj AI" attention CTA timing ──
+// ── Automatic "Ask EMIStore AI" attention CTA timing ──
 const PROMPT_INITIAL_DELAY = 12000 // first appearance ~10-15s after page load
 const PROMPT_VISIBLE_DURATION = 4500 // bubble stays visible ~4-5s
 const PROMPT_REPEAT_INTERVAL = 22000 // re-shows every ~20-30s
@@ -36,7 +36,7 @@ function createMessageId() {
 }
 
 /**
- * Manoj AI — the Manoj Mobiles AI assistant chatbot.
+ * EMIStore AI — the EMIStore AI assistant chatbot.
  *
  * This phase is UI-only: messages flow through local state and a clearly
  * separated placeholder in `components/ai/ai-service.ts`. To connect the
@@ -53,7 +53,7 @@ export function ManojAIChatbot() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // ── Automatic "Ask Manoj AI" attention CTA ──
+  // ── Automatic "Ask EMIStore AI" attention CTA ──
   const [showAiPrompt, setShowAiPrompt] = useState(false)
   const isHoveredRef = useRef(false) // hovering keeps the bubble visible (overrides the scheduled hide)
   const promptDelayRef = useRef(PROMPT_INITIAL_DELAY) // first show ≈12s, later shows use the repeat gap
@@ -78,7 +78,7 @@ export function ManojAIChatbot() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [isChatOpen])
 
-  // Automatic attention CTA: shows "Ask Manoj AI" ~12s after load for ~4.5s, then
+  // Automatic attention CTA: shows "Ask EMIStore AI" ~12s after load for ~4.5s, then
   // repeats with a ~22s gap. Fully paused while the chat is open; every timer is
   // cleaned up on unmount/chat-open (single timer chain — no duplicates on re-render).
   useEffect(() => {
@@ -203,7 +203,7 @@ export function ManojAIChatbot() {
       onFocus={() => setShowAiPrompt(true)}
       onBlur={() => setShowAiPrompt(false)}
     >
-      {/* ── Automatic "Ask Manoj AI" attention bubble (doubles as the hover tooltip) ── */}
+      {/* ── Automatic "Ask EMIStore AI" attention bubble (doubles as the hover tooltip) ── */}
       <div
         aria-hidden={!showAiPrompt || isChatOpen}
         className={`absolute bottom-full right-0 pb-2.5 ${showAiPrompt && !isChatOpen ? '' : 'pointer-events-none'}`}
@@ -212,7 +212,7 @@ export function ManojAIChatbot() {
           type="button"
           tabIndex={showAiPrompt && !isChatOpen ? 0 : -1}
           onClick={() => setIsChatOpen(true)}
-          aria-label="Ask Manoj AI"
+          aria-label="Ask EMIStore AI"
           className={`flex items-center gap-1.5 rounded-full border border-border bg-card py-1.5 pl-3 pr-3.5 shadow-lg transition-all duration-300 md:py-2 md:pl-3.5 md:pr-4 ${
             showAiPrompt && !isChatOpen
               ? 'translate-y-0 scale-100 opacity-100 ease-[cubic-bezier(0.34,1.56,0.64,1)]'
@@ -220,19 +220,19 @@ export function ManojAIChatbot() {
           }`}
         >
           <Sparkles size={12} className="shrink-0 text-primary" aria-hidden="true" />
-          <span className="whitespace-nowrap text-[11px] font-bold text-foreground md:text-xs">Ask Manoj AI</span>
+          <span className="whitespace-nowrap text-[11px] font-bold text-foreground md:text-xs">Ask EMIStore AI</span>
         </button>
         {/* Speech-bubble tail pointing at the AI button */}
         <span className="absolute bottom-[6px] right-6 size-2.5 rotate-45 rounded-[2px] border-b border-r border-border bg-card" aria-hidden="true" />
       </div>
 
-      {/* ── Floating Manoj AI launcher (replaces the old floating WhatsApp button position) ── */}
+      {/* ── Floating EMIStore AI launcher (replaces the old floating WhatsApp button position) ── */}
       <button
         type="button"
         onClick={() => setIsChatOpen(open => !open)}
-        aria-label={isChatOpen ? 'Close Manoj AI chat' : 'Ask Manoj AI'}
+        aria-label={isChatOpen ? 'Close EMIStore AI chat' : 'Ask EMIStore AI'}
         aria-expanded={isChatOpen}
-        aria-controls="manoj-ai-chat"
+        aria-controls="emistore-ai-chat"
         className={`group relative grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
           showAiPrompt && !isChatOpen ? 'scale-105' : ''
         }`}
@@ -251,9 +251,9 @@ export function ManojAIChatbot() {
 
       {/* ── Chat panel (compact popup anchored directly above the AI button) ── */}
       <div
-        id="manoj-ai-chat"
+        id="emistore-ai-chat"
         role="dialog"
-        aria-label="Manoj AI chat"
+        aria-label="EMIStore AI chat"
         aria-hidden={!isChatOpen}
         className={`absolute bottom-[calc(100%_+_12px)] right-0 z-[60] flex origin-bottom-right flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl transition-all duration-300 ease-out w-[calc(100vw_-_28px)] max-w-none h-[75dvh] max-h-[calc(100dvh_-_10rem)] md:h-[600px] md:max-h-[calc(100dvh_-_120px)] md:w-[360px] md:max-w-[380px] ${
           isChatOpen ? 'visible translate-y-0 scale-100 opacity-100' : 'invisible pointer-events-none translate-y-3 scale-95 opacity-0'
@@ -265,8 +265,8 @@ export function ManojAIChatbot() {
             <Sparkles size={20} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-black leading-tight text-foreground">Manoj AI</p>
-            <p className="truncate text-[11px] font-medium text-muted-foreground">Your Manoj Mobiles Assistant</p>
+            <p className="text-sm font-black leading-tight text-foreground">EMIStore AI</p>
+            <p className="truncate text-[11px] font-medium text-muted-foreground">Your EMIStore Assistant</p>
           </div>
           <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
             <span className="size-1.5 rounded-full bg-emerald-500 motion-safe:animate-pulse" aria-hidden="true" />
@@ -275,7 +275,7 @@ export function ManojAIChatbot() {
           <button
             type="button"
             onClick={() => setIsChatOpen(false)}
-            aria-label="Close Manoj AI chat"
+            aria-label="Close EMIStore AI chat"
             className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             <X size={18} />
@@ -313,8 +313,8 @@ export function ManojAIChatbot() {
                 autoResize()
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Manoj AI anything..."
-              aria-label="Message Manoj AI"
+              placeholder="Ask EMIStore AI anything..."
+              aria-label="Message EMIStore AI"
               className="max-h-28 flex-1 resize-none rounded-2xl border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/10"
             />
             <button
