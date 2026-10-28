@@ -96,3 +96,4 @@ const res = await axiosInstance.post('/api/auth/email/resend-otp', {
 })
 return res.data
 ```
+<!-- Timepass -->
