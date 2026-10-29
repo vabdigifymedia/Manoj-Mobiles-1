@@ -7,7 +7,7 @@ const DATA_DIR = path.join(process.cwd(), 'public', 'data')
 export const PRODUCT_FEATURE_IMAGES_FILE = path.join(DATA_DIR, 'product-feature-images.json')
 
 // Secondary writable fallback for serverless environments (AWS Lambda, Vercel) where process.cwd() is read-only
-const TMP_DATA_DIR = path.join(os.tmpdir(), 'manoj-data')
+const TMP_DATA_DIR = path.join(process.cwd(), '.cache', 'manoj-data')
 const TMP_PRODUCT_FEATURE_IMAGES_FILE = path.join(TMP_DATA_DIR, 'product-feature-images.json')
 
 interface ProductFeatureImagesMap {

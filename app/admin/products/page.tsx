@@ -10,6 +10,8 @@ import {
   FaMagnifyingGlass, 
   FaTrashCan, 
   FaStar, 
+  FaRegStar,
+  FaSpinner,
   FaPlus, 
   FaXmark, 
   FaFileLines, 
@@ -65,6 +67,8 @@ function ProductsCatalogContent() {
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [draftCount, setDraftCount] = useState<number>(0)
   const [globalProductSearch, setGlobalProductSearch] = useState(false)
+  const [trendingIds, setTrendingIds] = useState<Set<string>>(new Set())
+  const [togglingTrendingId, setTogglingTrendingId] = useState<string | null>(null)
 
   const loadData = async () => {
     try {
@@ -89,6 +93,16 @@ function ProductsCatalogContent() {
         : (brandsRes.data?.data?.content || [])
       setBrands(brandList)
       setBrandCategoriesMap(bCatRes.data || {})
+
+      // Fetch trending product IDs
+      fetch('/api/trending')
+        .then(res => res.json())
+        .then(d => {
+          if (d.success && Array.isArray(d.productIds)) {
+            setTrendingIds(new Set(d.productIds))
+          }
+        })
+        .catch(() => {})
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -259,6 +273,54 @@ function ProductsCatalogContent() {
       loadData()
     } catch {
       alert('Failed to update status')
+    }
+  }
+
+  const handleToggleTrending = async (product: CatalogProduct) => {
+    // Only mobile phone products are eligible for the Trending Phones section
+    const cat = (product.categoryName || '').toLowerCase()
+    const name = (product.name || '').toLowerCase()
+    const isExcluded = ['laptop', 'tablet', 'watch', 'audio', 'ear', 'head', 'cover', 'case', 'charger', 'accessory', 'accessories'].some(
+      kw => cat.includes(kw) || name.includes(kw)
+    )
+
+    if (isExcluded) {
+      alert('Only mobile phones can be featured in the Trending Phones section.')
+      return
+    }
+
+    const wasTrending = trendingIds.has(product.id)
+    setTogglingTrendingId(product.id)
+
+    // Optimistic UI update
+    setTrendingIds(prev => {
+      const next = new Set(prev)
+      if (wasTrending) next.delete(product.id)
+      else next.add(product.id)
+      return next
+    })
+
+    try {
+      const res = await fetch('/api/trending/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to toggle trending')
+      }
+    } catch (err: any) {
+      // Revert optimistic update
+      setTrendingIds(prev => {
+        const next = new Set(prev)
+        if (wasTrending) next.add(product.id)
+        else next.delete(product.id)
+        return next
+      })
+      alert(err?.message || 'Failed to update trending status')
+    } finally {
+      setTogglingTrendingId(null)
     }
   }
 
@@ -722,7 +784,7 @@ function ProductsCatalogContent() {
                               )}
                               <div className="min-w-0">
                                 <Link
-                                  href={`/admin/products/${product.id}`}
+                                  href={`/admin/products/${product.id}/edit`}
                                   className="font-bold text-foreground hover:text-primary transition-colors truncate block max-w-xs"
                                   title={product.name}
                                 >
@@ -781,8 +843,29 @@ function ProductsCatalogContent() {
                           {/* Actions */}
                           <td className="px-5 py-3.5 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              {/* Trending Star Button */}
+                              <button
+                                type="button"
+                                disabled={togglingTrendingId === product.id}
+                                onClick={() => handleToggleTrending(product)}
+                                className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                                  trendingIds.has(product.id)
+                                    ? 'text-amber-500 hover:text-amber-600 bg-amber-500/10 hover:bg-amber-500/20'
+                                    : 'text-muted-foreground hover:text-amber-500 hover:bg-muted'
+                                }`}
+                                title={trendingIds.has(product.id) ? 'Remove from Trending Phones' : 'Mark as Trending Phone'}
+                              >
+                                {togglingTrendingId === product.id ? (
+                                  <FaSpinner size={14} className="animate-spin text-amber-500" />
+                                ) : trendingIds.has(product.id) ? (
+                                  <FaStar size={14} className="fill-amber-500" />
+                                ) : (
+                                  <FaRegStar size={14} />
+                                )}
+                              </button>
+
                               <Link
-                                href={`/admin/products/${product.id}`}
+                                href={`/admin/products/${product.id}/edit`}
                                 className="p-2 rounded-lg text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
                                 title="Edit Product"
                               >

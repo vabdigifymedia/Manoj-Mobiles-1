@@ -10,6 +10,7 @@ import {
   selectByBrand,
   selectNewArrivals,
   selectActiveCategorySections,
+  selectTrendingPhones,
 } from '@/lib/productCatalog'
 import type { BannerResponseDTO, StoreSettingResponseDTO, FaqResponseDTO, BrandResponseDTO, CategoryResponseDTO, PageResponse, InstagramReelResponseDTO } from '@/lib/types'
 import { HeroCarousel } from '@/components/home/hero-carousel'
@@ -19,6 +20,7 @@ import { ProductTabs } from '@/components/home/product-tabs'
 import { FaqAccordion } from '@/components/home/faq-accordion'
 import { QuickFeatures } from '@/components/home/quick-features'
 import { BankOffers } from '@/components/home/bank-offers'
+import { TrendingPhones } from '@/components/home/trending-phones'
 import { BrandSpotlight } from '@/components/home/brand-spotlight'
 import { BudgetPhones } from '@/components/home/budget-phones'
 import { EmiEligibilityBanner } from '@/components/home/emi-eligibility-banner'
@@ -26,6 +28,8 @@ import { CategoryProductSection } from '@/components/home/category-section'
 import { FeaturesCarousel } from '@/components/home/features-carousel'
 import { InstagramReels } from '@/components/home/instagram-reels'
 import { BulkInquirySection } from '@/components/home/bulk-inquiry-section'
+import { getTrendingProductIds } from '@/lib/trendingStore'
+import { getProductRatingMap } from '@/lib/reviewStore'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -51,29 +55,47 @@ export default async function HomePage() {
   const activeDeal = (dealBanner || [])[0] || null
   const brandList = brands?.content || []
   const categoryList = categories || []
-  const newProducts = selectNewArrivals(newestProducts, 4)
-  const bestProducts = selectBestSellers(catalog, 4)
+
+  // Dynamic server-side enrichment with genuine ratings and trending flags
+  const trendingIds = new Set(getTrendingProductIds())
+  const ratingsMap = getProductRatingMap()
+
+  const enrichedCatalog = catalog.map(p => {
+    const stored = ratingsMap.get(p.id)
+    return {
+      ...p,
+      isTrending: trendingIds.has(p.id),
+      avgRating: stored ? stored.avgRating : p.avgRating,
+      totalReviews: stored ? stored.totalReviews : p.totalReviews,
+    }
+  })
+
+  const newProducts = selectNewArrivals(newestProducts, 4).map(p => {
+    const stored = ratingsMap.get(p.id)
+    return {
+      ...p,
+      isTrending: trendingIds.has(p.id),
+      avgRating: stored ? stored.avgRating : p.avgRating,
+      totalReviews: stored ? stored.totalReviews : p.totalReviews,
+    }
+  })
+  const bestProducts = selectBestSellers(enrichedCatalog, 4)
 
   // ---- Brand spotlights ----
-  // Brand membership comes from the brand master data and is matched
-  // case/whitespace-insensitively (product brand data contains values such as
-  // "realme" / "POCO" / "Oppo"), so a row can never be dropped by casing.
   const samsungBrand = findBrand(brandList, 'samsung')
   const appleBrand = findBrand(brandList, 'apple')
 
-  const samsungProducts = (samsungBrand ? selectByBrand(catalog, samsungBrand) : selectByBrand(catalog, 'samsung')).slice(0, 6)
-  const iphoneProducts = (appleBrand ? selectByBrand(catalog, appleBrand) : selectByBrand(catalog, 'apple')).slice(0, 6)
+  const samsungProducts = (samsungBrand ? selectByBrand(enrichedCatalog, samsungBrand) : selectByBrand(enrichedCatalog, 'samsung')).slice(0, 6)
+  const iphoneProducts = (appleBrand ? selectByBrand(enrichedCatalog, appleBrand) : selectByBrand(enrichedCatalog, 'apple')).slice(0, 6)
+
+  // ---- Trending Phones (Admin-marked mobile phones) ----
+  const trendingPhones = selectTrendingPhones(enrichedCatalog, trendingIds, 12)
 
   // ---- Budget Phones showcase & Budget Picks collection tab ----
-  // Both read the SAME real catalog data (most affordable mobiles ordered by the
-  // existing `startingPrice` field) — the API cannot sort by `startingPrice`
-  // server-side (it responds HTTP 500), so the ordering happens in the shared layer.
-  const budgetPhoneProducts = selectBudgetPicks(catalog, 8)
+  const budgetPhoneProducts = selectBudgetPicks(enrichedCatalog, 8)
 
   // ---- Dynamic Category Sections ----
-  // Discovers all categories with at least 1 active, valid product and prepares sections.
-  // Empty categories are excluded automatically with 0 DOM footprint.
-  const categorySections = selectActiveCategorySections(categoryList, catalog, 8)
+  const categorySections = selectActiveCategorySections(categoryList, enrichedCatalog, 8)
 
   return (
     <>
@@ -90,6 +112,9 @@ export default async function HomePage() {
 
       {/* Shop by Brand Showcase */}
       <BrandShowcase brands={brandList} />
+
+      {/* Trending Phones Section */}
+      <TrendingPhones products={trendingPhones} />
 
       {/* Brand Spotlight - Samsung */}
       <BrandSpotlight brandName="Samsung" title="Best Of Samsung" products={samsungProducts} />

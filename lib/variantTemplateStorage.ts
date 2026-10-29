@@ -8,7 +8,7 @@ import {
 } from './variantTemplates'
 
 const DATA_DIR = path.join(process.cwd(), 'public', 'data')
-const TMP_DATA_DIR = path.join(os.tmpdir(), 'manoj-data')
+const TMP_DATA_DIR = path.join(process.cwd(), '.cache', 'manoj-data')
 
 const VARIANT_TEMPLATES_FILE = path.join(DATA_DIR, 'variant-templates.json')
 const TMP_VARIANT_TEMPLATES_FILE = path.join(TMP_DATA_DIR, 'variant-templates.json')

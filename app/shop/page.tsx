@@ -15,6 +15,7 @@ import {
   findCategory,
   selectVisible,
   isMobileProduct,
+  selectTrendingPhones,
   matchesBrand,
   matchesCategory,
   dedupeById,
@@ -29,6 +30,8 @@ import {
 } from '@/lib/smartSearch'
 import { FaMagnifyingGlass, FaXmark } from 'react-icons/fa6'
 import type { PageResponse, BrandResponseDTO, CategoryResponseDTO } from '@/lib/types'
+import { getTrendingProductIds } from '@/lib/trendingStore'
+import { getProductRatingMap } from '@/lib/reviewStore'
 
 function getIndiaDateKey() {
   return new Intl.DateTimeFormat('en-CA', {
@@ -71,12 +74,13 @@ export const metadata: Metadata = {
 }
 
 export default async function ShopPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const { q, brand, category, minPrice, maxPrice } = await searchParams
+  const { q, brand, category, minPrice, maxPrice, trending } = await searchParams
   const searchQuery = typeof q === 'string' ? q.trim() : ''
   const brandQuery = typeof brand === 'string' ? brand.trim() : ''
   const categoryQuery = typeof category === 'string' ? category.trim() : ''
   const minPriceQuery = typeof minPrice === 'string' ? minPrice.trim() : ''
   const maxPriceQuery = typeof maxPrice === 'string' ? maxPrice.trim() : ''
+  const isTrendingQuery = trending === 'true'
 
   const [brandsRes, categoriesRes] = await Promise.all([
     serverFetch<PageResponse<BrandResponseDTO>>('/api/public/brands?page=0&size=100'),
@@ -113,10 +117,25 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     searchQuery ? fetchSearchServer(searchQuery).catch(() => []) : Promise.resolve([])
   ])
 
-  const catalog: CatalogProduct[] = dedupeById([...fullCatalog, ...searchApiResults])
+  const trendingIds = new Set(getTrendingProductIds())
+  const ratingsMap = getProductRatingMap()
+
+  const catalog: CatalogProduct[] = dedupeById([...fullCatalog, ...searchApiResults]).map(p => {
+    const stored = ratingsMap.get(p.id)
+    return {
+      ...p,
+      isTrending: trendingIds.has(p.id),
+      avgRating: stored ? stored.avgRating : p.avgRating,
+      totalReviews: stored ? stored.totalReviews : p.totalReviews,
+    }
+  })
 
   // Pre-filter candidate products based on brand, category, and price buffer
   let candidateProducts = selectVisible(catalog)
+
+  if (isTrendingQuery) {
+    candidateProducts = selectTrendingPhones(candidateProducts, trendingIds, 200)
+  }
 
   if (activeBrandObj) {
     candidateProducts = candidateProducts.filter(p => matchesBrand(p, activeBrandObj))
@@ -299,13 +318,23 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   const pageTitle = searchQuery
     ? `Results for "${searchQuery}"`
+    : isTrendingQuery
+    ? 'Trending Phones'
     : activeBrandObj
     ? `${activeBrandObj.name} Mobiles`
     : categoryQuery
     ? `${activeCategoryObj?.name || categoryQuery}`
     : 'Find your next phone'
 
-  const pageSubtitle = searchQuery ? 'Search Results' : activeBrandObj ? 'Brand Store' : hasFilters ? 'Filtered results' : 'The collection'
+  const pageSubtitle = searchQuery
+    ? 'Search Results'
+    : isTrendingQuery
+    ? 'Featured & Trending'
+    : activeBrandObj
+    ? 'Brand Store'
+    : hasFilters
+    ? 'Filtered results'
+    : 'The collection'
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8">

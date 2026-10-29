@@ -3,7 +3,7 @@ import path from 'node:path'
 import os from 'node:os'
 
 const DATA_DIR = path.join(process.cwd(), 'public', 'data')
-const TMP_DATA_DIR = path.join(os.tmpdir(), 'manoj-data')
+const TMP_DATA_DIR = path.join(process.cwd(), '.cache', 'manoj-data')
 
 const BRAND_CATEGORIES_FILE = path.join(DATA_DIR, 'brand-categories.json')
 const TMP_BRAND_CATEGORIES_FILE = path.join(TMP_DATA_DIR, 'brand-categories.json')

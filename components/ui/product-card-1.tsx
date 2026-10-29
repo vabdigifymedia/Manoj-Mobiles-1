@@ -137,13 +137,21 @@ const ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(
               <div className="flex flex-col gap-1 md:gap-3 pr-8 md:pr-0">
                 <h2 className="text-[15px] sm:text-base md:text-[17px] font-semibold text-foreground line-clamp-2 leading-snug hover:text-primary cursor-pointer">{title}</h2>
                 <div className="flex items-center gap-1.5 text-xs md:text-sm text-muted-foreground">
-                  <div className="bg-green-600 text-white px-1 py-0.5 rounded-sm flex items-center gap-0.5 font-medium text-[10px] md:text-xs">
-                    <span>{rating.toFixed(1)}</span>
-                    <Star className="h-2 w-2 md:h-3 md:w-3 fill-white" />
-                  </div>
-                  <span className="text-[11px] md:text-sm">
-                    ({formatNumber(ratingsCount)})
-                  </span>
+                  {ratingsCount > 0 ? (
+                    <>
+                      <div className="bg-emerald-600 text-white px-1.5 py-0.5 rounded-sm flex items-center gap-0.5 font-bold text-[10px] md:text-xs">
+                        <span>{rating.toFixed(1)}</span>
+                        <Star className="h-2.5 w-2.5 fill-white text-white" />
+                      </div>
+                      <span className="text-[11px] md:text-sm">
+                        ({formatNumber(ratingsCount)})
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-[11px] md:text-xs text-muted-foreground/75">
+                      No ratings yet
+                    </span>
+                  )}
                   {isAssured && (
                     <div className="flex items-center gap-0.5 ml-1">
                       <ShieldCheck className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-600" fill="currentColor" stroke="white" strokeWidth={1.5} />

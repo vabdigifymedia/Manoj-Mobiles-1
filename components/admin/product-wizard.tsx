@@ -98,6 +98,8 @@ export function ProductWizard({ productId }: { productId?: string }) {
   const [highestStepReached, setHighestStepReached] = useState(1)
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
+  const [productLoadError, setProductLoadError] = useState<string | null>(null)
+  const [isTrending, setIsTrending] = useState(false)
   const [draftAvailable, setDraftAvailable] = useState(false)
 
   // Validation & Database SKU tracking
@@ -476,12 +478,29 @@ export function ProductWizard({ productId }: { productId?: string }) {
         setExistingDbSkus(skuMap)
 
         if (productId) {
-          const [prodRes, attrRes] = await Promise.all([
-            apiClient.getProductById(productId),
-            apiClient.getProductVariantAttributes(productId).catch(() => ({ data: {} }))
-          ])
-          const p = prodRes.data.data
-          const savedAttrsMap: Record<string, Record<string, any>> = (attrRes.data as any) || {}
+          try {
+            const [prodRes, attrRes] = await Promise.all([
+              apiClient.getProductById(productId),
+              apiClient.getProductVariantAttributes(productId).catch(() => ({ data: {} }))
+            ])
+            const p = prodRes?.data?.data
+            if (!p || !p.id) {
+              setProductLoadError(`Product with ID "${productId}" was not found or has been deleted.`)
+              setInitialLoading(false)
+              return
+            }
+
+            // Check trending status
+            fetch(`/api/trending?productId=${encodeURIComponent(productId)}`)
+              .then(r => r.json())
+              .then(d => {
+                if (d.success && typeof d.isTrending === 'boolean') {
+                  setIsTrending(d.isTrending)
+                }
+              })
+              .catch(() => {})
+
+            const savedAttrsMap: Record<string, Record<string, any>> = (attrRes.data as any) || {}
 
           setBaseInfo({
             name: p.name,
@@ -592,7 +611,18 @@ export function ProductWizard({ productId }: { productId?: string }) {
           if (loadedFeatureImages.length > 0) {
             setFeatureImages(loadedFeatureImages)
           }
+        } catch (err: any) {
+          console.error('Failed to load product details', err)
+          const status = err?.response?.status
+          setProductLoadError(
+            status === 404
+              ? `Product with ID "${productId}" does not exist or has been deleted.`
+              : `Failed to load product details (ID: "${productId}"). Please check your network or try again.`
+          )
+          setInitialLoading(false)
+          return
         }
+      }
 
         // Automatic Draft Restoration
         const targetDraftId = paramDraftId
@@ -1698,6 +1728,18 @@ const uploadFilesParallel = async (
         }
       }
 
+      // Persist trending phone status
+      if (finalProductId) {
+        await fetch('/api/trending', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: finalProductId,
+            isTrending,
+          }),
+        }).catch(err => console.error('Failed to save trending status', err))
+      }
+
       // On successful publish, remove draft so admin doesn't get duplicate draft prompts
       clearDraftForProduct(productId, activeDraftId)
       toast.success(productId ? 'Product updated successfully!' : 'Product published successfully!')
@@ -1727,6 +1769,30 @@ const uploadFilesParallel = async (
     } finally {
       setLoading(false)
     }
+  }
+
+  if (productLoadError) {
+    return (
+      <div className="mx-auto max-w-4xl py-12 px-4">
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center max-w-lg mx-auto">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-4">
+            <FaTriangleExclamation size={26} />
+          </div>
+          <h2 className="text-xl font-black text-foreground">Product Not Found</h2>
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            {productLoadError}
+          </p>
+          <div className="mt-6 flex items-center justify-center gap-3">
+            <Link
+              href="/admin/products"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <FaChevronLeft size={12} /> Back to Products List
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (initialLoading) {
@@ -3620,6 +3686,31 @@ const uploadFilesParallel = async (
               })}
             </div>
             
+            {/* Trending Phone Spotlight Option */}
+            <div className="mt-8 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+              <label className="flex items-start gap-3.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isTrending}
+                  onChange={(e) => setIsTrending(e.target.checked)}
+                  className="mt-1 size-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-foreground text-sm">
+                      Feature this phone in Trending Phones?
+                    </span>
+                    <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-extrabold text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                      Homepage Spotlight
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                    Check this option to display this mobile phone in the prominent &quot;Trending Phones&quot; section on the homepage. Leave unchecked for regular catalog listing.
+                  </p>
+                </div>
+              </label>
+            </div>
+
             <div className="mt-8 flex justify-between">
               <button onClick={() => setCurrentStep(4)} className="text-sm font-bold px-4 py-2 border border-border rounded-xl">Back</button>
               <button 

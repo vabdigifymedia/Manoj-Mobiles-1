@@ -2,10 +2,45 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { FaHeart, FaTruck, FaRegHeart } from 'react-icons/fa6'
+import { FaHeart, FaTruck, FaRegHeart, FaStar, FaStarHalfStroke, FaRegStar } from 'react-icons/fa6'
 import { formatINR } from '@/lib/apiClient'
 import { useStore } from './store-provider'
 import type { ProductListResponseDTO } from '@/lib/types'
+
+function StarRatingBadge({ avgRating, totalReviews }: { avgRating?: number; totalReviews?: number }) {
+  const hasReviews = Boolean(totalReviews && totalReviews > 0)
+  const rating = Number(avgRating || 0)
+
+  if (!hasReviews) {
+    return (
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/75 py-0.5">
+        <span className="flex text-slate-300 dark:text-zinc-600">
+          <FaRegStar size={11} />
+        </span>
+        <span>No ratings yet</span>
+      </div>
+    )
+  }
+
+  const stars = []
+  for (let i = 1; i <= 5; i++) {
+    if (rating >= i) {
+      stars.push(<FaStar key={i} size={11} className="text-amber-500 fill-amber-500" />)
+    } else if (rating >= i - 0.5) {
+      stars.push(<FaStarHalfStroke key={i} size={11} className="text-amber-500 fill-amber-500" />)
+    } else {
+      stars.push(<FaRegStar key={i} size={11} className="text-slate-300 dark:text-zinc-600" />)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 text-[11px] py-0.5">
+      <div className="flex items-center gap-0.5">{stars}</div>
+      <span className="font-bold text-slate-800 dark:text-zinc-200">{rating.toFixed(1)}</span>
+      <span className="text-muted-foreground">({totalReviews})</span>
+    </div>
+  )
+}
 
 function getColorDotStyle(color: string): React.CSSProperties {
   const name = color.toLowerCase().trim()
@@ -102,12 +137,19 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
       onClick={handleCardClick}
       className="group relative flex flex-col h-full rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200 dark:hover:border-blue-900/50 cursor-pointer overflow-hidden font-sans"
     >
-      {/* EMI Badge */}
-      {showEMI && (
-        <span className="absolute left-3 top-3 z-10 rounded-full bg-slate-900 px-2.5 py-0.5 text-[10px] font-extrabold text-white dark:bg-white dark:text-slate-900 shadow-xs pointer-events-none">
-          No Cost EMI
-        </span>
-      )}
+      {/* Badges Container */}
+      <div className="absolute left-3 top-3 z-10 flex flex-col gap-1 pointer-events-none">
+        {(product as any).isTrending && (
+          <span className="rounded-full bg-amber-500 text-white px-2.5 py-0.5 text-[10px] font-extrabold shadow-xs flex items-center gap-1 w-fit">
+            <FaStar size={9} className="fill-white" /> Trending
+          </span>
+        )}
+        {showEMI && (
+          <span className="rounded-full bg-slate-900 px-2.5 py-0.5 text-[10px] font-extrabold text-white dark:bg-white dark:text-slate-900 shadow-xs w-fit">
+            No Cost EMI
+          </span>
+        )}
+      </div>
 
       {/* Wishlist Button — Exception (Stops Propagation) */}
       {!hideHeart && (
@@ -146,6 +188,11 @@ export function ProductCard({ product, hideHeart }: { product: ProductListRespon
           <h3 className="line-clamp-2 text-[15px] sm:text-base font-bold leading-snug text-slate-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
             {product.name}
           </h3>
+        </div>
+
+        {/* Rating & Reviews */}
+        <div className="mt-1">
+          <StarRatingBadge avgRating={product.avgRating} totalReviews={product.totalReviews} />
         </div>
 
         {/* Price & Delivery */}

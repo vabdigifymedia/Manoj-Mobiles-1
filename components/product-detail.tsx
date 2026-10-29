@@ -385,9 +385,20 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
             )}
             <h1 className="mt-1.5 text-xl md:text-3xl lg:text-4xl font-black leading-tight">{product.name}</h1>
             <div className="mt-2.5 md:mt-3 flex items-center gap-1.5 md:gap-2">
-              <FaStar className="size-[15px] md:size-[17px] text-accent" fill="currentColor" />
-              <b className="text-sm md:text-base">{product.avgRating || 0}</b>
-              <a href="#reviews" className="text-xs md:text-sm text-muted-foreground hover:text-primary hover:underline">{product.totalReviews || 0} reviews</a>
+              {product.totalReviews && product.totalReviews > 0 ? (
+                <>
+                  <FaStar className="size-[15px] md:size-[17px] text-amber-500 fill-amber-500" />
+                  <b className="text-sm md:text-base">{Number(product.avgRating || 0).toFixed(1)}</b>
+                  <span className="text-muted-foreground">·</span>
+                  <a href="#reviews" className="text-xs md:text-sm text-muted-foreground hover:text-primary hover:underline">
+                    {product.totalReviews} {product.totalReviews === 1 ? 'review' : 'reviews'}
+                  </a>
+                </>
+              ) : (
+                <a href="#reviews" className="text-xs md:text-sm text-muted-foreground hover:text-primary hover:underline">
+                  No ratings yet · Be the first to review
+                </a>
+              )}
             </div>
           </div>
 
@@ -626,7 +637,7 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
 
       <hr className="my-12 border-border" />
 
-      <ProductReviews productId={product.id} />
+      <ProductReviews productId={product.id} productName={product.name} />
 
       {(() => {
         const specFeatureImages: ProductFeatureImage[] = (selectedVariant?.specifications || product.variants?.[0]?.specifications || [])

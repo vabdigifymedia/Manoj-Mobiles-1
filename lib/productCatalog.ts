@@ -49,6 +49,7 @@ export interface CatalogProduct extends ProductListResponseDTO {
   categoryKey: string
   statusKey: string
   isVisible: boolean
+  isTrending?: boolean
   /** `startingPrice` coerced to a number (tolerant of string values). */
   price: number
 }
@@ -134,9 +135,13 @@ export function toCatalogProduct(row?: ProductListResponseDTO | null): CatalogPr
   const status = toText(source.status)
   const startingPrice = toNumber(source.startingPrice ?? source.price ?? source.sellingPrice)
 
+  const prodId = toText(source.id)
+  const avgRating = toOptionalNumber(source.avgRating)
+  const totalReviews = toOptionalNumber(source.totalReviews)
+
   return {
     ...source,
-    id: toText(source.id),
+    id: prodId,
     name: toText(source.name),
     brandName,
     brandKey: normalizeKey(brandName),
@@ -148,12 +153,13 @@ export function toCatalogProduct(row?: ProductListResponseDTO | null): CatalogPr
     status,
     statusKey: normalizeKey(status),
     isVisible: isStorefrontVisible(status),
+    isTrending: Boolean((source as any).isTrending),
     startingPrice,
     price: startingPrice,
     mrp: toOptionalNumber(source.mrp),
     discountPercent: toOptionalNumber(source.discountPercent),
-    avgRating: toOptionalNumber(source.avgRating),
-    totalReviews: toOptionalNumber(source.totalReviews),
+    avgRating,
+    totalReviews,
     highlights: toHighlights(source.highlights),
   }
 }
@@ -315,6 +321,16 @@ export function isMobileProduct(product: CatalogProduct): boolean {
 
 export function selectMobileProducts(catalog: CatalogProduct[]): CatalogProduct[] {
   return selectVisible(catalog).filter(isMobileProduct)
+}
+
+/**
+ * Trending Phones — only mobile phones explicitly marked as trending by an admin.
+ * If no products are marked as trending, returns an empty array.
+ */
+export function selectTrendingPhones(catalog: CatalogProduct[], trendingIds?: Set<string>, limit = 12): CatalogProduct[] {
+  return selectMobileProducts(catalog)
+    .filter(p => (trendingIds ? trendingIds.has(p.id) : Boolean(p.isTrending)))
+    .slice(0, limit)
 }
 
 /** New Arrivals — newest first, from the master catalog (ordered by the API). */
