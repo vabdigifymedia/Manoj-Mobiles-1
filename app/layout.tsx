@@ -168,6 +168,27 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js')})}`,
           }}
         />
+        {/* Gallabox Web Agent AI Chatbot Widget */}
+        <Script
+          id="gallabox-chat-widget"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJob3N0IjoiaHR0cHM6Ly9lbWlzdG9yZS5pbi8iLCJpZCI6IjZhZmM1MzNmY2M3ZTFiYzVkZmJjNmQxOCIsImFjY0lkIjoiNmE5NTIzMzExMDViMmQ0MTdkMmM3OWY0IiwicmVnaW9uIjoiZGVmYXVsdCIsInZlcnNpb24iOiJ2MiIsImlhdCI6MTc5NDkyNzE5M30.QiJCfeVCXYP3NKvC5fiqzW9qDlN7l7XjQVsuGthFLMA";
+              (function(w, d, s, u, t) {
+                w.Chatty = function(c) { w.Chatty._.push(c) };
+                w.Chatty._ = [];
+                w.Chatty.url = u;
+                w.Chatty.hash = t;
+                var h = d.getElementsByTagName(s)[0],
+                  j = d.createElement(s);
+                j.async = true;
+                j.src = 'https://widget.gallabox.com/chatty-widget-v2.min.js?_=' + Math.random();
+                h.parentNode.insertBefore(j, h);
+              })(window, document, 'script', 'https://widget.gallabox.com', token);
+            `,
+          }}
+        />
       </body>
     </html>
   )

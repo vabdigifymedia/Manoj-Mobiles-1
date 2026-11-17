@@ -687,8 +687,8 @@ export function Header() {
         </div>
       )}
 
-      {/* Floating Manoj AI Assistant (replaces the floating WhatsApp button) */}
-      <ManojAIChatbot />
+      {/* Replaced with Gallabox Web Agent Widget (in layout.tsx) */}
+      {/* <ManojAIChatbot /> */}
     </>
   )
 }
