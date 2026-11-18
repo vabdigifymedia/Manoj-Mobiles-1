@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTheme } from 'next-themes'
 import type {
   OrderResponseDTO,
   StoreSettingResponseDTO,
@@ -10,6 +11,7 @@ import { apiClient } from '@/lib/apiClient'
 import { useOrderTracking } from '@/lib/useOrderTracking'
 import {
   decodeEncodedPolyline,
+  getGoogleMapThemeOptions,
   GOOGLE_MAPS_LIBRARIES,
   GOOGLE_MAPS_SCRIPT_ID,
   GOOGLE_MAPS_VERSION,
@@ -64,6 +66,9 @@ export const HyperlocalTracker = ({
   mode = 'user',
   onStatusChange,
 }: HyperlocalTrackerProps) => {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: GOOGLE_MAPS_SCRIPT_ID,
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
@@ -355,6 +360,7 @@ export const HyperlocalTracker = ({
                 zoomControl: true,
                 clickableIcons: false,
                 gestureHandling: 'cooperative',
+                ...getGoogleMapThemeOptions(isDark),
               }}
             >
               {/* Completed Path (Faded) */}

@@ -1,9 +1,15 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from 'react'
+import { useTheme } from 'next-themes'
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api'
 import { FaMapLocationDot, FaLocationDot } from 'react-icons/fa6'
-import { GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_SCRIPT_ID, GOOGLE_MAPS_VERSION } from '@/lib/googleMapsConfig'
+import {
+  getGoogleMapThemeOptions,
+  GOOGLE_MAPS_LIBRARIES,
+  GOOGLE_MAPS_SCRIPT_ID,
+  GOOGLE_MAPS_VERSION,
+} from '@/lib/googleMapsConfig'
 
 const containerStyle = {
   width: '100%',
@@ -23,6 +29,9 @@ interface StoreLocationPickerProps {
 }
 
 export function StoreLocationPicker({ lat, lng, onChange }: StoreLocationPickerProps) {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: GOOGLE_MAPS_SCRIPT_ID,
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
@@ -175,7 +184,8 @@ export function StoreLocationPicker({ lat, lng, onChange }: StoreLocationPickerP
             streetViewControl: false,
             mapTypeControl: false,
             fullscreenControl: true,
-            clickableIcons: false
+            clickableIcons: false,
+            ...getGoogleMapThemeOptions(isDark),
           }}
         >
           <Marker 
