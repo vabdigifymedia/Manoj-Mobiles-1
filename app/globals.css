@@ -237,3 +237,41 @@
     margin-top: -30px;
   }
 }
+
+/* ========================================================
+   Gallabox / Chatty AI Assistant Widget
+   - Prevent white opaque iframe box in dark mode by matching
+     the embedded widget's light color-scheme.
+   - Completely hide on admin / staff / agent routes.
+   ======================================================== */
+iframe[src*="gallabox"],
+iframe[id*="chatty"],
+iframe[class*="chatty"],
+iframe[data-gallabox-iframe="true"],
+[id*="chatty"] iframe,
+[class*="chatty"] iframe,
+[id*="gallabox"] iframe,
+[class*="gallabox"] iframe {
+  color-scheme: light !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+[data-gallabox-widget="true"] {
+  color-scheme: light !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+html[data-hide-gallabox="true"] [data-gallabox-widget="true"],
+html[data-hide-gallabox="true"] iframe[src*="gallabox"],
+html[data-hide-gallabox="true"] iframe[id*="chatty"],
+html[data-hide-gallabox="true"] iframe[class*="chatty"],
+html[data-hide-gallabox="true"] [id*="chatty"],
+html[data-hide-gallabox="true"] [class*="chatty"],
+html[data-hide-gallabox="true"] [id*="gallabox"],
+html[data-hide-gallabox="true"] [class*="gallabox"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

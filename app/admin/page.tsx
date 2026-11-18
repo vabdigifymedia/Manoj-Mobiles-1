@@ -42,7 +42,7 @@ export default function AdminPage() {
     <>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-accent">Dashboard</p>
+          <p className="text-xs font-bold uppercase tracking-[.18em] text-muted-foreground">Dashboard</p>
           <h1 className="mt-1 text-3xl font-black">Store overview</h1>
         </div>
         <Link href="/admin/products/new" className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
