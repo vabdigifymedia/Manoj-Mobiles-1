@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Cookies from 'js-cookie'
 import { FaArrowLeft, FaCircleUser, FaCircleExclamation } from 'react-icons/fa6'
 import { useAuth } from '@/lib/auth-context'
 
@@ -21,7 +22,8 @@ export default function StaffLoginPage() {
     setError('')
     try {
       await login(email, password)
-      router.push('/admin')
+      const role = Cookies.get('userRole')
+      router.push(role === 'DELIVERY_AGENT' ? '/agent' : '/admin')
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid credentials. Please try again.')
     } finally {

@@ -400,10 +400,20 @@ export const apiClient = {
     axiosInstance.get<ApiResponse<PageResponse<OrderResponseDTO>>>(`/api/admin/orders?page=${page}&size=${size}`),
   getAdminOrderById: (orderId: string) =>
     axiosInstance.get<ApiResponse<OrderResponseDTO>>(`/api/admin/orders/${orderId}`),
+  getAdminOrderTracking: (orderId: string) =>
+    axiosInstance.get<ApiResponse<import('./types').OrderTrackingSnapshotDTO>>(`/api/admin/orders/${orderId}/tracking`),
+  getAdminOrderLiveLocation: (orderId: string) =>
+    axiosInstance.get<ApiResponse<import('./types').LiveLocationDTO>>(`/api/admin/orders/${orderId}/live-location`),
   updateAdminOrderStatus: (orderId: string, dto: { status: string; remarks?: string }) =>
     axiosInstance.put<ApiResponse<OrderResponseDTO>>(`/api/admin/orders/${orderId}/status`, dto),
   assignAdminOrderPartner: (orderId: string, deliveryPartnerId: string) =>
     axiosInstance.post<ApiResponse<OrderResponseDTO>>(`/api/admin/orders/${orderId}/assign-partner`, { deliveryPartnerId }),
+  autoDispatchAdminOrder: (orderId: string) =>
+    axiosInstance.post<ApiResponse<import('./types').ShipmentResponseDTO>>(`/api/admin/orders/${orderId}/auto-dispatch`),
+  assignAdminOrderAgent: (orderId: string, agentId: string) =>
+    axiosInstance.post<ApiResponse<import('./types').ShipmentResponseDTO>>(`/api/admin/orders/${orderId}/assign-agent`, { agentId }),
+  getAdminDeliveryAgents: (page = 0, size = 100) =>
+    axiosInstance.get<ApiResponse<PageResponse<import('./types').DeliveryAgentResponseDTO>>>(`/api/admin/delivery-agents?page=${page}&size=${size}`),
 
   // --- Dashboard ---
   getDashboardStats: () =>
@@ -471,12 +481,34 @@ export const apiClient = {
   deleteAddress: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/api/user/addresses/${id}`),
 
+  // --- Delivery Options (Public & Customer) ---
+  getPublicDeliveryOptions: (params: { pincode: string; lat?: number; lng?: number; cartTotal?: number }) => {
+    const query = new URLSearchParams({ pincode: params.pincode })
+    if (params.lat != null) query.set('lat', String(params.lat))
+    if (params.lng != null) query.set('lng', String(params.lng))
+    if (params.cartTotal != null) query.set('cartTotal', String(params.cartTotal))
+    return axiosInstance.get<ApiResponse<import('./types').DeliveryOptionsResponseDTO>>(
+      `/api/public/delivery/options?${query.toString()}`
+    )
+  },
+
+  getUserDeliveryOptions: (addressId: string, cartTotal?: number) => {
+    const query = new URLSearchParams({ addressId })
+    if (cartTotal != null) query.set('cartTotal', String(cartTotal))
+    return axiosInstance.get<ApiResponse<import('./types').DeliveryOptionsResponseDTO>>(
+      `/api/user/orders/delivery-options?${query.toString()}`
+    )
+  },
+
   // --- Orders (Customer) ---
   getUserOrders: (page = 0, size = 10) =>
     axiosInstance.get<ApiResponse<PageResponse<import('./types').OrderResponseDTO>>>(`/api/user/orders?page=${page}&size=${size}`),
 
   getOrderById: (orderId: string) =>
     axiosInstance.get<ApiResponse<import('./types').OrderResponseDTO>>(`/api/user/orders/${orderId}`),
+
+  getOrderTracking: (orderId: string) =>
+    axiosInstance.get<ApiResponse<import('./types').OrderTrackingSnapshotDTO>>(`/api/user/orders/${orderId}/tracking`),
 
   getOrderLiveLocation: (orderId: string) =>
     axiosInstance.get<ApiResponse<import('./types').LiveLocationDTO>>(`/api/user/orders/${orderId}/live-location`),
@@ -492,6 +524,30 @@ export const apiClient = {
 
   trackOrder: (orderId: string) =>
     axiosInstance.get<ApiResponse<import('./types').LocationResponseDTO>>(`/api/user/orders/${orderId}/track`),
+
+  // --- Delivery Agent APIs ---
+  getAgentShipments: (page = 0, size = 20) =>
+    axiosInstance.get<ApiResponse<PageResponse<import('./types').ShipmentResponseDTO>>>(`/api/agent/shipments?page=${page}&size=${size}`),
+
+  updateAgentAvailability: (isAvailable: boolean) =>
+    axiosInstance.put<ApiResponse<import('./types').DeliveryAgentResponseDTO>>('/api/agent/availability', { isAvailable }),
+
+  sendAgentHeartbeat: (dto: import('./types').AgentHeartbeatRequestDTO) =>
+    axiosInstance.post<ApiResponse<void>>('/api/agent/heartbeat', dto),
+
+  sendAgentLocation: (dto: import('./types').AgentLocationRequestDTO) =>
+    axiosInstance.post<ApiResponse<void>>('/api/agent/location', dto),
+
+  updateAgentShipmentStatus: (shipmentId: string, status: 'OUT_FOR_DELIVERY' | 'DELIVERED') =>
+    axiosInstance.put<ApiResponse<import('./types').ShipmentResponseDTO>>(
+      `/api/agent/shipments/${shipmentId}/status?status=${encodeURIComponent(status)}`
+    ),
+
+  pushDeliveryLiveLocation: (
+    orderId: string,
+    dto: { lat: number; lng: number; heading?: number; speedKmh?: number }
+  ) =>
+    axiosInstance.post<ApiResponse<void>>(`/api/delivery/orders/${orderId}/live-location`, dto),
 
   // --- Wishlist ---
   getWishlist: (page = 0, size = 20) =>

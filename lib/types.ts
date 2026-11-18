@@ -308,9 +308,183 @@ export interface UpdateDeliveryPartnerRequestDTO {
   vehicleNo: string
 }
 
+export type DeliveryType = 'HYPERLOCAL' | 'STANDARD'
+
+export interface DeliveryOptionDTO {
+  type: DeliveryType
+  label: string
+  description: string
+  available: boolean
+  unavailableReason: string | null
+  deliveryCharge: number
+  estimatedMinutes: number | null
+  estimatedDays: number | null
+  estimatedDeliveryTime: string | null
+  liveTrackingSupported: boolean
+  codAvailable: boolean
+}
+
+export interface DeliveryOptionsResponseDTO {
+  pincode: string
+  hyperlocalAvailable: boolean
+  standardAvailable: boolean
+  distanceFromStoreKm: number | null
+  recommendedType: DeliveryType | null
+  options: DeliveryOptionDTO[]
+}
+
+export interface TrackingLocationPointDTO {
+  lat: number | null
+  lng: number | null
+  label?: string | null
+  address?: string | null
+  pincode?: string | null
+}
+
+export interface TrackingAgentLocationDTO {
+  lat: number | null
+  lng: number | null
+  rawLat?: number | null
+  rawLng?: number | null
+  heading?: number | null
+  speedKmh?: number | null
+  progress?: number | null
+  remainingMetres?: number | null
+  remainingSeconds?: number | null
+  eta?: string | null
+  recordedAt?: string | null
+}
+
+export interface TrackingAgentDTO {
+  id: string
+  userId?: string
+  name: string
+  phone: string
+  vehicleNo: string
+  isAvailable?: boolean
+  currentLat?: number | null
+  currentLng?: number | null
+  heading?: number | null
+  lastLocationAt?: string | null
+}
+
+export interface TrackingTimelineEntryDTO {
+  status: string
+  changedAt: string
+  note?: string | null
+}
+
+export interface OrderTrackingSnapshotDTO {
+  orderId: string
+  orderNumber: string
+  deliveryType: DeliveryType
+  orderStatus: OrderResponseDTO['orderStatus']
+  placedAt: string
+  expectedDeliveryDate?: string | null
+  eta?: string | null
+  trackingId?: string | null
+  courierPartner?: string | null
+  store?: TrackingLocationPointDTO | null
+  destination?: TrackingLocationPointDTO | null
+  routePolyline?: string | null
+  routeDistanceMetres?: number | null
+  routeDurationSeconds?: number | null
+  agentLocation?: TrackingAgentLocationDTO | null
+  progress?: number | null
+  remainingMetres?: number | null
+  remainingSeconds?: number | null
+  agent?: TrackingAgentDTO | null
+  liveTrackingActive: boolean
+  wsEndpoint?: string | null
+  wsUserQueue?: string | null
+  wsOrderTopic?: string | null
+  timeline?: TrackingTimelineEntryDTO[]
+}
+
+export type TrackingEventType = 'AGENT_ASSIGNED' | 'LOCATION_UPDATE' | 'STATUS_CHANGE'
+
+export interface TrackingEventDTO {
+  eventType: TrackingEventType
+  orderId: string
+  orderNumber: string
+  status: string
+  lat: number | null
+  lng: number | null
+  rawLat: number | null
+  rawLng: number | null
+  heading: number | null
+  speedKmh: number | null
+  progress: number | null
+  remainingMetres: number | null
+  remainingSeconds: number | null
+  eta: string | null
+  routePolyline?: string | null
+  routeDistanceMetres?: number | null
+  routeDurationSeconds?: number | null
+  agent?: {
+    id: string
+    name: string
+    phone: string
+    vehicleNo: string
+  } | null
+  message?: string | null
+  timestamp: string
+}
+
+export interface AgentHeartbeatRequestDTO {
+  lat: number
+  lng: number
+  heading?: number
+  isAvailable?: boolean
+}
+
+export interface AgentLocationRequestDTO {
+  orderId: string
+  lat: number
+  lng: number
+  heading?: number
+  speedKmh?: number
+}
+
+export interface DeliveryAgentResponseDTO {
+  id: string
+  userId: string
+  name: string
+  phone: string
+  vehicleNo: string
+  isAvailable: boolean
+  currentLat?: number | null
+  currentLng?: number | null
+  heading?: number | null
+  lastLocationAt?: string | null
+}
+
+export interface ShipmentResponseDTO {
+  id: string
+  orderId: string
+  orderNumber: string
+  agent?: DeliveryAgentResponseDTO | TrackingAgentDTO | null
+  currentStatus: string
+  assignedAt?: string | null
+  pickedAt?: string | null
+  deliveredAt?: string | null
+  destinationAddress?: string | null
+  customerName?: string | null
+  customerPhone?: string | null
+}
+
 export interface LiveLocationDTO {
   lat: number
   lng: number
+  rawLat?: number | null
+  rawLng?: number | null
+  heading?: number | null
+  speedKmh?: number | null
+  progress?: number | null
+  remainingMetres?: number | null
+  remainingSeconds?: number | null
+  eta?: string | null
+  recordedAt?: string | null
 }
 
 // --- Order ---
@@ -617,7 +791,8 @@ export interface AddressResponseDTO {
 export interface PlaceOrderRequestDTO {
   addressId: string
   paymentMethod: 'COD' | 'CARD' | 'UPI' | 'WALLET' | 'ONLINE'
-  couponCode?: string
+  deliveryType?: DeliveryType | null
+  couponCode?: string | null
   returnUrl?: string
 }
 

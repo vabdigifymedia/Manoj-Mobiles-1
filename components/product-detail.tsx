@@ -8,7 +8,7 @@ import { formatINR } from '@/lib/apiClient'
 import { useStore } from '@/components/store-provider'
 import { useBulkInquiry } from '@/components/bulk-inquiry-provider'
 import { useAuth } from '@/lib/auth-context'
-import type { ProductResponseDTO, ProductVariantResponseDTO, ProductSpecificationResponseDTO, ProductFeatureImage } from '@/lib/types'
+import type { ProductResponseDTO, ProductVariantResponseDTO, ProductSpecificationResponseDTO, ProductFeatureImage, DeliveryOptionsResponseDTO } from '@/lib/types'
 import { ProductReviews } from '@/components/product-reviews'
 import { apiClient } from '@/lib/apiClient'
 import { ProductFeatureImages } from './product-detail-feature-images'
@@ -186,7 +186,9 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
   }, [selectedVariant])
 
   const [pincode, setPincode] = useState('')
-  const [deliveryStatus, setDeliveryStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [deliveryStatus, setDeliveryStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOptionsResponseDTO | null>(null)
+  const [deliveryError, setDeliveryError] = useState('')
 
   const { addToCart, toggleCompare, isInCompare, cart } = useStore()
   const { isAuthenticated } = useAuth()
@@ -224,10 +226,35 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
     }
   }
 
-  const checkPincode = (e: React.FormEvent) => {
+  const checkPincode = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (pincode.length === 6) setDeliveryStatus('success')
-    else setDeliveryStatus('error')
+    const cleanPin = pincode.replace(/\D/g, '')
+    if (cleanPin.length !== 6) {
+      setDeliveryStatus('error')
+      setDeliveryOptions(null)
+      setDeliveryError('Please enter a valid 6-digit pincode.')
+      return
+    }
+    setDeliveryStatus('loading')
+    setDeliveryError('')
+    try {
+      const res = await apiClient.getPublicDeliveryOptions({
+        pincode: cleanPin,
+        cartTotal: selectedVariant?.sellingPrice,
+      })
+      if (res.data?.success && res.data?.data) {
+        setDeliveryOptions(res.data.data)
+        setDeliveryStatus('success')
+      } else {
+        setDeliveryOptions(null)
+        setDeliveryStatus('error')
+        setDeliveryError(res.data?.message || 'Delivery not available for this pincode.')
+      }
+    } catch (err: any) {
+      setDeliveryOptions(null)
+      setDeliveryStatus('error')
+      setDeliveryError(err.response?.data?.message || 'Could not check delivery options right now.')
+    }
   }
 
   if (!selectedVariant) return <div className="p-8 text-center">Loading product details...</div>
@@ -508,18 +535,87 @@ export function ProductDetailClient({ product: initialProduct }: { product: Prod
             </p>
             <div className="flex gap-2">
               <input
-                type="text" placeholder="Enter 6-digit Pincode" value={pincode}
-                onChange={(e) => { setPincode(e.target.value); setDeliveryStatus('idle'); }}
+                type="text"
+                placeholder="Enter 6-digit Pincode"
+                value={pincode}
+                onChange={(e) => {
+                  setPincode(e.target.value.replace(/\D/g, ''))
+                  setDeliveryStatus('idle')
+                  setDeliveryOptions(null)
+                  setDeliveryError('')
+                }}
                 className="flex-1 min-w-0 rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
                 maxLength={6}
               />
-              <button type="submit" className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">Check</button>
+              <button
+                type="submit"
+                disabled={deliveryStatus === 'loading'}
+                className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-60"
+              >
+                {deliveryStatus === 'loading' ? 'Checking...' : 'Check'}
+              </button>
             </div>
-            {deliveryStatus === 'success' && (
-              <p className="mt-3 text-sm font-semibold text-emerald-600 flex items-center gap-1.5"><FaCircleCheck size={16} /> Delivery available by tomorrow!</p>
+            {deliveryStatus === 'success' && deliveryOptions && (
+              <div className="mt-3.5 space-y-2.5">
+                {deliveryOptions.distanceFromStoreKm != null && (
+                  <p className="text-[11px] font-semibold text-muted-foreground">
+                    Pincode {deliveryOptions.pincode} • {deliveryOptions.distanceFromStoreKm.toFixed(1)} km from Manoj Mobiles store
+                  </p>
+                )}
+                <div className="grid gap-2">
+                  {deliveryOptions.options.map((opt) => (
+                    <div
+                      key={opt.type}
+                      className={`rounded-xl border p-3 text-xs transition-colors ${
+                        opt.available
+                          ? opt.type === 'HYPERLOCAL'
+                            ? 'border-orange-500/30 bg-orange-500/5'
+                            : 'border-emerald-500/30 bg-emerald-500/5'
+                          : 'border-border bg-muted/40 opacity-65'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 font-bold text-foreground">
+                          {opt.type === 'HYPERLOCAL' ? (
+                            <FaBolt size={12} className="text-orange-500" />
+                          ) : (
+                            <FaTruckFast size={12} className="text-emerald-600" />
+                          )}
+                          <span>{opt.label}</span>
+                          {opt.available && deliveryOptions.recommendedType === opt.type && (
+                            <span className="rounded-full bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-black text-orange-600 dark:text-orange-400">
+                              FASTEST
+                            </span>
+                          )}
+                        </div>
+                        {opt.available ? (
+                          <span className="font-black text-emerald-600 dark:text-emerald-400 shrink-0">
+                            {opt.deliveryCharge === 0 ? 'FREE' : formatINR(opt.deliveryCharge)}
+                          </span>
+                        ) : (
+                          <span className="font-bold text-muted-foreground shrink-0">Unavailable</span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-muted-foreground font-medium">
+                        {opt.available ? opt.description : (opt.unavailableReason || 'Not serviceable for this pincode')}
+                      </p>
+                      {opt.available && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                          {opt.liveTrackingSupported && (
+                            <span className="text-orange-600 dark:text-orange-400">• Live GPS Map Tracking</span>
+                          )}
+                          <span>• {opt.codAvailable ? 'COD Available' : 'Prepaid Only'}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
             {deliveryStatus === 'error' && (
-              <p className="mt-3 text-sm font-semibold text-destructive">Please enter a valid 6-digit pincode.</p>
+              <p className="mt-3 text-sm font-semibold text-destructive">
+                {deliveryError || 'Please enter a valid 6-digit pincode.'}
+              </p>
             )}
           </form>
 

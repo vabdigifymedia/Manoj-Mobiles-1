@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient, formatINR } from '@/lib/apiClient'
-import type { OrderResponseDTO } from '@/lib/types'
+import type { OrderResponseDTO, TrackingEventDTO } from '@/lib/types'
 import { FaChevronLeft, FaDownload } from 'react-icons/fa6'
 import Link from 'next/link'
 import { HyperlocalTracker } from '@/components/order/HyperlocalTracker'
@@ -27,6 +27,26 @@ export default function OrderDetailsPage() {
       // router.push('/account/orders')
     }).finally(() => setLoading(false))
   }, [id])
+
+  const handleTrackingEvent = useCallback((event: TrackingEventDTO) => {
+    setOrder((prev) => {
+      if (!prev) return prev
+      const nextStatus = (event.status || prev.orderStatus) as OrderResponseDTO['orderStatus']
+      return {
+        ...prev,
+        orderStatus: nextStatus,
+        expectedDeliveryDate: event.eta ?? prev.expectedDeliveryDate,
+        deliveryPartnerInfo: event.agent
+          ? {
+              id: event.agent.id,
+              name: event.agent.name,
+              phone: event.agent.phone,
+              vehicleNo: event.agent.vehicleNo,
+            }
+          : prev.deliveryPartnerInfo,
+      }
+    })
+  }, [])
 
   if (loading) {
     return (
@@ -62,11 +82,11 @@ export default function OrderDetailsPage() {
       </div>
 
       {/* Dynamic Tracker */}
-      {(order.orderStatus === 'OUT_FOR_DELIVERY' || order.orderStatus === 'SHIPPED') && (
+      {order.orderStatus !== 'CANCELLED' && (
         order.deliveryType === 'HYPERLOCAL' ? (
-          <HyperlocalTracker order={order} />
+          <HyperlocalTracker order={order} mode="user" onStatusChange={handleTrackingEvent} />
         ) : (
-          <StandardTracker order={order} />
+          <StandardTracker order={order} mode="user" />
         )
       )}
 

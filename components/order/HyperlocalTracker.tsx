@@ -1,240 +1,463 @@
 'use client'
 
-import React, { useEffect, useState, useRef, useMemo } from 'react'
-import type { OrderResponseDTO, LiveLocationDTO, StoreSettingResponseDTO } from '@/lib/types'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type {
+  OrderResponseDTO,
+  StoreSettingResponseDTO,
+  TrackingEventDTO,
+} from '@/lib/types'
 import { apiClient } from '@/lib/apiClient'
-import { FaPhone, FaMotorcycle } from 'react-icons/fa6'
-import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, Polyline } from '@react-google-maps/api'
+import { useOrderTracking } from '@/lib/useOrderTracking'
+import {
+  decodeEncodedPolyline,
+  GOOGLE_MAPS_LIBRARIES,
+  GOOGLE_MAPS_SCRIPT_ID,
+  GOOGLE_MAPS_VERSION,
+  type LatLngPoint,
+} from '@/lib/googleMapsConfig'
+import {
+  FaPhone,
+  FaMotorcycle,
+  FaLocationCrosshairs,
+  FaBolt,
+  FaRoute,
+  FaClock,
+  FaCircleCheck,
+} from 'react-icons/fa6'
+import { GoogleMap, useJsApiLoader, Marker, Polyline } from '@react-google-maps/api'
 
 const containerStyle = {
   width: '100%',
   height: '100%',
-  borderRadius: '0.75rem'
 }
 
-const libraries: ("places")[] = ["places"]
+function formatDistance(metres?: number | null): string | null {
+  if (metres == null || Number.isNaN(metres)) return null
+  if (metres < 1000) return `${Math.round(metres)} m`
+  return `${(metres / 1000).toFixed(1)} km`
+}
 
-export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
-  const [liveLocation, setLiveLocation] = useState<LiveLocationDTO | null>(null)
-  
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
+function formatDuration(seconds?: number | null): string | null {
+  if (seconds == null || Number.isNaN(seconds)) return null
+  const mins = Math.max(1, Math.round(seconds / 60))
+  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'}`
+  const hrs = Math.floor(mins / 60)
+  const rem = mins % 60
+  return rem > 0 ? `${hrs}h ${rem}m` : `${hrs}h`
+}
+
+function formatTime(iso?: string | null): string | null {
+  if (!iso) return null
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+export interface HyperlocalTrackerProps {
+  order: OrderResponseDTO
+  mode?: 'user' | 'admin'
+  onStatusChange?: (event: TrackingEventDTO) => void
+}
+
+export const HyperlocalTracker = ({
+  order,
+  mode = 'user',
+  onStatusChange,
+}: HyperlocalTrackerProps) => {
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: GOOGLE_MAPS_SCRIPT_ID,
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries,
-    version: 'weekly'
+    libraries: GOOGLE_MAPS_LIBRARIES,
+    version: GOOGLE_MAPS_VERSION,
   })
 
+  const { snapshot, bikePos, heading, speedKmh, connected, loading } = useOrderTracking(
+    order.id,
+    {
+      mode,
+      onEvent: onStatusChange,
+    }
+  )
+
   const [storeSettings, setStoreSettings] = useState<StoreSettingResponseDTO | null>(null)
+  const mapRef = useRef<google.maps.Map | null>(null)
+  const hasFittedBoundsRef = useRef(false)
 
+  // Fetch fallback store settings only if snapshot doesn't provide store coordinates
   useEffect(() => {
-    apiClient.getPublicStoreSettings()
-      .then(res => {
-        if (res.data?.data) {
-          setStoreSettings(res.data.data)
-        }
+    if (snapshot?.store?.lat != null && snapshot?.store?.lng != null) return
+    apiClient
+      .getPublicStoreSettings()
+      .then((res) => {
+        if (res.data?.data) setStoreSettings(res.data.data)
       })
-      .catch(console.error)
-  }, [])
+      .catch(() => {})
+  }, [snapshot?.store?.lat, snapshot?.store?.lng])
 
-  // Poll for live location
-  useEffect(() => {
-    if (order.deliveryType !== 'HYPERLOCAL' || order.orderStatus !== 'OUT_FOR_DELIVERY') return;
-
-    const fetchLocation = async () => {
-      try {
-        const res = await apiClient.getOrderLiveLocation(order.id)
-        if (res.data?.success && res.data?.data) {
-          setLiveLocation(res.data.data)
-        }
-      } catch (e) {
-        console.error('Failed to fetch live location:', e)
-      }
+  const storePos = useMemo<LatLngPoint>(() => {
+    if (snapshot?.store?.lat != null && snapshot?.store?.lng != null) {
+      return { lat: snapshot.store.lat, lng: snapshot.store.lng }
     }
-
-    fetchLocation()
-    const interval = setInterval(fetchLocation, 5000) // Poll every 5 seconds
-
-    return () => clearInterval(interval)
-  }, [order.id, order.deliveryType, order.orderStatus])
-
-  const [osrmPath, setOsrmPath] = useState<{lat: number, lng: number}[] | null>(null)
-  const [routeError, setRouteError] = useState(false)
-  const [isSimulating, setIsSimulating] = useState(false)
-  const [simulationIndex, setSimulationIndex] = useState(0)
-  const simulationInterval = useRef<NodeJS.Timeout | null>(null)
-
-  // Draw Route using OSRM API (Bypasses Google Directions Billing)
-  useEffect(() => {
-    if (!isLoaded || !window.google) return;
-    
-    // Don't fetch again if we already have the path or if it previously failed (prevent rate limit loop)
-    if (osrmPath || routeError) return;
-    
-    // Fallbacks for origin and destination in case of legacy orders or loading states
-    const originLat = storeSettings?.storeLat || 28.5355;
-    const originLng = storeSettings?.storeLng || 77.3910;
-    
-    const destinationLat = order.address?.lat || 28.6219; // Fallback to a random near point if missing
-    const destinationLng = order.address?.lng || 77.3776;
-
-    const fetchOSRMRoute = async () => {
-      try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${destinationLng},${destinationLat}?overview=full&geometries=geojson`
-        const res = await fetch(url)
-        const data = await res.json()
-        
-        if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
-          const coords = data.routes[0].geometry.coordinates.map((p: [number, number]) => ({
-            lat: p[1],
-            lng: p[0]
-          }))
-          setOsrmPath(coords)
-          setRouteError(false)
-        } else {
-          setRouteError(true)
-        }
-      } catch (err) {
-        console.error("OSRM failed, falling back to direct line:", err)
-        setRouteError(true)
-      }
-    }
-
-    fetchOSRMRoute()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, storeSettings, order.address?.lat, order.address?.lng, osrmPath, routeError])
-
-  // Stable Center logic to prevent map jumping during live tracking
-  const defaultCenter = useMemo(() => {
     if (storeSettings?.storeLat && storeSettings?.storeLng) {
       return { lat: storeSettings.storeLat, lng: storeSettings.storeLng }
     }
-    if (order.address?.lat && order.address?.lng) {
-      return { lat: order.address.lat, lng: order.address.lng as number }
-    }
-    return { lat: 28.5355, lng: 77.3910 }
-  }, [storeSettings?.storeLat, storeSettings?.storeLng, order.address?.lat, order.address?.lng])
+    return { lat: 28.5355, lng: 77.391 }
+  }, [snapshot?.store?.lat, snapshot?.store?.lng, storeSettings?.storeLat, storeSettings?.storeLng])
 
-  const startSimulation = () => {
-    if (!osrmPath || osrmPath.length === 0) return;
-    setIsSimulating(true);
-    let index = simulationIndex; // resume if paused
-    simulationInterval.current = setInterval(() => {
-      if (index < osrmPath.length) {
-        setLiveLocation(osrmPath[index]);
-        setSimulationIndex(index);
-        index += 2; // Skip points to make it move faster
+  const destinationPos = useMemo<LatLngPoint | null>(() => {
+    if (snapshot?.destination?.lat != null && snapshot?.destination?.lng != null) {
+      return { lat: snapshot.destination.lat, lng: snapshot.destination.lng }
+    }
+    if (order.address?.lat != null && order.address?.lng != null) {
+      return { lat: order.address.lat, lng: order.address.lng }
+    }
+    return null
+  }, [snapshot?.destination?.lat, snapshot?.destination?.lng, order.address?.lat, order.address?.lng])
+
+  // Decode route polyline from backend (straight-line fallback if unset)
+  const routePath = useMemo<LatLngPoint[]>(() => {
+    if (snapshot?.routePolyline) {
+      const decoded = decodeEncodedPolyline(snapshot.routePolyline)
+      if (decoded.length > 1) return decoded
+    }
+    if (destinationPos) {
+      return [storePos, destinationPos]
+    }
+    return []
+  }, [snapshot?.routePolyline, storePos, destinationPos])
+
+  const effectiveStatus = snapshot?.orderStatus || order.orderStatus
+  const effectiveProgress = useMemo(() => {
+    if (effectiveStatus === 'DELIVERED') return 1
+    if (snapshot?.progress != null) {
+      return Math.max(0, Math.min(1, snapshot.progress))
+    }
+    if (snapshot?.agentLocation?.progress != null) {
+      return Math.max(0, Math.min(1, snapshot.agentLocation.progress))
+    }
+    return 0
+  }, [effectiveStatus, snapshot?.progress, snapshot?.agentLocation?.progress])
+
+  // Split polyline into completed (faded) & remaining (orange) segments
+  const { completedPath, remainingPath } = useMemo(() => {
+    if (routePath.length < 2) {
+      return { completedPath: [] as LatLngPoint[], remainingPath: [] as LatLngPoint[] }
+    }
+
+    let splitIndex = Math.floor((routePath.length - 1) * effectiveProgress)
+
+    // If progress isn't provided yet but we have bikePos, project onto nearest vertex
+    if (effectiveProgress === 0 && bikePos && routePath.length > 2) {
+      let closestIdx = 0
+      let minDist = Infinity
+      for (let i = 0; i < routePath.length; i++) {
+        const d =
+          Math.pow(routePath[i].lat - bikePos.lat, 2) +
+          Math.pow(routePath[i].lng - bikePos.lng, 2)
+        if (d < minDist) {
+          minDist = d
+          closestIdx = i
+        }
+      }
+      splitIndex = closestIdx
+    }
+
+    splitIndex = Math.max(0, Math.min(routePath.length - 1, splitIndex))
+    return {
+      completedPath: routePath.slice(0, splitIndex + 1),
+      remainingPath: routePath.slice(splitIndex),
+    }
+  }, [routePath, effectiveProgress, bikePos])
+
+  const defaultCenter = useMemo<LatLngPoint>(() => {
+    if (bikePos) return bikePos
+    if (destinationPos) {
+      return {
+        lat: (storePos.lat + destinationPos.lat) / 2,
+        lng: (storePos.lng + destinationPos.lng) / 2,
+      }
+    }
+    return storePos
+  }, [bikePos, storePos, destinationPos])
+
+  const fitMapBounds = useCallback(
+    (map: google.maps.Map) => {
+      if (typeof window === 'undefined' || !window.google?.maps) return
+      const bounds = new window.google.maps.LatLngBounds()
+      let count = 0
+      bounds.extend(storePos)
+      count++
+      if (destinationPos) {
+        bounds.extend(destinationPos)
+        count++
+      }
+      if (bikePos) {
+        bounds.extend(bikePos)
+        count++
+      }
+      if (count > 1) {
+        map.fitBounds(bounds, { top: 48, right: 48, bottom: 48, left: 48 })
       } else {
-        stopSimulation();
+        map.setCenter(storePos)
+        map.setZoom(14)
       }
-    }, 500); // Move every 500ms
+    },
+    [storePos, destinationPos, bikePos]
+  )
+
+  const handleMapLoad = useCallback(
+    (map: google.maps.Map) => {
+      mapRef.current = map
+      fitMapBounds(map)
+      hasFittedBoundsRef.current = true
+    },
+    [fitMapBounds]
+  )
+
+  const handleMapUnmount = useCallback(() => {
+    mapRef.current = null
+    hasFittedBoundsRef.current = false
+  }, [])
+
+  // Fit bounds once destination/route arrives if map loaded before snapshot
+  useEffect(() => {
+    if (mapRef.current && !hasFittedBoundsRef.current && (destinationPos || routePath.length > 1)) {
+      fitMapBounds(mapRef.current)
+      hasFittedBoundsRef.current = true
+    }
+  }, [destinationPos, routePath.length, fitMapBounds])
+
+  const centerOnRider = () => {
+    const target = bikePos || storePos
+    if (mapRef.current && target) {
+      mapRef.current.panTo(target)
+      mapRef.current.setZoom(16)
+    }
   }
 
-  const stopSimulation = () => {
-    if (simulationInterval.current) {
-      clearInterval(simulationInterval.current);
+  // Build heading-rotated navigation symbol for the moving rider
+  const riderArrowIcon = useMemo<google.maps.Symbol | undefined>(() => {
+    if (!isLoaded || typeof window === 'undefined' || !window.google?.maps) return undefined
+    return {
+      path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+      scale: 6.5,
+      rotation: heading || 0,
+      fillColor: '#f97316',
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: 2.5,
     }
-    setIsSimulating(false);
-  }
+  }, [isLoaded, heading])
 
-  // Calculate the remaining path (behind the bike disappears)
-  const currentPath = useMemo(() => {
-    if (!osrmPath) return null;
-    if (isSimulating) return osrmPath.slice(simulationIndex);
-    
-    // For real live tracking, find the closest coordinate to current liveLocation
-    if (!liveLocation) return osrmPath;
-    
-    let closestIdx = 0;
-    let minDistance = Infinity;
-    for (let i = 0; i < osrmPath.length; i++) {
-      const dist = Math.pow(osrmPath[i].lat - liveLocation.lat, 2) + Math.pow(osrmPath[i].lng - liveLocation.lng, 2);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestIdx = i;
-      }
+  const agentInfo = snapshot?.agent || order.deliveryPartnerInfo || null
+  const etaFormatted = formatTime(snapshot?.eta || snapshot?.expectedDeliveryDate || order.expectedDeliveryDate)
+  const remainingDistLabel = formatDistance(snapshot?.remainingMetres ?? snapshot?.routeDistanceMetres)
+  const remainingDurLabel = formatDuration(snapshot?.remainingSeconds ?? snapshot?.routeDurationSeconds)
+  const progressPercent = Math.round(effectiveProgress * 100)
+  const isDelivered = effectiveStatus === 'DELIVERED'
+  const isLiveActive =
+    snapshot?.liveTrackingActive ||
+    effectiveStatus === 'OUT_FOR_DELIVERY' ||
+    effectiveStatus === 'SHIPPED'
+
+  const statusHeadline = useMemo(() => {
+    if (isDelivered) return 'Delivered to your doorstep'
+    if (effectiveStatus === 'OUT_FOR_DELIVERY') {
+      return etaFormatted ? `Arriving by ${etaFormatted}` : 'Rider is on the way'
     }
-    return osrmPath.slice(closestIdx);
-  }, [osrmPath, isSimulating, simulationIndex, liveLocation]);
+    if (effectiveStatus === 'SHIPPED' && agentInfo) {
+      return `${agentInfo.name} assigned — picking up your order`
+    }
+    if (effectiveStatus === 'PACKED') return 'Order packed — assigning nearby rider'
+    if (effectiveStatus === 'CONFIRMED') return 'Order confirmed — preparing at store'
+    return 'Preparing your express hyperlocal order'
+  }, [isDelivered, effectiveStatus, etaFormatted, agentInfo])
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-border rounded-3xl overflow-hidden shadow-sm">
-      <div className="p-6 border-b border-border flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-black tracking-tight">Live Tracking</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            {order.expectedDeliveryDate ? (
-              <span>Arriving by <span className="font-bold text-foreground">{new Date(order.expectedDeliveryDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></span>
+      {/* Top Status & Live Connection Header */}
+      <div className="p-5 sm:p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400">
+              <FaBolt size={10} /> Express Hyperlocal
+            </span>
+            {isDelivered ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <FaCircleCheck size={11} /> Delivered
+              </span>
+            ) : connected ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <span className="relative flex size-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
+                </span>
+                Live Tracking
+              </span>
             ) : (
-              'Preparing your order'
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <span className="size-2 rounded-full bg-amber-500" />
+                {loading ? 'Connecting...' : 'Reconnecting'}
+              </span>
             )}
-          </p>
+          </div>
+          <h3 className="text-lg sm:text-xl font-black tracking-tight">{statusHeadline}</h3>
+          {(remainingDurLabel || remainingDistLabel) && !isDelivered && (
+            <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold text-muted-foreground">
+              {remainingDurLabel && (
+                <span className="inline-flex items-center gap-1.5 text-foreground">
+                  <FaClock size={12} className="text-orange-500" /> ~{remainingDurLabel} away
+                </span>
+              )}
+              {remainingDistLabel && (
+                <span className="inline-flex items-center gap-1.5">
+                  <FaRoute size={12} className="text-primary" /> {remainingDistLabel} remaining
+                </span>
+              )}
+            </div>
+          )}
         </div>
-        {osrmPath && (
-          <div className="flex items-center gap-2">
-            {!isSimulating ? (
-              <button 
-                onClick={startSimulation}
-                className="text-xs font-bold bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
-              >
-                {simulationIndex > 0 ? 'Resume' : 'Test Simulate'}
-              </button>
-            ) : (
-              <button 
-                onClick={stopSimulation}
-                className="text-xs font-bold bg-rose-500/10 text-rose-500 px-3 py-1.5 rounded-lg hover:bg-rose-500/20 transition-colors"
-              >
-                Pause
-              </button>
-            )}
+
+        {/* Route Progress Meter */}
+        {(isLiveActive || isDelivered) && (
+          <div className="sm:w-48 shrink-0">
+            <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+              <span className="text-muted-foreground">Route Progress</span>
+              <span className="text-orange-600 dark:text-orange-400">{progressPercent}%</span>
+            </div>
+            <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-orange-500 to-emerald-500 transition-all duration-700 ease-out"
+                style={{ width: `${Math.max(progressPercent, isLiveActive ? 6 : 0)}%` }}
+              />
+            </div>
           </div>
         )}
       </div>
-      
-      {/* Map Section */}
-      <div className="w-full h-64 bg-slate-100 dark:bg-zinc-800 relative">
-        {isLoaded ? (
-          <GoogleMap
-            mapContainerStyle={containerStyle}
-            center={defaultCenter}
-            zoom={14}
-            options={{ disableDefaultUI: true, zoomControl: true, clickableIcons: false }}
-          >
-            {/* Delivery Boy Marker */}
-            {liveLocation ? (
-              <Marker position={liveLocation} icon={{ url: '/bike-marker.png', scaledSize: new window.google.maps.Size(48, 48) }} zIndex={50} />
-            ) : (
-              storeSettings?.storeLat && storeSettings?.storeLng && (
-                // Park the bike at the store if not out for delivery yet
-                <Marker position={{ lat: storeSettings.storeLat, lng: storeSettings.storeLng }} icon={{ url: '/bike-marker.png', scaledSize: new window.google.maps.Size(48, 48) }} zIndex={50} />
-              )
-            )}
-            
-            {/* Store Marker */}
-            {storeSettings?.storeLat && storeSettings?.storeLng && (
-              <Marker position={{ lat: storeSettings.storeLat, lng: storeSettings.storeLng }} icon={{ url: '/store-marker.png', scaledSize: new window.google.maps.Size(72, 72) }} zIndex={40} />
-            )}
-            
-            {/* Destination Marker */}
-            <Marker 
-              position={{ 
-                lat: order.address?.lat || 28.6219, 
-                lng: order.address?.lng || 77.3776 
-              }} 
-            />
-            
-            {/* Snapped Road Route using OSRM */}
-            {osrmPath && !routeError && currentPath && (
-              <Polyline 
-                path={currentPath}
-                options={{ 
-                  strokeColor: '#3b82f6', 
-                  strokeWeight: 6,
-                  strokeOpacity: 0.9,
-                  geodesic: true
-                }} 
+
+      {/* Live Map Section */}
+      <div className="w-full h-72 sm:h-80 bg-slate-100 dark:bg-zinc-800 relative">
+        {loadError ? (
+          <div className="w-full h-full flex flex-col items-center justify-center text-sm text-muted-foreground p-6 text-center">
+            <p className="font-bold text-foreground mb-1">Map preview unavailable</p>
+            <p className="text-xs">Live ETA and status updates continue in real time.</p>
+          </div>
+        ) : isLoaded ? (
+          <>
+            <GoogleMap
+              mapContainerStyle={containerStyle}
+              center={defaultCenter}
+              zoom={14}
+              onLoad={handleMapLoad}
+              onUnmount={handleMapUnmount}
+              options={{
+                disableDefaultUI: true,
+                zoomControl: true,
+                clickableIcons: false,
+                gestureHandling: 'cooperative',
+              }}
+            >
+              {/* Completed Path (Faded) */}
+              {completedPath.length > 1 && (
+                <Polyline
+                  path={completedPath}
+                  options={{
+                    strokeColor: '#94a3b8',
+                    strokeWeight: 5,
+                    strokeOpacity: 0.55,
+                    geodesic: true,
+                    zIndex: 10,
+                  }}
+                />
+              )}
+
+              {/* Remaining Path (Vivid Orange) */}
+              {remainingPath.length > 1 && (
+                <Polyline
+                  path={remainingPath}
+                  options={{
+                    strokeColor: '#f97316',
+                    strokeWeight: 6,
+                    strokeOpacity: 0.95,
+                    geodesic: true,
+                    zIndex: 20,
+                  }}
+                />
+              )}
+
+              {/* Store Marker */}
+              <Marker
+                position={storePos}
+                title={snapshot?.store?.label || 'Manoj Mobiles Store'}
+                icon={{
+                  url: '/store-marker.png',
+                  scaledSize: new window.google.maps.Size(56, 56),
+                }}
+                zIndex={30}
               />
-            )}
-          </GoogleMap>
+
+              {/* Destination Marker */}
+              {destinationPos && (
+                <Marker
+                  position={destinationPos}
+                  title={snapshot?.destination?.label || order.address?.label || 'Delivery Address'}
+                  zIndex={35}
+                />
+              )}
+
+              {/* Smoothly Gliding & Heading-Rotated Rider Marker */}
+              {bikePos && !isDelivered ? (
+                <>
+                  <Marker
+                    position={bikePos}
+                    title={agentInfo ? `${agentInfo.name} (${agentInfo.vehicleNo})` : 'Delivery Rider'}
+                    icon={riderArrowIcon}
+                    zIndex={60}
+                  />
+                  <Marker
+                    position={bikePos}
+                    icon={{
+                      url: '/bike-marker.png',
+                      scaledSize: new window.google.maps.Size(44, 44),
+                      anchor: new window.google.maps.Point(22, 48),
+                    }}
+                    zIndex={55}
+                  />
+                </>
+              ) : (
+                !isDelivered && (
+                  <Marker
+                    position={storePos}
+                    title="Rider at store"
+                    icon={{
+                      url: '/bike-marker.png',
+                      scaledSize: new window.google.maps.Size(42, 42),
+                    }}
+                    zIndex={50}
+                  />
+                )
+              )}
+            </GoogleMap>
+
+            {/* Floating Map Action Controls */}
+            <div className="absolute bottom-3 left-3 flex items-center gap-2">
+              {bikePos && !isDelivered && (
+                <button
+                  type="button"
+                  onClick={centerOnRider}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur px-3 py-2 text-xs font-bold text-foreground shadow-md border border-border hover:bg-muted transition-colors"
+                >
+                  <FaLocationCrosshairs size={13} className="text-orange-500" />
+                  Focus Rider
+                </button>
+              )}
+              {speedKmh != null && speedKmh > 0 && !isDelivered && (
+                <span className="rounded-xl bg-zinc-900/85 text-white px-3 py-2 text-xs font-bold backdrop-blur shadow-md">
+                  {Math.round(speedKmh)} km/h
+                </span>
+              )}
+            </div>
+          </>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
@@ -242,21 +465,95 @@ export const HyperlocalTracker = ({ order }: { order: OrderResponseDTO }) => {
         )}
       </div>
 
-      {/* Partner Info */}
-      {order.deliveryPartnerInfo && (
-        <div className="p-6 bg-slate-50 dark:bg-zinc-950/50 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="size-12 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 flex items-center justify-center text-xl font-bold">
-              <FaMotorcycle />
-            </div>
+      {/* Store & Destination Strip */}
+      {(snapshot?.store?.address || snapshot?.destination?.address) && (
+        <div className="px-5 sm:px-6 py-3.5 bg-muted/20 border-b border-border grid sm:grid-cols-2 gap-3 text-xs">
+          <div className="flex items-start gap-2.5">
+            <span className="mt-1 size-2.5 rounded-full bg-blue-500 shrink-0" />
             <div>
-              <h4 className="font-bold text-sm">{order.deliveryPartnerInfo.name}</h4>
-              <p className="text-xs text-muted-foreground">{order.deliveryPartnerInfo.vehicleNo}</p>
+              <p className="font-bold text-foreground">{snapshot.store?.label || 'Manoj Mobiles'}</p>
+              <p className="text-muted-foreground line-clamp-1">{snapshot.store?.address}</p>
             </div>
           </div>
-          <a href={`tel:${order.deliveryPartnerInfo.phone}`} className="size-10 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-200 transition-colors">
-            <FaPhone size={14} />
-          </a>
+          {snapshot.destination?.address && (
+            <div className="flex items-start gap-2.5">
+              <span className="mt-1 size-2.5 rounded-full bg-orange-500 shrink-0" />
+              <div>
+                <p className="font-bold text-foreground">{snapshot.destination.label || 'Destination'}</p>
+                <p className="text-muted-foreground line-clamp-1">
+                  {snapshot.destination.address}
+                  {snapshot.destination.pincode ? ` - ${snapshot.destination.pincode}` : ''}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Delivery Agent Card */}
+      {agentInfo ? (
+        <div className="p-5 sm:p-6 bg-slate-50 dark:bg-zinc-950/50 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="size-12 rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 flex items-center justify-center text-xl shrink-0">
+              <FaMotorcycle />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Delivery Partner
+              </p>
+              <h4 className="font-black text-sm sm:text-base truncate">{agentInfo.name}</h4>
+              <p className="text-xs text-muted-foreground font-mono font-semibold">
+                {agentInfo.vehicleNo}
+              </p>
+            </div>
+          </div>
+          {agentInfo.phone && (
+            <a
+              href={`tel:${agentInfo.phone}`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors shrink-0 shadow-sm"
+            >
+              <FaPhone size={12} />
+              Call Rider
+            </a>
+          )}
+        </div>
+      ) : (
+        <div className="px-5 sm:px-6 py-4 bg-slate-50 dark:bg-zinc-950/50 text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2.5">
+          <FaMotorcycle className="text-orange-500 shrink-0" />
+          <span>A nearby delivery rider will be assigned shortly. Live map updates automatically.</span>
+        </div>
+      )}
+
+      {/* Live Backend Timeline Notes (if present) */}
+      {snapshot?.timeline && snapshot.timeline.length > 0 && (
+        <div className="px-5 sm:px-6 py-4 border-t border-border bg-background/60">
+          <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground mb-3">
+            Live Updates
+          </p>
+          <div className="space-y-2.5">
+            {snapshot.timeline.map((entry, idx) => (
+              <div key={`${entry.status}-${idx}`} className="flex items-start justify-between gap-3 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <span
+                    className={`mt-1 size-2 rounded-full shrink-0 ${
+                      idx === snapshot.timeline!.length - 1 ? 'bg-orange-500' : 'bg-emerald-500'
+                    }`}
+                  />
+                  <div>
+                    <span className="font-bold text-foreground">
+                      {entry.status.replace(/_/g, ' ')}
+                    </span>
+                    {entry.note && (
+                      <p className="text-muted-foreground mt-0.5">{entry.note}</p>
+                    )}
+                  </div>
+                </div>
+                <span className="text-[11px] text-muted-foreground font-mono shrink-0">
+                  {formatTime(entry.changedAt) || new Date(entry.changedAt).toLocaleDateString()}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

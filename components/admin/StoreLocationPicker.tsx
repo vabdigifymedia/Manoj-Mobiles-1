@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api'
 import { FaMapLocationDot, FaLocationDot } from 'react-icons/fa6'
+import { GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_SCRIPT_ID, GOOGLE_MAPS_VERSION } from '@/lib/googleMapsConfig'
 
 const containerStyle = {
   width: '100%',
@@ -21,14 +22,12 @@ interface StoreLocationPickerProps {
   onChange: (lat: number, lng: number) => void
 }
 
-const libraries: ("places")[] = ["places"]
-
 export function StoreLocationPicker({ lat, lng, onChange }: StoreLocationPickerProps) {
   const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
+    id: GOOGLE_MAPS_SCRIPT_ID,
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries,
-    version: 'weekly'
+    libraries: GOOGLE_MAPS_LIBRARIES,
+    version: GOOGLE_MAPS_VERSION
   })
 
   const [map, setMap] = useState<google.maps.Map | null>(null)

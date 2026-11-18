@@ -1,17 +1,24 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { apiClient, formatINR } from '@/lib/apiClient'
-import type { OrderResponseDTO, DeliveryPartnerDTO } from '@/lib/types'
+import type {
+  OrderResponseDTO,
+  DeliveryPartnerDTO,
+  DeliveryAgentResponseDTO,
+  TrackingEventDTO,
+} from '@/lib/types'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import TrackingTimeline from '@/components/ui/order-history'
+import { HyperlocalTracker } from '@/components/order/HyperlocalTracker'
+import { StandardTracker } from '@/components/order/StandardTracker'
 import { ClipboardCheck, Package, Ship, Bike, Home } from 'lucide-react'
 import {
   FaChevronLeft, FaClock, FaTruck,
   FaMotorcycle, FaWallet, FaMapPin, FaFileInvoice,
-  FaCircleCheck, FaTriangleExclamation, FaBox
+  FaCircleCheck, FaTriangleExclamation, FaBox, FaBolt
 } from 'react-icons/fa6'
 
 const statusOrder = ['PLACED', 'CONFIRMED', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'];
@@ -22,14 +29,17 @@ export default function AdminOrderDetailsPage() {
 
   const [order, setOrder] = useState<OrderResponseDTO | null>(null)
   const [loading, setLoading] = useState(true)
+  const [deliveryAgents, setDeliveryAgents] = useState<DeliveryAgentResponseDTO[]>([])
   const [activePartners, setActivePartners] = useState<DeliveryPartnerDTO[]>([])
-  const [selectedPartnerId, setSelectedPartnerId] = useState<string>('')
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('')
   const [assigning, setAssigning] = useState(false)
+  const [autoDispatching, setAutoDispatching] = useState(false)
+  const [dispatchMessage, setDispatchMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [updatingStatus, setUpdatingStatus] = useState(false)
 
   useEffect(() => {
     fetchOrder()
-    fetchPartners()
+    fetchAgentsAndPartners()
   }, [id])
 
   const fetchOrder = async () => {
@@ -43,14 +53,41 @@ export default function AdminOrderDetailsPage() {
     }
   }
 
-  const fetchPartners = async () => {
+  const fetchAgentsAndPartners = async () => {
+    try {
+      const agentsRes = await apiClient.getAdminDeliveryAgents(0, 100)
+      const list = agentsRes.data?.data?.content || []
+      setDeliveryAgents(list)
+    } catch {
+      setDeliveryAgents([])
+    }
     try {
       const res = await apiClient.getActiveDeliveryPartners()
-      setActivePartners(res.data.data || [])
-    } catch (e) {
-      console.error(e)
+      setActivePartners(res.data?.data || [])
+    } catch {
+      setActivePartners([])
     }
   }
+
+  const handleTrackingEvent = useCallback((event: TrackingEventDTO) => {
+    setOrder((prev) => {
+      if (!prev) return prev
+      const nextStatus = (event.status || prev.orderStatus) as OrderResponseDTO['orderStatus']
+      return {
+        ...prev,
+        orderStatus: nextStatus,
+        expectedDeliveryDate: event.eta ?? prev.expectedDeliveryDate,
+        deliveryPartnerInfo: event.agent
+          ? {
+              id: event.agent.id,
+              name: event.agent.name,
+              phone: event.agent.phone,
+              vehicleNo: event.agent.vehicleNo,
+            }
+          : prev.deliveryPartnerInfo,
+      }
+    })
+  }, [])
 
   const handleUpdateStatus = async (status: string) => {
     if (!order) return;
@@ -66,19 +103,57 @@ export default function AdminOrderDetailsPage() {
     }
   }
 
-  const handleAssignPartner = async () => {
-    if (!order || !selectedPartnerId) return
+  const handleAutoDispatch = async () => {
+    if (!order) return
+    setAutoDispatching(true)
+    setDispatchMessage(null)
+    try {
+      const res = await apiClient.autoDispatchAdminOrder(order.id)
+      const shipment = res.data?.data
+      const assignedName = shipment?.agent?.name
+      setDispatchMessage({
+        type: 'success',
+        text: assignedName
+          ? `Auto-dispatched nearest available agent (${assignedName}) and broadcast live route.`
+          : 'Auto-dispatched nearest available agent successfully.',
+      })
+      await fetchOrder()
+    } catch (e: any) {
+      setDispatchMessage({
+        type: 'error',
+        text: e.response?.data?.message || 'No available nearby agent found for auto-dispatch.',
+      })
+    } finally {
+      setAutoDispatching(false)
+    }
+  }
+
+  const handleAssignAgent = async () => {
+    if (!order || !selectedAgentId) return
     if (order.deliveryType !== 'HYPERLOCAL') {
-      alert("Only HYPERLOCAL orders can be assigned to delivery boys.")
+      alert("Only HYPERLOCAL orders can be assigned to delivery agents.")
       return
     }
     setAssigning(true)
+    setDispatchMessage(null)
     try {
-      await apiClient.assignAdminOrderPartner(order.id, selectedPartnerId)
+      const isDeliveryAgent = deliveryAgents.some((a) => a.id === selectedAgentId)
+      if (isDeliveryAgent) {
+        await apiClient.assignAdminOrderAgent(order.id, selectedAgentId)
+      } else {
+        await apiClient.assignAdminOrderPartner(order.id, selectedAgentId)
+      }
+      setDispatchMessage({
+        type: 'success',
+        text: 'Agent assigned, route polyline computed, and WebSocket notification sent.',
+      })
       await fetchOrder()
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
-      alert('Failed to assign partner.')
+      setDispatchMessage({
+        type: 'error',
+        text: e.response?.data?.message || 'Failed to assign delivery agent.',
+      })
     } finally {
       setAssigning(false)
     }
@@ -253,6 +328,15 @@ export default function AdminOrderDetailsPage() {
         </div>
       </div>
 
+      {/* LIVE TRACKING VIEW FOR ADMIN */}
+      {order.orderStatus !== 'CANCELLED' && (
+        order.deliveryType === 'HYPERLOCAL' ? (
+          <HyperlocalTracker order={order} mode="admin" onStatusChange={handleTrackingEvent} />
+        ) : (
+          <StandardTracker order={order} mode="admin" />
+        )
+      )}
+
       {/* TWO COLUMN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -345,38 +429,94 @@ export default function AdminOrderDetailsPage() {
         {/* SIDEBAR (30-35%) */}
         <div className="lg:col-span-1 space-y-6">
 
-          {/* Delivery Assignment Panel */}
-          {order.orderStatus !== 'DELIVERED' && order.orderStatus !== 'CANCELLED' && order.deliveryType === 'HYPERLOCAL' && !order.deliveryPartnerInfo && (
-            <div className="bg-emerald-50 dark:bg-emerald-950/20 p-6 rounded-3xl border border-emerald-200 dark:border-emerald-900/50 shadow-sm">
-              <h4 className="text-base font-black text-emerald-800 dark:text-emerald-400 mb-4 flex items-center gap-2">
-                <FaMotorcycle /> Assign Partner
+          {/* Delivery Dispatch & Assignment Panel */}
+          {order.orderStatus !== 'DELIVERED' && order.orderStatus !== 'CANCELLED' && order.deliveryType === 'HYPERLOCAL' && (
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 p-6 rounded-3xl border border-emerald-200 dark:border-emerald-900/50 shadow-sm space-y-4">
+              <h4 className="text-base font-black text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
+                <FaMotorcycle /> {order.deliveryPartnerInfo ? 'Reassign / Dispatch Agent' : 'Hyperlocal Dispatch'}
               </h4>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground font-medium">Select a delivery boy to assign this order and start live tracking.</p>
+              <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                Auto-dispatch picks the nearest available agent via live GPS heartbeat, computes the route polyline, and notifies both customer &amp; rider over WebSocket.
+              </p>
 
-                <Select value={selectedPartnerId} onValueChange={(val) => setSelectedPartnerId(val || '')}>
-                  <SelectTrigger className="w-full !bg-white dark:!bg-zinc-900 border-emerald-200 dark:border-emerald-800 rounded-xl px-4 h-12 text-sm font-bold shadow-sm focus:ring-emerald-500">
-                    {selectedPartnerId ? (
-                      <span>{activePartners.find(p => p.id === selectedPartnerId)?.name} ({activePartners.find(p => p.id === selectedPartnerId)?.vehicleNo})</span>
-                    ) : (
-                      <span className="text-muted-foreground">Select Partner...</span>
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activePartners.map(p => (
-                      <SelectItem key={p.id} value={p.id} className="font-medium">{p.name} ({p.vehicleNo})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <button
+                type="button"
+                onClick={handleAutoDispatch}
+                disabled={autoDispatching || assigning}
+                className="w-full flex items-center justify-center gap-2 bg-orange-600 text-white font-bold py-3 rounded-xl hover:bg-orange-700 transition-colors disabled:opacity-50 shadow-sm text-sm"
+              >
+                <FaBolt size={13} />
+                {autoDispatching ? 'Finding Nearest Agent...' : 'Auto-Dispatch Nearest Agent'}
+              </button>
 
-                <button
-                  onClick={handleAssignPartner}
-                  disabled={!selectedPartnerId || assigning}
-                  className="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm"
-                >
-                  {assigning ? 'Assigning...' : 'Assign & Dispatch'}
-                </button>
+              <div className="relative flex items-center py-1">
+                <div className="flex-grow border-t border-emerald-200 dark:border-emerald-800/60" />
+                <span className="mx-3 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                  Or Assign Manually
+                </span>
+                <div className="flex-grow border-t border-emerald-200 dark:border-emerald-800/60" />
               </div>
+
+              {(() => {
+                const selectableList = deliveryAgents.length > 0
+                  ? deliveryAgents.map((a) => ({
+                      id: a.id,
+                      name: a.name,
+                      vehicleNo: a.vehicleNo,
+                      available: a.isAvailable,
+                      hasGps: a.currentLat != null && a.currentLng != null,
+                    }))
+                  : activePartners.map((p) => ({
+                      id: p.id,
+                      name: p.name,
+                      vehicleNo: p.vehicleNo,
+                      available: true,
+                      hasGps: false,
+                    }))
+                const selectedItem = selectableList.find((item) => item.id === selectedAgentId)
+
+                return (
+                  <div className="space-y-3">
+                    <Select value={selectedAgentId} onValueChange={(val) => setSelectedAgentId(val || '')}>
+                      <SelectTrigger className="w-full !bg-white dark:!bg-zinc-900 border-emerald-200 dark:border-emerald-800 rounded-xl px-4 h-12 text-sm font-bold shadow-sm focus:ring-emerald-500">
+                        {selectedItem ? (
+                          <span>{selectedItem.name} ({selectedItem.vehicleNo})</span>
+                        ) : (
+                          <span className="text-muted-foreground">Select Delivery Agent...</span>
+                        )}
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectableList.map((item) => (
+                          <SelectItem key={item.id} value={item.id} className="font-medium">
+                            {item.name} ({item.vehicleNo}){item.available ? '' : ' — Busy'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <button
+                      type="button"
+                      onClick={handleAssignAgent}
+                      disabled={!selectedAgentId || assigning || autoDispatching}
+                      className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm text-sm"
+                    >
+                      {assigning ? 'Assigning...' : 'Assign Agent & Start Tracking'}
+                    </button>
+                  </div>
+                )
+              })()}
+
+              {dispatchMessage && (
+                <div
+                  className={`rounded-xl px-3.5 py-2.5 text-xs font-bold ${
+                    dispatchMessage.type === 'success'
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-destructive/10 text-destructive'
+                  }`}
+                >
+                  {dispatchMessage.text}
+                </div>
+              )}
             </div>
           )}
 
