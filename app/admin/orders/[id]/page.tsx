@@ -433,45 +433,45 @@ export default function AdminOrderDetailsPage() {
           {order.orderStatus !== 'DELIVERED' && order.orderStatus !== 'CANCELLED' && order.deliveryType === 'HYPERLOCAL' && (
             <div className="bg-emerald-50 dark:bg-emerald-950/20 p-6 rounded-3xl border border-emerald-200 dark:border-emerald-900/50 shadow-sm space-y-4">
               <h4 className="text-base font-black text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
-                <FaMotorcycle /> {order.deliveryPartnerInfo ? 'Reassign / Dispatch Agent' : 'Hyperlocal Dispatch'}
+                <FaMotorcycle /> {order.deliveryPartnerInfo ? 'Reassign Delivery Partner' : 'Assign Delivery Partner'}
               </h4>
               <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                Auto-dispatch picks the nearest available agent via live GPS heartbeat, computes the route polyline, and notifies both customer &amp; rider over WebSocket.
+                Assigning a partner routes the road polyline, seeds Redis, and broadcasts live assignment to customer over WebSocket. Auto-dispatch finds the nearest rider via live GPS heartbeat.
               </p>
 
               <button
                 type="button"
                 onClick={handleAutoDispatch}
                 disabled={autoDispatching || assigning}
-                className="w-full flex items-center justify-center gap-2 bg-orange-600 text-white font-bold py-3 rounded-xl hover:bg-orange-700 transition-colors disabled:opacity-50 shadow-sm text-sm"
+                className="w-full flex items-center justify-center gap-2 bg-[#FC8019] hover:bg-[#e67312] text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 shadow-sm text-sm"
               >
                 <FaBolt size={13} />
-                {autoDispatching ? 'Finding Nearest Agent...' : 'Auto-Dispatch Nearest Agent'}
+                {autoDispatching ? 'Finding Nearest Rider...' : 'Auto-Dispatch Nearest Rider'}
               </button>
 
               <div className="relative flex items-center py-1">
                 <div className="flex-grow border-t border-emerald-200 dark:border-emerald-800/60" />
                 <span className="mx-3 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                  Or Assign Manually
+                  Or Assign Partner Manually
                 </span>
                 <div className="flex-grow border-t border-emerald-200 dark:border-emerald-800/60" />
               </div>
 
               {(() => {
-                const selectableList = deliveryAgents.length > 0
-                  ? deliveryAgents.map((a) => ({
+                const selectableList = activePartners.length > 0
+                  ? activePartners.map((p) => ({
+                      id: p.id,
+                      name: p.name,
+                      vehicleNo: p.vehicleNo,
+                      available: p.isActive,
+                      login: p.loginUsername || p.email,
+                    }))
+                  : deliveryAgents.map((a) => ({
                       id: a.id,
                       name: a.name,
                       vehicleNo: a.vehicleNo,
                       available: a.isAvailable,
-                      hasGps: a.currentLat != null && a.currentLng != null,
-                    }))
-                  : activePartners.map((p) => ({
-                      id: p.id,
-                      name: p.name,
-                      vehicleNo: p.vehicleNo,
-                      available: true,
-                      hasGps: false,
+                      login: a.phone ? `${a.phone}@rider.emistore.in` : undefined,
                     }))
                 const selectedItem = selectableList.find((item) => item.id === selectedAgentId)
 
@@ -482,13 +482,13 @@ export default function AdminOrderDetailsPage() {
                         {selectedItem ? (
                           <span>{selectedItem.name} ({selectedItem.vehicleNo})</span>
                         ) : (
-                          <span className="text-muted-foreground">Select Delivery Agent...</span>
+                          <span className="text-muted-foreground">Select Delivery Partner...</span>
                         )}
                       </SelectTrigger>
                       <SelectContent>
                         {selectableList.map((item) => (
                           <SelectItem key={item.id} value={item.id} className="font-medium">
-                            {item.name} ({item.vehicleNo}){item.available ? '' : ' — Busy'}
+                            {item.name} ({item.vehicleNo}){item.available ? '' : ' — Inactive'}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -500,7 +500,7 @@ export default function AdminOrderDetailsPage() {
                       disabled={!selectedAgentId || assigning || autoDispatching}
                       className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-sm text-sm"
                     >
-                      {assigning ? 'Assigning...' : 'Assign Agent & Start Tracking'}
+                      {assigning ? 'Assigning...' : 'Assign Delivery Partner'}
                     </button>
                   </div>
                 )

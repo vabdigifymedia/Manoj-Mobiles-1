@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as cheerio from 'cheerio'
 
-export interface ExtractedSpec {
+interface ExtractedSpec {
   specGroup: string
   specKey: string
   specValue: string
@@ -10,7 +10,7 @@ export interface ExtractedSpec {
 // -------------------------------------------------------------------------
 // STRICTLY ALLOWED 10 SPECIFICATION GROUPS ONLY
 // -------------------------------------------------------------------------
-export const ALLOWED_GROUPS = [
+const ALLOWED_GROUPS = [
   'Battery & Power Features',
   'Dimensions',
   'Display Features',

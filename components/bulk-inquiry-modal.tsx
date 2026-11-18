@@ -484,7 +484,7 @@ export function BulkInquiryModal({ isOpen, onClose, target }: BulkInquiryModalPr
                       <div className="min-w-0 flex-1">
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">Pre-Selected Smartphone</span>
                         <p className="text-sm sm:text-base font-black text-slate-900 truncate">
-                          {target.brandName ? `${target.brandName} ` : ''}{target.name}
+                          {target?.brandName ? `${target?.brandName} ` : ''}{target?.name}
                         </p>
                       </div>
                     </div>
@@ -615,10 +615,10 @@ export function BulkInquiryModal({ isOpen, onClose, target }: BulkInquiryModalPr
                 {activeProduct && (
                   <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-blue-50/90 via-sky-50/50 to-white border border-blue-200/80 flex items-center gap-4 animate-in fade-in slide-in-from-top-2 duration-200 shadow-2xs">
                     <div className="size-16 sm:size-20 rounded-xl bg-white p-1.5 border border-blue-100 flex items-center justify-center shrink-0 shadow-2xs">
-                      {activeProduct.imageUrl ? (
+                      {activeProduct?.imageUrl ? (
                         <img 
-                          src={activeProduct.imageUrl} 
-                          alt={activeProduct.name} 
+                          src={activeProduct?.imageUrl} 
+                          alt={activeProduct?.name || ''} 
                           className="w-full h-full object-contain" 
                         />
                       ) : (
@@ -632,10 +632,10 @@ export function BulkInquiryModal({ isOpen, onClose, target }: BulkInquiryModalPr
                         </span>
                       </div>
                       <h4 className="text-sm sm:text-base font-black text-slate-900 truncate">
-                        {activeProduct.name}
+                        {activeProduct?.name}
                       </h4>
                       <p className="text-xs text-slate-600 font-semibold mt-0.5 flex items-center gap-1.5">
-                        <span>{activeProduct.brandName}</span>
+                        <span>{activeProduct?.brandName}</span>
                         <span>•</span>
                         <span className="text-blue-700 font-bold">{selectedColor || 'All Colours'}</span>
                       </p>

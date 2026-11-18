@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FaFloppyDisk, FaStore, FaMessage, FaLocationDot, FaBullhorn, FaImage } from 'react-icons/fa6'
+import { FaFloppyDisk, FaStore, FaMessage, FaLocationDot, FaBullhorn, FaImage, FaBolt, FaTruckFast } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import type { StoreSettingResponseDTO, StoreSettingRequestDTO } from '@/lib/types'
 import { BannerImageUploader } from '@/components/admin/banner-image-uploader'
 import { StoreLocationPicker } from '@/components/admin/StoreLocationPicker'
+import { Switch } from '@/components/ui/switch'
 
 const DEFAULT_SETTINGS: StoreSettingResponseDTO = {
   id: '1',
@@ -26,6 +27,12 @@ const DEFAULT_SETTINGS: StoreSettingResponseDTO = {
   googleMapsUrl: 'https://maps.google.com',
   freeDeliveryThreshold: 999,
   expressDeliveryText: 'EXPRESS Delivery tomorrow',
+  hyperlocalEnabled: true,
+  hyperlocalDeliveryCharge: 49,
+  hyperlocalEstimatedMins: 45,
+  hyperlocalMaxRadiusKm: 15,
+  standardDeliveryCharge: 0,
+  standardEstimatedDays: 5,
   updatedAt: new Date().toISOString()
 }
 
@@ -97,6 +104,12 @@ export default function AdminSettingsPage() {
         storeLng: settings.storeLng,
         freeDeliveryThreshold: Number(settings.freeDeliveryThreshold) || 0,
         expressDeliveryText: settings.expressDeliveryText || '',
+        hyperlocalEnabled: settings.hyperlocalEnabled !== false,
+        hyperlocalDeliveryCharge: Number(settings.hyperlocalDeliveryCharge ?? 49),
+        hyperlocalEstimatedMins: Number(settings.hyperlocalEstimatedMins ?? 45),
+        hyperlocalMaxRadiusKm: Number(settings.hyperlocalMaxRadiusKm ?? 15),
+        standardDeliveryCharge: Number(settings.standardDeliveryCharge ?? 0),
+        standardEstimatedDays: Number(settings.standardEstimatedDays ?? 5),
       }
 
       const normalized: StoreSettingResponseDTO = {
@@ -299,6 +312,119 @@ export default function AdminSettingsPage() {
             <div>
               <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Express Delivery Text</label>
               <input value={settings.expressDeliveryText || ''} onChange={e => update('expressDeliveryText', e.target.value)} className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
+            </div>
+          </div>
+        </div>
+
+        {/* Hyperlocal & Standard Delivery Controls */}
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-6">
+          <div className="flex items-center justify-between flex-wrap gap-4 border-b border-border pb-4">
+            <div className="flex items-center gap-2">
+              <FaBolt size={18} className="text-orange-500" />
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Hyperlocal &amp; Standard Delivery Controls</h2>
+                <p className="text-xs text-muted-foreground font-medium">Configure delivery fees, ETA windows, and max radius for live tracking and express riders.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 bg-muted/40 px-3.5 py-2 rounded-xl border border-border">
+              <span className="text-xs font-bold text-foreground">Hyperlocal Express</span>
+              <Switch
+                checked={settings.hyperlocalEnabled !== false}
+                onCheckedChange={(val) => update('hyperlocalEnabled', val)}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Hyperlocal Delivery Charge (₹)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={settings.hyperlocalDeliveryCharge ?? 49}
+                onChange={(e) => update('hyperlocalDeliveryCharge', Number(e.target.value))}
+                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                placeholder="49"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Fee for express rider dispatch.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Hyperlocal Estimated Time (Mins)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={settings.hyperlocalEstimatedMins ?? 45}
+                onChange={(e) => update('hyperlocalEstimatedMins', Number(e.target.value))}
+                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                placeholder="45"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Displayed to customer as initial ETA.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Max Hyperlocal Radius (Km)
+              </label>
+              <input
+                type="number"
+                step="0.5"
+                min={1}
+                value={settings.hyperlocalMaxRadiusKm ?? 15}
+                onChange={(e) => update('hyperlocalMaxRadiusKm', Number(e.target.value))}
+                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                placeholder="15"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Addresses further than this use standard courier.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Standard Courier Charge (₹)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={settings.standardDeliveryCharge ?? 0}
+                onChange={(e) => update('standardDeliveryCharge', Number(e.target.value))}
+                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                placeholder="0"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Courier shipping fee across India.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Standard Delivery Days
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={settings.standardEstimatedDays ?? 5}
+                onChange={(e) => update('standardEstimatedDays', Number(e.target.value))}
+                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                placeholder="5"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Estimated business days for courier.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Free Delivery Above (₹)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={settings.freeDeliveryThreshold ?? 999}
+                onChange={(e) => update('freeDeliveryThreshold', Number(e.target.value))}
+                className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                placeholder="999"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Orders above this get free delivery.</p>
             </div>
           </div>
         </div>

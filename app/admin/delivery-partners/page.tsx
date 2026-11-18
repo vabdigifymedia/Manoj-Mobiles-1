@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FaPlus, FaPen, FaTrashCan, FaMotorcycle, FaMagnifyingGlass, FaChevronLeft, FaChevronRight } from 'react-icons/fa6'
+import { FaPlus, FaPen, FaTrashCan, FaMotorcycle, FaMagnifyingGlass, FaChevronLeft, FaChevronRight, FaCopy, FaCheck } from 'react-icons/fa6'
 import { apiClient } from '@/lib/apiClient'
 import type { DeliveryPartnerResponseDTO, CreateDeliveryPartnerRequestDTO, UpdateDeliveryPartnerRequestDTO } from '@/lib/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -22,6 +22,13 @@ export default function AdminDeliveryPartnersPage() {
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingPartner, setEditingPartner] = useState<DeliveryPartnerResponseDTO | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   useEffect(() => {
     fetchData()
@@ -51,6 +58,8 @@ export default function AdminDeliveryPartnersPage() {
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
+    const emailVal = (formData.get('email') as string)?.trim() || undefined
+    const passwordVal = (formData.get('password') as string)?.trim() || undefined
     
     try {
       if (editingPartner) {
@@ -58,6 +67,8 @@ export default function AdminDeliveryPartnersPage() {
           name: formData.get('name') as string,
           phone: formData.get('phone') as string,
           vehicleNo: formData.get('vehicleNo') as string,
+          email: emailVal,
+          password: passwordVal,
         }
         await apiClient.updateAdminDeliveryPartner(editingPartner.id, data)
       } else {
@@ -65,6 +76,8 @@ export default function AdminDeliveryPartnersPage() {
           name: formData.get('name') as string,
           phone: formData.get('phone') as string,
           vehicleNo: formData.get('vehicleNo') as string,
+          email: emailVal,
+          password: passwordVal,
           isActive: formData.get('isActive') === 'on'
         }
         await apiClient.createAdminDeliveryPartner(data)
@@ -158,44 +171,62 @@ export default function AdminDeliveryPartnersPage() {
                   <th className="p-4 font-semibold text-muted-foreground">Name</th>
                   <th className="p-4 font-semibold text-muted-foreground">Phone</th>
                   <th className="p-4 font-semibold text-muted-foreground">Vehicle No</th>
+                  <th className="p-4 font-semibold text-muted-foreground">Login Username</th>
                   <th className="p-4 font-semibold text-muted-foreground">Status</th>
                   <th className="p-4 font-semibold text-muted-foreground text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {partners.map(partner => (
-                  <tr key={partner.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="p-4 font-bold">{partner.name}</td>
-                    <td className="p-4 text-muted-foreground">{partner.phone}</td>
-                    <td className="p-4">
-                      <span className="bg-slate-100 dark:bg-zinc-800 px-2 py-1 rounded-md font-mono text-xs border border-border">
-                        {partner.vehicleNo}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <Switch 
-                        checked={partner.isActive} 
-                        onCheckedChange={() => handleToggleStatus(partner.id)} 
-                      />
-                    </td>
-                    <td className="p-4">
-                      <div className="flex justify-end gap-2">
-                        <button 
-                          onClick={() => openEditModal(partner)}
-                          className="size-8 rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-200 transition-colors"
-                        >
-                          <FaPen size={12} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(partner.id)}
-                          className="size-8 rounded-lg bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 flex items-center justify-center hover:bg-red-200 transition-colors"
-                        >
-                          <FaTrashCan size={12} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {partners.map(partner => {
+                  const loginUsername = partner.loginUsername || partner.email || `${partner.phone}@rider.emistore.in`
+                  const isCopied = copiedId === partner.id
+                  return (
+                    <tr key={partner.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="p-4 font-bold">{partner.name}</td>
+                      <td className="p-4 text-muted-foreground">{partner.phone}</td>
+                      <td className="p-4">
+                        <span className="bg-slate-100 dark:bg-zinc-800 px-2 py-1 rounded-md font-mono text-xs border border-border">
+                          {partner.vehicleNo}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="inline-flex items-center gap-1.5 bg-muted/60 px-2.5 py-1 rounded-lg border border-border text-xs font-mono">
+                          <span className="text-foreground font-semibold">{loginUsername}</span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(loginUsername, partner.id)}
+                            className="text-muted-foreground hover:text-primary transition-colors ml-1"
+                            title="Copy rider login username"
+                          >
+                            {isCopied ? <FaCheck size={11} className="text-emerald-500" /> : <FaCopy size={11} />}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <Switch 
+                          checked={partner.isActive} 
+                          onCheckedChange={() => handleToggleStatus(partner.id)} 
+                        />
+                      </td>
+                      <td className="p-4">
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => openEditModal(partner)}
+                            className="size-8 rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-200 transition-colors"
+                          >
+                            <FaPen size={12} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(partner.id)}
+                            className="size-8 rounded-lg bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 flex items-center justify-center hover:bg-red-200 transition-colors"
+                          >
+                            <FaTrashCan size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -265,6 +296,39 @@ export default function AdminDeliveryPartnersPage() {
                 className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2 outline-none focus:border-primary transition-colors uppercase"
                 placeholder="e.g. DL-12-AB-3456"
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                Email / Login Username <span className="font-normal text-muted-foreground/75">(Optional)</span>
+              </label>
+              <input 
+                type="email"
+                name="email" 
+                defaultValue={editingPartner?.email || ''} 
+                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2 outline-none focus:border-primary transition-colors text-sm"
+                placeholder="Defaults to {phone}@rider.emistore.in"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                If left blank, rider username will be auto-generated from phone number.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                Password <span className="font-normal text-muted-foreground/75">{editingPartner ? '(Leave blank to keep unchanged)' : '(Optional)'}</span>
+              </label>
+              <input 
+                type="password"
+                name="password" 
+                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2 outline-none focus:border-primary transition-colors text-sm"
+                placeholder={editingPartner ? '••••••••' : 'Defaults to Password@123'}
+              />
+              {!editingPartner && (
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Default password for new riders is <span className="font-mono font-bold text-foreground">Password@123</span>.
+                </p>
+              )}
             </div>
             
             {!editingPartner && (

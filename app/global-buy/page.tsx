@@ -22,10 +22,12 @@ export default async function GlobalBuyPage({ searchParams }: { searchParams: Pr
   // TEMPORARILY HIDDEN: Redirect direct visits away from /global-buy to /shop
   redirect('/shop')
 
-  const { q, brand } = await searchParams
-  const searchQuery = typeof q === 'string' ? q.trim() : ''
-  const brandQuery = typeof brand === 'string' ? brand : ''
-  const brandKey = brandQuery.trim().toLowerCase()
+  const resolvedParams: Record<string, unknown> = (await searchParams) || {}
+  const rawQ = resolvedParams['q']
+  const searchQuery = typeof rawQ === 'string' ? (rawQ as string).trim() : ''
+
+  const rawBrand = resolvedParams['brand']
+  const brandKey = typeof rawBrand === 'string' ? (rawBrand as string).trim().toLowerCase() : ''
 
   // ------------------------------------------------------------------
   // SINGLE SOURCE OF TRUTH (lib/productCatalog.ts) — same as /shop.
@@ -41,8 +43,10 @@ export default async function GlobalBuyPage({ searchParams }: { searchParams: Pr
 
   // Identify the Samsung & Apple brands from the EXISTING brand relationship
   // (matched against the brand master data — never against product names)
-  const samsungBrand = findBrand(brands, 'samsung') || null
-  const appleBrand = findBrand(brands, 'apple') || null
+  const samsungBrandFound = findBrand(brands, 'samsung')
+  const appleBrandFound = findBrand(brands, 'apple')
+  const samsungBrand = samsungBrandFound || null
+  const appleBrand = appleBrandFound || null
 
   // GLOBAL BUY RULE: Published + Active products only, brand is Samsung OR Apple
   // (matched through the shared normalized brand layer so "Samsung"/"APPLE"
@@ -59,10 +63,12 @@ export default async function GlobalBuyPage({ searchParams }: { searchParams: Pr
   })
 
   // Brand tab: All (default) / Samsung / Apple
+  const samsungList: BrandResponseDTO[] = samsungBrandFound ? [samsungBrandFound as BrandResponseDTO] : []
+  const appleList: BrandResponseDTO[] = appleBrandFound ? [appleBrandFound as BrandResponseDTO] : []
   const activeTab: 'all' | 'samsung' | 'apple' =
-    brandKey === 'samsung' || (samsungBrand != null && findBrand([samsungBrand], brandKey) != null)
+    brandKey === 'samsung' || (samsungList.length > 0 && findBrand(samsungList, brandKey) != null)
       ? 'samsung'
-      : brandKey === 'apple' || (appleBrand != null && findBrand([appleBrand], brandKey) != null)
+      : brandKey === 'apple' || (appleList.length > 0 && findBrand(appleList, brandKey) != null)
       ? 'apple'
       : 'all'
 

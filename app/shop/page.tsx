@@ -29,7 +29,7 @@ import {
   type ParsedSearchQuery,
 } from '@/lib/smartSearch'
 import { FaMagnifyingGlass, FaXmark } from 'react-icons/fa6'
-import type { PageResponse, BrandResponseDTO, CategoryResponseDTO } from '@/lib/types'
+import type { PageResponse, BrandResponseDTO, CategoryResponseDTO, ProductResponseDTO } from '@/lib/types'
 import { getTrendingProductIds } from '@/lib/trendingStore'
 import { getProductRatingMap } from '@/lib/reviewStore'
 

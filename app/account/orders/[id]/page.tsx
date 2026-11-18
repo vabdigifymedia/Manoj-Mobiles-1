@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient, formatINR } from '@/lib/apiClient'
 import type { OrderResponseDTO, TrackingEventDTO } from '@/lib/types'
-import { FaChevronLeft, FaDownload } from 'react-icons/fa6'
+import { FaChevronLeft, FaDownload, FaLocationCrosshairs, FaBolt } from 'react-icons/fa6'
 import Link from 'next/link'
 import { HyperlocalTracker } from '@/components/order/HyperlocalTracker'
 import { StandardTracker } from '@/components/order/StandardTracker'
@@ -76,9 +76,19 @@ export default function OrderDetailsPage() {
           <h2 className="text-3xl font-black tracking-tight">Order #{order.orderNumber}</h2>
           <p className="text-sm text-muted-foreground mt-1">Placed on {new Date(order.placedAt).toLocaleString()}</p>
         </div>
-        <button className="flex items-center gap-2 bg-slate-900 text-white dark:bg-white dark:text-zinc-900 px-4 py-2 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity">
-          <FaDownload /> Invoice
-        </button>
+        <div className="flex items-center gap-3">
+          {order.deliveryType === 'HYPERLOCAL' && order.orderStatus !== 'CANCELLED' && (
+            <Link
+              href={`/orders/${order.id}/track`}
+              className="flex items-center gap-2 bg-[#FC8019] text-white px-4 py-2 rounded-xl font-bold text-sm hover:opacity-90 shadow-sm transition-opacity"
+            >
+              <FaBolt size={12} /> Live Tracking
+            </Link>
+          )}
+          <button className="flex items-center gap-2 bg-slate-900 text-white dark:bg-white dark:text-zinc-900 px-4 py-2 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity">
+            <FaDownload /> Invoice
+          </button>
+        </div>
       </div>
 
       {/* Dynamic Tracker */}

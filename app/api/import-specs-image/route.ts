@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export interface ExtractedSpec {
+interface ExtractedSpec {
   specGroup: string
   specKey: string
   specValue: string
 }
 
-export const ALLOWED_GROUPS = [
+const ALLOWED_GROUPS = [
   'Battery & Power Features',
   'Dimensions',
   'Display Features',
@@ -84,7 +84,7 @@ function mapToAllowedGroup(rawGroup: string, specKey: string): string | null {
   return null
 }
 
-export function parseSpecsFromOcrText(ocrText: string): ExtractedSpec[] {
+function parseSpecsFromOcrText(ocrText: string): ExtractedSpec[] {
   const rawLines = ocrText.split(/\r?\n/).map(l => cleanText(l)).filter(Boolean)
   const results: ExtractedSpec[] = []
   const seenKeys = new Set<string>()

@@ -247,7 +247,7 @@ export const HyperlocalTracker = ({
       path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
       scale: 6.5,
       rotation: heading || 0,
-      fillColor: '#f97316',
+      fillColor: '#FC8019',
       fillOpacity: 1,
       strokeColor: '#ffffff',
       strokeWeight: 2.5,
@@ -377,12 +377,12 @@ export const HyperlocalTracker = ({
                 />
               )}
 
-              {/* Remaining Path (Vivid Orange) */}
+              {/* Remaining Path (Vivid Swiggy Orange) */}
               {remainingPath.length > 1 && (
                 <Polyline
                   path={remainingPath}
                   options={{
-                    strokeColor: '#f97316',
+                    strokeColor: '#FC8019',
                     strokeWeight: 6,
                     strokeOpacity: 0.95,
                     geodesic: true,

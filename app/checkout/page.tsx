@@ -327,7 +327,7 @@ export default function CheckoutPage() {
         window.location.href = order.paymentUrl
       } else {
         showToast({ message: 'Order placed successfully!', type: 'success' })
-        router.push(order?.id ? `/account/orders/${order.id}` : '/account/orders')
+        router.push(order?.id ? `/orders/${order.id}/track` : '/account/orders')
       }
     } catch (err: any) {
       showToast({ message: err.response?.data?.message || 'Failed to place order', type: 'error' })

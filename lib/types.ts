@@ -288,17 +288,24 @@ export interface DeliveryPartnerDTO {
   name: string
   phone: string
   vehicleNo: string
+  isActive?: boolean
+  email?: string
+  loginUsername?: string
 }
 
 export interface DeliveryPartnerResponseDTO extends DeliveryPartnerDTO {
   isActive: boolean
   createdAt: string
+  email?: string
+  loginUsername?: string
 }
 
 export interface CreateDeliveryPartnerRequestDTO {
   name: string
   phone: string
   vehicleNo: string
+  email?: string
+  password?: string
   isActive?: boolean
 }
 
@@ -306,6 +313,8 @@ export interface UpdateDeliveryPartnerRequestDTO {
   name: string
   phone: string
   vehicleNo: string
+  email?: string
+  password?: string
 }
 
 export type DeliveryType = 'HYPERLOCAL' | 'STANDARD'
@@ -661,6 +670,12 @@ export interface StoreSettingRequestDTO {
   storeLng?: number
   freeDeliveryThreshold?: number
   expressDeliveryText?: string
+  hyperlocalEnabled?: boolean
+  hyperlocalDeliveryCharge?: number
+  hyperlocalEstimatedMins?: number
+  hyperlocalMaxRadiusKm?: number
+  standardDeliveryCharge?: number
+  standardEstimatedDays?: number
 }
 
 export interface StoreSettingResponseDTO {
@@ -684,6 +699,12 @@ export interface StoreSettingResponseDTO {
   storeLng?: number
   freeDeliveryThreshold?: number
   expressDeliveryText?: string
+  hyperlocalEnabled?: boolean
+  hyperlocalDeliveryCharge?: number
+  hyperlocalEstimatedMins?: number
+  hyperlocalMaxRadiusKm?: number
+  standardDeliveryCharge?: number
+  standardEstimatedDays?: number
   updatedAt: string
 }
 
