@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "simulate-rider": "node scripts/simulate-rider.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

@@ -18,7 +18,8 @@ import { ClipboardCheck, Package, Ship, Bike, Home } from 'lucide-react'
 import {
   FaChevronLeft, FaClock, FaTruck,
   FaMotorcycle, FaWallet, FaMapPin, FaFileInvoice,
-  FaCircleCheck, FaTriangleExclamation, FaBox, FaBolt
+  FaCircleCheck, FaTriangleExclamation, FaBox, FaBolt,
+  FaLocationCrosshairs
 } from 'react-icons/fa6'
 
 const statusOrder = ['PLACED', 'CONFIRMED', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'];
@@ -36,6 +37,7 @@ export default function AdminOrderDetailsPage() {
   const [autoDispatching, setAutoDispatching] = useState(false)
   const [dispatchMessage, setDispatchMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [simulatingGps, setSimulatingGps] = useState(false)
 
   useEffect(() => {
     fetchOrder()
@@ -156,6 +158,34 @@ export default function AdminOrderDetailsPage() {
       })
     } finally {
       setAssigning(false)
+    }
+  }
+
+  const handleSimulateGps = async () => {
+    if (!order) return
+    setSimulatingGps(true)
+    setDispatchMessage(null)
+    try {
+      const baseLat = 28.5355 + Math.random() * 0.015
+      const baseLng = 77.391 - Math.random() * 0.015
+      await apiClient.pushDeliveryLiveLocation(order.id, {
+        lat: Number(baseLat.toFixed(5)),
+        lng: Number(baseLng.toFixed(5)),
+        heading: 295,
+        speedKmh: 28,
+      })
+      setDispatchMessage({
+        type: 'success',
+        text: 'Live GPS test ping sent! Marker will glide smoothly on the customer tracking page in real-time.',
+      })
+    } catch (e: any) {
+      console.error(e)
+      setDispatchMessage({
+        type: 'error',
+        text: e.response?.data?.message || 'Failed to push test GPS ping.',
+      })
+    } finally {
+      setSimulatingGps(false)
     }
   }
 
@@ -505,6 +535,23 @@ export default function AdminOrderDetailsPage() {
                   </div>
                 )
               })()}
+
+              {order.deliveryPartnerInfo && (
+                <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60">
+                  <button
+                    type="button"
+                    onClick={handleSimulateGps}
+                    disabled={simulatingGps}
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-800 dark:text-emerald-300 font-bold py-2.5 rounded-xl transition-colors disabled:opacity-50 text-xs border border-emerald-300/60 dark:border-emerald-800/60 shadow-2xs"
+                  >
+                    <FaLocationCrosshairs size={13} />
+                    {simulatingGps ? 'Broadcasting Ping...' : 'Send Live GPS Test Ping (Simulate)'}
+                  </button>
+                  <p className="text-[10px] text-muted-foreground mt-1 text-center font-medium">
+                    Test live marker gliding on customer map without needing a rider app
+                  </p>
+                </div>
+              )}
 
               {dispatchMessage && (
                 <div

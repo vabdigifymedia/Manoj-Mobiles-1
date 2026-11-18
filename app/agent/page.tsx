@@ -59,10 +59,9 @@ export default function DeliveryAgentDashboardPage() {
   }, [outForDeliveryShipment?.orderId])
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/staff-login')
-    }
-  }, [authLoading, isAuthenticated, router])
+    // Rider login is not provided on the website (reserved for future mobile app)
+    router.replace('/admin')
+  }, [router])
 
   const loadShipments = useCallback(async () => {
     setLoadingShipments(true)

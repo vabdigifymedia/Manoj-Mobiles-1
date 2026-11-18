@@ -22,8 +22,7 @@ export default function StaffLoginPage() {
     setError('')
     try {
       await login(email, password)
-      const role = Cookies.get('userRole')
-      router.push(role === 'DELIVERY_AGENT' ? '/agent' : '/admin')
+      router.push('/admin')
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid credentials. Please try again.')
     } finally {
