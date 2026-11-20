@@ -74,6 +74,8 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
   const [geocodedDest, setGeocodedDest] = useState<LatLngPoint | null>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
   const hasFittedRef = useRef(false)
+  const userMovedMapRef = useRef(false)
+  const resumeAutoFollowTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Redirect to login if user is not authenticated
   useEffect(() => {
@@ -168,7 +170,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     return () => {
       active = false
     }
-  }, [snapshot?.routePolyline, storePos, destinationPos])
+  }, [snapshot?.routePolyline, storePos, destinationPos, isLoaded])
 
   // Final road polyline points for map rendering
   const routePoints = useMemo<LatLngPoint[]>(() => {
@@ -268,8 +270,32 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     }
   }, [destinationPos, routePoints.length, fitBounds])
 
-  // Camera Auto-Follow: smoothly pan camera when rider moves near map edges
+  // Handle user manual dragging: allow free exploration, pause auto-follow, and resume after 18s of inactivity
+  const handleMapDragStart = useCallback(() => {
+    userMovedMapRef.current = true
+    if (resumeAutoFollowTimerRef.current) {
+      clearTimeout(resumeAutoFollowTimerRef.current)
+    }
+  }, [])
+
+  const handleMapDragEnd = useCallback(() => {
+    userMovedMapRef.current = true
+    if (resumeAutoFollowTimerRef.current) {
+      clearTimeout(resumeAutoFollowTimerRef.current)
+    }
+    // After 18 seconds of user inactivity, automatically pan back to the rider
+    resumeAutoFollowTimerRef.current = setTimeout(() => {
+      userMovedMapRef.current = false
+      const target = bikePos || storePos
+      if (mapRef.current && target) {
+        mapRef.current.panTo(target)
+      }
+    }, 18000)
+  }, [bikePos, storePos])
+
+  // Camera Auto-Follow: smoothly pan camera when rider moves near map edges (only if user hasn't manually moved map in last 18s)
   useEffect(() => {
+    if (userMovedMapRef.current) return
     if (!mapRef.current || !bikePos || typeof window === 'undefined' || !window.google?.maps) return
     const bounds = mapRef.current.getBounds()
     if (!bounds) return
@@ -287,6 +313,10 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
   }, [bikePos])
 
   const centerOnRider = () => {
+    userMovedMapRef.current = false
+    if (resumeAutoFollowTimerRef.current) {
+      clearTimeout(resumeAutoFollowTimerRef.current)
+    }
     const target = bikePos || storePos
     if (mapRef.current && target) {
       mapRef.current.panTo(target)
@@ -426,6 +456,8 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
                 center={defaultCenter}
                 zoom={14}
                 onLoad={onMapLoad}
+                onDragStart={handleMapDragStart}
+                onDragEnd={handleMapDragEnd}
                 options={{
                   disableDefaultUI: true,
                   zoomControl: true,

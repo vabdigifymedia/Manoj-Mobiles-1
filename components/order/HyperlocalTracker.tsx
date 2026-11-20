@@ -92,6 +92,8 @@ export const HyperlocalTracker = ({
   const [geocodedDest, setGeocodedDest] = useState<LatLngPoint | null>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
   const hasFittedBoundsRef = useRef(false)
+  const userMovedMapRef = useRef(false)
+  const resumeAutoFollowTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Fetch fallback store settings only if snapshot doesn't provide store coordinates
   useEffect(() => {
@@ -171,7 +173,7 @@ export const HyperlocalTracker = ({
     return () => {
       active = false
     }
-  }, [snapshot?.routePolyline, storePos, destinationPos])
+  }, [snapshot?.routePolyline, storePos, destinationPos, isLoaded])
 
   // Final turn-by-turn road polyline for map rendering
   const routePath = useMemo<LatLngPoint[]>(() => {
@@ -297,8 +299,32 @@ export const HyperlocalTracker = ({
     }
   }, [destinationPos, routePath.length, fitMapBounds])
 
-  // Auto-follow rider: smoothly pan camera when rider moves near map edges
+  // Handle user manual dragging: allow free exploration, pause auto-follow, and resume after 18s of inactivity
+  const handleMapDragStart = useCallback(() => {
+    userMovedMapRef.current = true
+    if (resumeAutoFollowTimerRef.current) {
+      clearTimeout(resumeAutoFollowTimerRef.current)
+    }
+  }, [])
+
+  const handleMapDragEnd = useCallback(() => {
+    userMovedMapRef.current = true
+    if (resumeAutoFollowTimerRef.current) {
+      clearTimeout(resumeAutoFollowTimerRef.current)
+    }
+    // After 18 seconds of user inactivity, automatically pan back to the rider
+    resumeAutoFollowTimerRef.current = setTimeout(() => {
+      userMovedMapRef.current = false
+      const target = bikePos || storePos
+      if (mapRef.current && target) {
+        mapRef.current.panTo(target)
+      }
+    }, 18000)
+  }, [bikePos, storePos])
+
+  // Auto-follow rider: smoothly pan camera when rider moves near map edges (only if user hasn't manually moved map in last 18s)
   useEffect(() => {
+    if (userMovedMapRef.current) return
     if (!mapRef.current || !bikePos || typeof window === 'undefined' || !window.google?.maps) return
     const bounds = mapRef.current.getBounds()
     if (!bounds) return
@@ -316,6 +342,10 @@ export const HyperlocalTracker = ({
   }, [bikePos])
 
   const centerOnRider = () => {
+    userMovedMapRef.current = false
+    if (resumeAutoFollowTimerRef.current) {
+      clearTimeout(resumeAutoFollowTimerRef.current)
+    }
     const target = bikePos || storePos
     if (mapRef.current && target) {
       mapRef.current.panTo(target)
@@ -440,6 +470,8 @@ export const HyperlocalTracker = ({
               zoom={14}
               onLoad={handleMapLoad}
               onUnmount={handleMapUnmount}
+              onDragStart={handleMapDragStart}
+              onDragEnd={handleMapDragEnd}
               options={{
                 disableDefaultUI: true,
                 zoomControl: true,
