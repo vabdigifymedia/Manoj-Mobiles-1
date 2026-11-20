@@ -122,8 +122,8 @@ export function decodeEncodedPolyline(encoded: string): LatLngPoint[] {
 
 /**
  * Fetches turn-by-turn road polyline between origin and destination.
- * 1. Tries Google Maps DirectionsService if available in the browser.
- * 2. Falls back to free public OSRM road routing engine (no API key required).
+ * 1. Calls our Next.js server proxy /api/directions (Google Directions + OSRM server-side, no CORS).
+ * 2. Tries browser Google Maps DirectionsService if available.
  * 3. Falls back to straight line [origin, destination] if both fail.
  */
 export async function fetchRoadRoute(
@@ -134,7 +134,26 @@ export async function fetchRoadRoute(
     return []
   }
 
-  // 1. Try Google Maps DirectionsService in browser
+  // 1. First priority: Server proxy /api/directions (tries server Google Directions then server OSRM, bypassing all browser CORS/ad-blockers)
+  try {
+    const res = await fetch(
+      `/api/directions?originLat=${origin.lat}&originLng=${origin.lng}&destLat=${destination.lat}&destLng=${destination.lng}`
+    )
+    if (res.ok) {
+      const data = await res.json()
+      if (data?.polyline) {
+        const decoded = decodeEncodedPolyline(data.polyline)
+        if (decoded.length > 2) return decoded
+      }
+      if (Array.isArray(data?.coordinates) && data.coordinates.length > 2) {
+        return data.coordinates
+      }
+    }
+  } catch {
+    // Continue to browser fallback
+  }
+
+  // 2. Second priority: Try Google Maps DirectionsService directly in browser
   if (typeof window !== 'undefined' && window.google?.maps?.DirectionsService) {
     try {
       const directionsService = new window.google.maps.DirectionsService()
@@ -149,6 +168,7 @@ export async function fetchRoadRoute(
             if (status === window.google.maps.DirectionsStatus.OK && res) {
               resolve(res)
             } else {
+              console.warn('Google DirectionsService status:', status)
               resolve(null)
             }
           }
@@ -161,24 +181,9 @@ export async function fetchRoadRoute(
           lng: pt.lng(),
         }))
       }
-    } catch {
-      // Fallback to OSRM below
+    } catch (err) {
+      console.warn('Browser DirectionsService error:', err)
     }
-  }
-
-  // 2. Fallback to OpenStreetMap / OSRM public road routing API (no API key needed)
-  try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`
-    const res = await fetch(url)
-    if (res.ok) {
-      const data = await res.json()
-      const coords = data?.routes?.[0]?.geometry?.coordinates
-      if (Array.isArray(coords) && coords.length > 1) {
-        return coords.map(([lng, lat]: [number, number]) => ({ lat, lng }))
-      }
-    }
-  } catch {
-    // Fallback to straight line
   }
 
   // 3. Fallback: straight line
