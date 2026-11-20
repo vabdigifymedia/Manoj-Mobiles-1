@@ -71,6 +71,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
 
   const [orderFallback, setOrderFallback] = useState<OrderResponseDTO | null>(null)
   const [roadRoute, setRoadRoute] = useState<LatLngPoint[]>([])
+  const [geocodedDest, setGeocodedDest] = useState<LatLngPoint | null>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
   const hasFittedRef = useRef(false)
 
@@ -114,12 +115,34 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     return { lat: 28.5355, lng: 77.391 }
   }, [snapshot?.store?.lat, snapshot?.store?.lng])
 
+  // Geocode address fallback if backend destination lat/lng is null
+  useEffect(() => {
+    if (snapshot?.destination?.lat != null && snapshot?.destination?.lng != null) return
+
+    const addrParts = [
+      snapshot?.destination?.address,
+      snapshot?.destination?.pincode,
+    ].filter(Boolean)
+
+    if (addrParts.length === 0 || !isLoaded || typeof window === 'undefined' || !window.google?.maps?.Geocoder) return
+
+    const textAddress = addrParts.join(', ')
+    const geocoder = new window.google.maps.Geocoder()
+    geocoder.geocode({ address: textAddress }, (results, status) => {
+      if (status === 'OK' && results?.[0]?.geometry?.location) {
+        const loc = results[0].geometry.location
+        setGeocodedDest({ lat: loc.lat(), lng: loc.lng() })
+      }
+    })
+  }, [snapshot?.destination?.lat, snapshot?.destination?.lng, snapshot?.destination?.address, snapshot?.destination?.pincode, isLoaded])
+
   const destinationPos = useMemo<LatLngPoint | null>(() => {
     if (snapshot?.destination?.lat != null && snapshot?.destination?.lng != null) {
       return { lat: snapshot.destination.lat, lng: snapshot.destination.lng }
     }
+    if (geocodedDest) return geocodedDest
     return null
-  }, [snapshot?.destination?.lat, snapshot?.destination?.lng])
+  }, [snapshot?.destination?.lat, snapshot?.destination?.lng, geocodedDest])
 
   // Fetch turn-by-turn road polyline (uses backend polyline, or Google Directions, or free OSRM engine)
   useEffect(() => {

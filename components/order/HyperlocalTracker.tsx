@@ -89,6 +89,7 @@ export const HyperlocalTracker = ({
 
   const [storeSettings, setStoreSettings] = useState<StoreSettingResponseDTO | null>(null)
   const [roadRoute, setRoadRoute] = useState<LatLngPoint[]>([])
+  const [geocodedDest, setGeocodedDest] = useState<LatLngPoint | null>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
   const hasFittedBoundsRef = useRef(false)
 
@@ -113,6 +114,30 @@ export const HyperlocalTracker = ({
     return { lat: 28.5355, lng: 77.391 }
   }, [snapshot?.store?.lat, snapshot?.store?.lng, storeSettings?.storeLat, storeSettings?.storeLng])
 
+  // Geocode address fallback if backend destination lat/lng is null
+  useEffect(() => {
+    if (snapshot?.destination?.lat != null && snapshot?.destination?.lng != null) return
+    if (order.address?.lat != null && order.address?.lng != null) return
+
+    const addrParts = [
+      snapshot?.destination?.address || order.address?.addressLine,
+      order.address?.city,
+      order.address?.state,
+      snapshot?.destination?.pincode || order.address?.pincode,
+    ].filter(Boolean)
+
+    if (addrParts.length === 0 || !isLoaded || typeof window === 'undefined' || !window.google?.maps?.Geocoder) return
+
+    const textAddress = addrParts.join(', ')
+    const geocoder = new window.google.maps.Geocoder()
+    geocoder.geocode({ address: textAddress }, (results, status) => {
+      if (status === 'OK' && results?.[0]?.geometry?.location) {
+        const loc = results[0].geometry.location
+        setGeocodedDest({ lat: loc.lat(), lng: loc.lng() })
+      }
+    })
+  }, [snapshot?.destination, order.address, isLoaded])
+
   const destinationPos = useMemo<LatLngPoint | null>(() => {
     if (snapshot?.destination?.lat != null && snapshot?.destination?.lng != null) {
       return { lat: snapshot.destination.lat, lng: snapshot.destination.lng }
@@ -120,8 +145,9 @@ export const HyperlocalTracker = ({
     if (order.address?.lat != null && order.address?.lng != null) {
       return { lat: order.address.lat, lng: order.address.lng }
     }
+    if (geocodedDest) return geocodedDest
     return null
-  }, [snapshot?.destination?.lat, snapshot?.destination?.lng, order.address?.lat, order.address?.lng])
+  }, [snapshot?.destination?.lat, snapshot?.destination?.lng, order.address?.lat, order.address?.lng, geocodedDest])
 
   // Fetch turn-by-turn road polyline (uses backend polyline, or Google Directions, or free OSRM engine)
   useEffect(() => {
