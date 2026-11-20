@@ -7,17 +7,14 @@
  * without needing any rider app or website login!
  *
  * Usage:
+ *   # Full continuous simulation (loops back and forth indefinitely):
+ *   node scripts/simulate-rider.mjs --order <ORDER_ID> --token <JWT> --loop
+ *
+ *   # Auto-login with staff/admin credentials:
+ *   node scripts/simulate-rider.mjs --order <ORDER_ID> --email admin@example.com --password mypass --loop
+ *
  *   # Quick single GPS ping:
  *   node scripts/simulate-rider.mjs --order <ORDER_ID> --token <JWT> --once
- *
- *   # Full journey simulation (smooth glide every 2.5s):
- *   node scripts/simulate-rider.mjs --order <ORDER_ID> --token <JWT>
- *
- *   # Auto-login with staff/admin credentials (no need to copy token):
- *   node scripts/simulate-rider.mjs --order <ORDER_ID> --email admin@example.com --password mypass
- *
- *   # Custom coordinates ping:
- *   node scripts/simulate-rider.mjs --order <ORDER_ID> --token <JWT> --lat 28.5450 --lng 77.3820 --heading 315
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.emistore.in'
@@ -31,24 +28,25 @@ function printHelp() {
   --token, -t       JWT Access Token (or provide --email & --password)
   --email           Admin or Staff Email for auto-login
   --password        Admin or Staff Password
+  --loop, -l        Loop journey continuously until stopped with Ctrl+C (Recommended)
   --once            Send a single test GPS ping and exit
   --lat             Latitude for single ping (default: auto along route)
   --lng             Longitude for single ping (default: auto along route)
   --heading         Heading degrees (0-360)
   --speed           Speed in km/h (default: 26)
-  --steps           Number of simulation steps (default: 12)
+  --steps           Number of simulation steps (default: 30)
   --interval        Delay between pings in ms (default: 2500)
   --help, -h        Show this help message
 
 \x1b[1mExamples:\x1b[0m
-  # 1. Send single GPS coordinate ping:
+  # 1. Continuous simulation loop (rider keeps moving along the route):
+  node scripts/simulate-rider.mjs --order c1a9e8... --token eyJhbGci... --loop
+
+  # 2. Continuous simulation with auto-login:
+  node scripts/simulate-rider.mjs --order c1a9e8... --email admin@manojmobiles.com --password secret --loop
+
+  # 3. Send single GPS coordinate ping:
   node scripts/simulate-rider.mjs --order c1a9e8... --token eyJhbGci... --once
-
-  # 2. Simulate complete live route with auto-login:
-  node scripts/simulate-rider.mjs --order c1a9e8... --email admin@manojmobiles.com --password secret
-
-  # 3. Custom ping:
-  node scripts/simulate-rider.mjs --order c1a9e8... --token eyJ... --lat 28.5480 --lng 77.3620 --heading 290
 `)
 }
 
@@ -62,6 +60,8 @@ function parseArgs() {
       params.help = true
     } else if (arg === '--once') {
       params.once = true
+    } else if (arg === '--loop' || arg === '-l') {
+      params.loop = true
     } else if (arg.startsWith('--')) {
       const key = arg.slice(2)
       params[key] = args[i + 1]
@@ -70,6 +70,7 @@ function parseArgs() {
       const key = arg.slice(1)
       if (key === 'o') params.order = args[i + 1]
       if (key === 't') params.token = args[i + 1]
+      if (key === 'l') params.loop = true
       i++
     }
   }
@@ -88,6 +89,38 @@ function calculateBearing(lat1, lon1, lat2, lon2) {
   return Math.round((toDeg(θ) + 360) % 360)
 }
 
+// Standard Google polyline decoder
+function decodePolyline(encoded) {
+  if (!encoded || typeof encoded !== 'string') return []
+  const points = []
+  let index = 0, len = encoded.length
+  let lat = 0, lng = 0
+
+  while (index < len) {
+    let b, shift = 0, result = 0
+    do {
+      b = encoded.charCodeAt(index++) - 63
+      result |= (b & 0x1f) << shift
+      shift += 5
+    } while (b >= 0x20)
+    const dlat = (result & 1) !== 0 ? ~(result >> 1) : result >> 1
+    lat += dlat
+
+    shift = 0
+    result = 0
+    do {
+      b = encoded.charCodeAt(index++) - 63
+      result |= (b & 0x1f) << shift
+      shift += 5
+    } while (b >= 0x20)
+    const dlng = (result & 1) !== 0 ? ~(result >> 1) : result >> 1
+    lng += dlng
+
+    points.push({ lat: lat / 1e5, lng: lng / 1e5 })
+  }
+  return points
+}
+
 async function loginStaff(email, password) {
   console.log(`🔐 Logging in as ${email}...`)
   const res = await fetch(`${API_BASE}/api/auth/staff/login`, {
@@ -103,30 +136,45 @@ async function loginStaff(email, password) {
   return json.data.token
 }
 
-async function fetchOrderPoints(orderId, token) {
-  try {
-    const res = await fetch(`${API_BASE}/api/user/orders/${orderId}/tracking`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    const json = await res.json()
-    if (json.success && json.data) {
-      const start = {
-        lat: json.data.store?.lat ?? 28.5355,
-        lng: json.data.store?.lng ?? 77.391,
+async function fetchOrderRoute(orderId, token) {
+  // Try admin tracking first, then user tracking
+  const endpoints = [
+    `${API_BASE}/api/admin/orders/${orderId}/tracking`,
+    `${API_BASE}/api/user/orders/${orderId}/tracking`,
+  ]
+
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) continue
+      const json = await res.json()
+      if (json.success && json.data) {
+        const start = {
+          lat: json.data.store?.lat ?? 28.5355,
+          lng: json.data.store?.lng ?? 77.391,
+        }
+        const end = {
+          lat: json.data.destination?.lat ?? 28.5672,
+          lng: json.data.destination?.lng ?? 77.321,
+        }
+        let path = []
+        if (json.data.routePolyline) {
+          path = decodePolyline(json.data.routePolyline)
+        }
+        return { start, end, path }
       }
-      const end = {
-        lat: json.data.destination?.lat ?? 28.5672,
-        lng: json.data.destination?.lng ?? 77.321,
-      }
-      return { start, end }
+    } catch {
+      // try next
     }
-  } catch {
-    // ignore
   }
-  // Default Noida Store -> Sector 15 fallback
+
+  // Default fallback: Sector 18 Store -> Sector 15 Destination
   return {
     start: { lat: 28.5355, lng: 77.391 },
     end: { lat: 28.5672, lng: 77.321 },
+    path: [],
   }
 }
 
@@ -223,40 +271,64 @@ async function main() {
   }
 
   // Multi-step journey mode
-  const totalSteps = parseInt(args.steps || '12', 10)
+  const totalSteps = parseInt(args.steps || '30', 10)
   const intervalMs = parseInt(args.interval || '2500', 10)
+  const shouldLoop = Boolean(args.loop)
 
   console.log(`Fetching route endpoints for Order #${orderId}...`)
-  const { start, end } = await fetchOrderPoints(orderId, token)
+  const { start, end, path } = await fetchOrderRoute(orderId, token)
   console.log(`Store:       (${start.lat.toFixed(4)}, ${start.lng.toFixed(4)})`)
   console.log(`Destination: (${end.lat.toFixed(4)}, ${end.lng.toFixed(4)})`)
-  console.log(`Steps:       ${totalSteps} pings (every ${intervalMs / 1000}s)`)
+  console.log(`Path Points: ${path.length > 0 ? `${path.length} road coordinates` : 'Straight interpolation'}`)
+  console.log(`Steps:       ${totalSteps} pings per leg (every ${intervalMs / 1000}s)`)
+  console.log(`Mode:        ${shouldLoop ? '\x1b[32mContinuous Loop (Patrol mode)\x1b[0m' : '\x1b[33mSingle Run (Pass --loop to keep running)\x1b[0m'}`)
   console.log(`\n\x1b[33mOpen http://localhost:3000/orders/${orderId}/track in your browser to watch the bike glide in real-time!\x1b[0m\n`)
 
-  for (let i = 1; i <= totalSteps; i++) {
-    const progress = i / totalSteps
-    // Linear interpolation
-    const lat = Number((start.lat + (end.lat - start.lat) * progress).toFixed(6))
-    const lng = Number((start.lng + (end.lng - start.lng) * progress).toFixed(6))
-    const heading = calculateBearing(start.lat, start.lng, end.lat, end.lng)
-    const speedKmh = Math.floor(22 + Math.random() * 8)
+  let leg = 1
+  do {
+    console.log(`\x1b[1m--- ${shouldLoop ? `Trip Cycle #${leg}` : 'Starting Journey'} ---\x1b[0m`)
 
-    process.stdout.write(`[${i}/${totalSteps}] 🏍️  Pinging: (${lat}, ${lng}) | Bearing: ${heading}° | ${speedKmh} km/h... `)
+    for (let i = 1; i <= totalSteps; i++) {
+      const progress = i / totalSteps
+      let lat, lng, heading
 
-    const result = await sendGpsPing(orderId, token, { lat, lng, heading, speedKmh })
+      if (path.length > 1) {
+        // Step along actual road polyline
+        const idx = Math.min(path.length - 1, Math.floor(progress * (path.length - 1)))
+        const nextIdx = Math.min(path.length - 1, idx + 1)
+        lat = Number(path[idx].lat.toFixed(6))
+        lng = Number(path[idx].lng.toFixed(6))
+        heading = calculateBearing(path[idx].lat, path[idx].lng, path[nextIdx].lat, path[nextIdx].lng)
+      } else {
+        // Linear interpolation
+        lat = Number((start.lat + (end.lat - start.lat) * progress).toFixed(6))
+        lng = Number((start.lng + (end.lng - start.lng) * progress).toFixed(6))
+        heading = calculateBearing(start.lat, start.lng, end.lat, end.lng)
+      }
 
-    if (result.ok) {
-      console.log(`\x1b[32m✓ Sent!\x1b[0m`)
-    } else {
-      console.log(`\x1b[31m✗ HTTP ${result.status}\x1b[0m (${result.body?.message || 'Error'})`)
-    }
+      const speedKmh = Math.floor(22 + Math.random() * 8)
+      process.stdout.write(`[${i}/${totalSteps}] 🏍️  Pinging: (${lat}, ${lng}) | Heading: ${heading}° | ${speedKmh} km/h... `)
 
-    if (i < totalSteps) {
+      const result = await sendGpsPing(orderId, token, { lat, lng, heading, speedKmh })
+
+      if (result.ok) {
+        console.log(`\x1b[32m✓ Sent!\x1b[0m`)
+      } else {
+        console.log(`\x1b[31m✗ HTTP ${result.status}\x1b[0m (${result.body?.message || 'Error'})`)
+      }
+
       await new Promise((r) => setTimeout(r, intervalMs))
     }
-  }
 
-  console.log(`\n\x1b[32m\x1b[1m🎉 Rider simulation completed! Order #${orderId} reached destination.\x1b[0m\n`)
+    if (shouldLoop) {
+      console.log(`\n\x1b[36mReached destination! Pausing 5s before next patrol cycle...\x1b[0m\n`)
+      await new Promise((r) => setTimeout(r, 5000))
+      leg++
+    }
+  } while (shouldLoop)
+
+  console.log(`\n\x1b[32m\x1b[1m🎉 Rider simulation completed! Order #${orderId} reached destination.\x1b[0m`)
+  console.log(`\x1b[90mTip: To keep the rider moving continuously without stopping, pass --loop\x1b[0m\n`)
 }
 
 main().catch((err) => {

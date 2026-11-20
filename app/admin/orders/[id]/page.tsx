@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { apiClient, formatINR } from '@/lib/apiClient'
@@ -38,6 +38,9 @@ export default function AdminOrderDetailsPage() {
   const [dispatchMessage, setDispatchMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [simulatingGps, setSimulatingGps] = useState(false)
+  const [isSimulatingLive, setIsSimulatingLive] = useState(false)
+  const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const simulationStepRef = useRef(0)
 
   useEffect(() => {
     fetchOrder()
@@ -187,6 +190,63 @@ export default function AdminOrderDetailsPage() {
     } finally {
       setSimulatingGps(false)
     }
+  }
+
+  const stopContinuousSimulation = useCallback(() => {
+    if (simulationIntervalRef.current) {
+      clearInterval(simulationIntervalRef.current)
+      simulationIntervalRef.current = null
+    }
+    setIsSimulatingLive(false)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (simulationIntervalRef.current) {
+        clearInterval(simulationIntervalRef.current)
+      }
+    }
+  }, [])
+
+  const toggleContinuousSimulation = () => {
+    if (isSimulatingLive) {
+      stopContinuousSimulation()
+      setDispatchMessage({
+        type: 'success',
+        text: 'Live rider simulation stopped.',
+      })
+      return
+    }
+
+    if (!order) return
+    setIsSimulatingLive(true)
+    setDispatchMessage({
+      type: 'success',
+      text: 'Continuous rider movement started! Watch the bike glide in real-time on the customer tracking page.',
+    })
+
+    const baseStoreLat = 28.5355
+    const baseStoreLng = 77.391
+    const destLat = order.address?.lat ?? 28.5672
+    const destLng = order.address?.lng ?? 77.321
+    const totalSteps = 30
+
+    simulationIntervalRef.current = setInterval(async () => {
+      simulationStepRef.current = (simulationStepRef.current + 1) % totalSteps
+      const progress = simulationStepRef.current / totalSteps
+      const lat = Number((baseStoreLat + (destLat - baseStoreLat) * progress).toFixed(5))
+      const lng = Number((baseStoreLng + (destLng - baseStoreLng) * progress).toFixed(5))
+      try {
+        await apiClient.pushDeliveryLiveLocation(order.id, {
+          lat,
+          lng,
+          heading: 295,
+          speedKmh: 28,
+        })
+      } catch (err) {
+        console.warn('Simulation ping failed:', err)
+      }
+    }, 2500)
   }
 
   if (loading) {
@@ -537,18 +597,34 @@ export default function AdminOrderDetailsPage() {
               })()}
 
               {order.deliveryPartnerInfo && (
-                <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60">
+                <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 space-y-2">
+                  <button
+                    type="button"
+                    onClick={toggleContinuousSimulation}
+                    className={`w-full flex items-center justify-center gap-2 font-bold py-2.5 rounded-xl transition-colors text-xs border shadow-2xs ${
+                      isSimulatingLive
+                        ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-800 animate-pulse'
+                        : 'bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-800 dark:text-emerald-300 border-emerald-300/60 dark:border-emerald-800/60'
+                    }`}
+                  >
+                    <FaLocationCrosshairs size={13} />
+                    {isSimulatingLive ? 'Stop Continuous Movement' : 'Start Continuous Live Movement (Loop)'}
+                  </button>
+
                   <button
                     type="button"
                     onClick={handleSimulateGps}
-                    disabled={simulatingGps}
-                    className="w-full flex items-center justify-center gap-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-800 dark:text-emerald-300 font-bold py-2.5 rounded-xl transition-colors disabled:opacity-50 text-xs border border-emerald-300/60 dark:border-emerald-800/60 shadow-2xs"
+                    disabled={simulatingGps || isSimulatingLive}
+                    className="w-full flex items-center justify-center gap-2 bg-background hover:bg-muted text-muted-foreground font-bold py-2 rounded-xl transition-colors disabled:opacity-50 text-[11px] border border-border"
                   >
-                    <FaLocationCrosshairs size={13} />
-                    {simulatingGps ? 'Broadcasting Ping...' : 'Send Live GPS Test Ping (Simulate)'}
+                    <FaBolt size={11} />
+                    {simulatingGps ? 'Broadcasting Ping...' : 'Send Single GPS Ping'}
                   </button>
-                  <p className="text-[10px] text-muted-foreground mt-1 text-center font-medium">
-                    Test live marker gliding on customer map without needing a rider app
+
+                  <p className="text-[10px] text-muted-foreground text-center font-medium">
+                    {isSimulatingLive
+                      ? 'Broadcasting live coordinates every 2.5s continuously...'
+                      : 'Test live marker gliding on customer map without needing a rider app'}
                   </p>
                 </div>
               )}

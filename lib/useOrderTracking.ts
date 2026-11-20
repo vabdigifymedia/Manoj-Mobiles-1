@@ -46,13 +46,17 @@ export function useOrderTracking(
   orderId: string,
   options: UseOrderTrackingOptions = {}
 ): UseOrderTrackingResult {
+  const cookieRole = typeof window !== 'undefined' ? Cookies.get('userRole') : undefined
+  const effectiveMode = options.mode ?? (cookieRole === 'ADMIN' || cookieRole === 'STAFF' ? 'admin' : 'user')
+
   const {
     apiBaseUrl = API_BASE_URL,
     token: explicitToken,
-    mode = 'user',
     enabled = true,
     onEvent,
   } = options
+
+  const mode = effectiveMode
 
   const [snapshot, setSnapshot] = useState<OrderTrackingSnapshotDTO | null>(null)
   const [bikePos, setBikePos] = useState<LatLng | null>(null)
@@ -66,7 +70,8 @@ export function useOrderTracking(
   const currentPosRef = useRef<LatLng | null>(null)
   const currentHeadingRef = useRef<number>(0)
   const rafRef = useRef<number | null>(null)
-  const lastEventKeyRef = useRef<string | null>(null)
+  const lastEventKeyRef = useRef<{ key: string; time: number } | null>(null)
+  const lastMessageTimeRef = useRef<number>(Date.now())
   const onEventRef = useRef(onEvent)
   onEventRef.current = onEvent
 
@@ -75,14 +80,26 @@ export function useOrderTracking(
 
   const animateTo = useCallback(
     (target: LatLng, nextHeading?: number | null, durationMs = 2500) => {
-      const start = currentPosRef.current
-      const startHeading = currentHeadingRef.current
-      const targetHeading = nextHeading != null ? nextHeading : startHeading
+      const targetLat = Number(target?.lat)
+      const targetLng = Number(target?.lng)
+      if (Number.isNaN(targetLat) || Number.isNaN(targetLng) || !targetLat || !targetLng) {
+        return
+      }
 
-      if (!start) {
-        currentPosRef.current = target
+      const validTarget: LatLng = { lat: targetLat, lng: targetLng }
+      const start = currentPosRef.current
+      const startLat = start ? Number(start.lat) : NaN
+      const startLng = start ? Number(start.lng) : NaN
+      const startHeading = Number(currentHeadingRef.current) || 0
+      const targetHeading =
+        nextHeading != null && !Number.isNaN(Number(nextHeading))
+          ? Number(nextHeading)
+          : startHeading
+
+      if (!start || Number.isNaN(startLat) || Number.isNaN(startLng)) {
+        currentPosRef.current = validTarget
         currentHeadingRef.current = targetHeading
-        setBikePos(target)
+        setBikePos(validTarget)
         setHeading(targetHeading)
         return
       }
@@ -95,8 +112,8 @@ export function useOrderTracking(
         // Ease-out cubic for natural deceleration at stops
         const eased = 1 - Math.pow(1 - p, 3)
         const interpolated: LatLng = {
-          lat: start.lat + (target.lat - start.lat) * eased,
-          lng: start.lng + (target.lng - start.lng) * eased,
+          lat: Number((startLat + (targetLat - startLat) * eased).toFixed(6)),
+          lng: Number((startLng + (targetLng - startLng) * eased).toFixed(6)),
         }
         const interpolatedHeading =
           nextHeading != null ? interpolateAngle(startHeading, targetHeading, eased) : startHeading
@@ -109,9 +126,9 @@ export function useOrderTracking(
         if (p < 1) {
           rafRef.current = requestAnimationFrame(step)
         } else {
-          currentPosRef.current = target
+          currentPosRef.current = validTarget
           currentHeadingRef.current = targetHeading
-          setBikePos(target)
+          setBikePos(validTarget)
           if (nextHeading != null) setHeading(targetHeading)
         }
       }
@@ -123,16 +140,26 @@ export function useOrderTracking(
 
   const fetchSnapshot = useCallback(async () => {
     if (!orderId || !resolvedToken || !enabled) return
-    const endpoint =
+    const primaryEndpoint =
       mode === 'admin'
         ? `${apiBaseUrl}/api/admin/orders/${orderId}/tracking`
         : `${apiBaseUrl}/api/user/orders/${orderId}/tracking`
+    const fallbackEndpoint =
+      mode === 'admin'
+        ? `${apiBaseUrl}/api/user/orders/${orderId}/tracking`
+        : `${apiBaseUrl}/api/admin/orders/${orderId}/tracking`
 
     try {
-      const res = await fetch(endpoint, {
+      let res = await fetch(primaryEndpoint, {
         headers: { Authorization: `Bearer ${resolvedToken}` },
         cache: 'no-store',
       })
+      if (!res.ok && (res.status === 403 || res.status === 404)) {
+        res = await fetch(fallbackEndpoint, {
+          headers: { Authorization: `Bearer ${resolvedToken}` },
+          cache: 'no-store',
+        })
+      }
       if (!res.ok) {
         setError(`Failed to load tracking snapshot (${res.status})`)
         return
@@ -186,12 +213,23 @@ export function useOrderTracking(
       if (!active) return
       try {
         const event: TrackingEventDTO = JSON.parse(frame.body)
-        if (event.orderId !== orderId) return
+        const matchesOrder =
+          event.orderId === orderId ||
+          (snapshot?.orderNumber && event.orderNumber === snapshot.orderNumber) ||
+          event.orderNumber === orderId
+        if (!matchesOrder) return
 
-        // Deduplicate if subscribed to both user queue and order topic
-        const dedupeKey = `${event.eventType}|${event.timestamp}|${event.status}|${event.lat}|${event.lng}`
-        if (lastEventKeyRef.current === dedupeKey) return
-        lastEventKeyRef.current = dedupeKey
+        // Time-windowed deduplication (skip identical duplicates received across both queue & topic within 800ms)
+        const now = Date.now()
+        const dedupeKey = `${event.eventType}|${Number(event.lat).toFixed(5)}|${Number(event.lng).toFixed(5)}|${event.status}`
+        if (
+          lastEventKeyRef.current?.key === dedupeKey &&
+          now - lastEventKeyRef.current.time < 800
+        ) {
+          return
+        }
+        lastEventKeyRef.current = { key: dedupeKey, time: now }
+        lastMessageTimeRef.current = now
 
         setLastEvent(event)
         onEventRef.current?.(event)
@@ -222,11 +260,15 @@ export function useOrderTracking(
             }
           }
 
+          const hasValidCoords = event.lat != null && event.lng != null && !Number.isNaN(Number(event.lat))
+          const numLat = hasValidCoords ? Number(event.lat) : undefined
+          const numLng = hasValidCoords ? Number(event.lng) : undefined
+
           return {
             ...prev,
             orderStatus: nextStatus,
             eta: event.eta ?? prev.eta,
-            progress: event.progress ?? prev.progress,
+            progress: event.progress != null ? Number(event.progress) : prev.progress,
             remainingMetres: event.remainingMetres ?? prev.remainingMetres,
             remainingSeconds: event.remainingSeconds ?? prev.remainingSeconds,
             routePolyline: event.routePolyline ?? prev.routePolyline,
@@ -239,16 +281,16 @@ export function useOrderTracking(
                 }
               : prev.agent,
             agentLocation:
-              event.lat != null && event.lng != null
+              hasValidCoords && numLat != null && numLng != null
                 ? {
                     ...(prev.agentLocation || {}),
-                    lat: event.lat,
-                    lng: event.lng,
-                    rawLat: event.rawLat ?? prev.agentLocation?.rawLat,
-                    rawLng: event.rawLng ?? prev.agentLocation?.rawLng,
-                    heading: event.heading ?? prev.agentLocation?.heading,
-                    speedKmh: event.speedKmh ?? prev.agentLocation?.speedKmh,
-                    progress: event.progress ?? prev.agentLocation?.progress,
+                    lat: numLat,
+                    lng: numLng,
+                    rawLat: event.rawLat != null ? Number(event.rawLat) : prev.agentLocation?.rawLat,
+                    rawLng: event.rawLng != null ? Number(event.rawLng) : prev.agentLocation?.rawLng,
+                    heading: event.heading != null ? Number(event.heading) : prev.agentLocation?.heading,
+                    speedKmh: event.speedKmh != null ? Number(event.speedKmh) : prev.agentLocation?.speedKmh,
+                    progress: event.progress != null ? Number(event.progress) : prev.agentLocation?.progress,
                     remainingMetres: event.remainingMetres ?? prev.agentLocation?.remainingMetres,
                     remainingSeconds: event.remainingSeconds ?? prev.agentLocation?.remainingSeconds,
                     eta: event.eta ?? prev.agentLocation?.eta,
@@ -262,7 +304,11 @@ export function useOrderTracking(
         })
 
         if (event.lat != null && event.lng != null) {
-          animateTo({ lat: event.lat, lng: event.lng }, event.heading)
+          const latNum = Number(event.lat)
+          const lngNum = Number(event.lng)
+          if (!Number.isNaN(latNum) && !Number.isNaN(lngNum) && latNum !== 0 && lngNum !== 0) {
+            animateTo({ lat: latNum, lng: lngNum }, event.heading)
+          }
         }
       } catch (err) {
         console.error('Error parsing tracking STOMP message:', err)
@@ -272,12 +318,14 @@ export function useOrderTracking(
     const client = new Client({
       webSocketFactory: () => new SockJS(`${apiBaseUrl}/ws-delivery`),
       connectHeaders: { Authorization: `Bearer ${resolvedToken}` },
-      reconnectDelay: 3000,
-      heartbeatIncoming: 10000,
+      reconnectDelay: 2000,
+      // heartbeatIncoming: 0 disables client-side disconnect if server broker drops heartbeats
+      heartbeatIncoming: 0,
       heartbeatOutgoing: 10000,
       onConnect: () => {
         if (!active) return
         setConnected(true)
+        lastMessageTimeRef.current = Date.now()
         if (mode === 'user') {
           client.subscribe('/user/queue/order-tracking', handleTrackingMessage)
         }
@@ -302,54 +350,94 @@ export function useOrderTracking(
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       client.deactivate()
     }
-  }, [orderId, apiBaseUrl, resolvedToken, mode, enabled, fetchSnapshot, animateTo])
+  }, [orderId, apiBaseUrl, resolvedToken, mode, enabled, fetchSnapshot, animateTo, snapshot?.orderNumber])
 
-  // 3. Redis-backed REST fallback polling ONLY while WebSocket is disconnected & tracking is active
+  // 3. Fail-safe Watchdog + REST Fallback Polling (polls if disconnected OR if WebSocket stream stalls for >4s)
   useEffect(() => {
-    if (!enabled || connected || !orderId || !resolvedToken) return
-    if (!snapshot?.liveTrackingActive) return
+    if (!enabled || !orderId || !resolvedToken) return
 
-    const fallbackEndpoint =
+    const primaryFallback =
       mode === 'admin'
         ? `${apiBaseUrl}/api/admin/orders/${orderId}/live-location`
         : `${apiBaseUrl}/api/user/orders/${orderId}/live-location`
+    const secondaryFallback =
+      mode === 'admin'
+        ? `${apiBaseUrl}/api/user/orders/${orderId}/live-location`
+        : `${apiBaseUrl}/api/admin/orders/${orderId}/live-location`
 
     let cancelled = false
     const poll = async () => {
-      try {
-        const res = await fetch(fallbackEndpoint, {
-          headers: { Authorization: `Bearer ${resolvedToken}` },
-          cache: 'no-store',
-        })
-        if (!res.ok || cancelled) return
-        const body: ApiResponse<LiveLocationDTO> = await res.json()
-        const loc = body?.data
-        if (body?.success && loc?.lat != null && loc?.lng != null) {
-          animateTo({ lat: loc.lat, lng: loc.lng }, loc.heading)
-          if (loc.speedKmh != null) setSpeedKmh(loc.speedKmh)
-          setSnapshot((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  progress: loc.progress ?? prev.progress,
-                  remainingMetres: loc.remainingMetres ?? prev.remainingMetres,
-                  remainingSeconds: loc.remainingSeconds ?? prev.remainingSeconds,
-                  eta: loc.eta ?? prev.eta,
-                }
-              : prev
-          )
+      // Check if tracking is relevant for this order
+      const isTrackable =
+        snapshot?.liveTrackingActive ||
+        snapshot?.orderStatus === 'OUT_FOR_DELIVERY' ||
+        snapshot?.orderStatus === 'SHIPPED' ||
+        Boolean(snapshot?.agentLocation) ||
+        Boolean(snapshot?.agent)
+
+      if (!isTrackable) return
+
+      const isStale = Date.now() - lastMessageTimeRef.current > 4000
+      // Poll if disconnected OR if no WebSocket message arrived in last 4 seconds
+      if (!connected || isStale) {
+        try {
+          let res = await fetch(primaryFallback, {
+            headers: { Authorization: `Bearer ${resolvedToken}` },
+            cache: 'no-store',
+          })
+          if (!res.ok && (res.status === 403 || res.status === 404)) {
+            res = await fetch(secondaryFallback, {
+              headers: { Authorization: `Bearer ${resolvedToken}` },
+              cache: 'no-store',
+            })
+          }
+          if (!res.ok || cancelled) return
+          const body: ApiResponse<LiveLocationDTO> = await res.json()
+          const loc = body?.data
+          if (body?.success && loc?.lat != null && loc?.lng != null) {
+            const latNum = Number(loc.lat)
+            const lngNum = Number(loc.lng)
+            if (!Number.isNaN(latNum) && !Number.isNaN(lngNum) && latNum !== 0 && lngNum !== 0) {
+              lastMessageTimeRef.current = Date.now()
+              animateTo({ lat: latNum, lng: lngNum }, loc.heading)
+              if (loc.speedKmh != null) setSpeedKmh(loc.speedKmh)
+              setSnapshot((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      progress: loc.progress != null ? Number(loc.progress) : prev.progress,
+                      remainingMetres: loc.remainingMetres ?? prev.remainingMetres,
+                      remainingSeconds: loc.remainingSeconds ?? prev.remainingSeconds,
+                      eta: loc.eta ?? prev.eta,
+                      agentLocation: {
+                        ...(prev.agentLocation || {}),
+                        lat: latNum,
+                        lng: lngNum,
+                        heading: loc.heading ?? prev.agentLocation?.heading,
+                        speedKmh: loc.speedKmh ?? prev.agentLocation?.speedKmh,
+                        progress: loc.progress != null ? Number(loc.progress) : prev.agentLocation?.progress,
+                        remainingMetres: loc.remainingMetres ?? prev.agentLocation?.remainingMetres,
+                        remainingSeconds: loc.remainingSeconds ?? prev.agentLocation?.remainingSeconds,
+                        eta: loc.eta ?? prev.agentLocation?.eta,
+                        recordedAt: loc.recordedAt ?? new Date().toISOString(),
+                      },
+                    }
+                  : prev
+              )
+            }
+          }
+        } catch {
+          // Silent fallback retry on next interval
         }
-      } catch {
-        // Silent fallback retry on next interval
       }
     }
 
-    const timer = setInterval(poll, 5000)
+    const timer = setInterval(poll, 3500)
     return () => {
       cancelled = true
       clearInterval(timer)
     }
-  }, [enabled, connected, orderId, resolvedToken, snapshot?.liveTrackingActive, mode, apiBaseUrl, animateTo])
+  }, [enabled, connected, orderId, resolvedToken, snapshot?.liveTrackingActive, snapshot?.orderStatus, snapshot?.agentLocation, snapshot?.agent, mode, apiBaseUrl, animateTo])
 
   return {
     snapshot,
