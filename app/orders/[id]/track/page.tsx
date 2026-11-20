@@ -29,6 +29,8 @@ import {
   GOOGLE_MAPS_SCRIPT_ID,
   GOOGLE_MAPS_VERSION,
   type LatLngPoint,
+  calculateProgressAlongRoute,
+  computeDistanceMetres,
 } from '@/lib/googleMapsConfig'
 import { StandardTracker } from '@/components/order/StandardTracker'
 import type { OrderResponseDTO } from '@/lib/types'
@@ -158,11 +160,23 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     return []
   }, [snapshot?.routePolyline, roadRoute, storePos, destinationPos])
 
+  const dynamicDistanceMetres = useMemo(() => {
+    if (bikePos && destinationPos) {
+      return computeDistanceMetres(bikePos, destinationPos)
+    }
+    return snapshot?.remainingMetres ?? snapshot?.routeDistanceMetres ?? null
+  }, [bikePos, destinationPos, snapshot?.remainingMetres, snapshot?.routeDistanceMetres])
+
   const effectiveProgress = useMemo(() => {
     if (snapshot?.orderStatus === 'DELIVERED') return 1
-    if (snapshot?.progress != null) return Math.max(0, Math.min(1, snapshot.progress))
-    return 0
-  }, [snapshot?.orderStatus, snapshot?.progress])
+    if (snapshot?.progress != null && snapshot.progress > 0) {
+      return Math.max(0, Math.min(1, snapshot.progress))
+    }
+    if (bikePos && destinationPos) {
+      return calculateProgressAlongRoute(bikePos, storePos, destinationPos)
+    }
+    return 0.08
+  }, [snapshot?.orderStatus, snapshot?.progress, bikePos, destinationPos, storePos])
 
   // Split polyline into completed (faded) and remaining (Swiggy orange #FC8019)
   const { completedPath, remainingPath } = useMemo(() => {
@@ -231,6 +245,24 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     }
   }, [destinationPos, routePoints.length, fitBounds])
 
+  // Camera Auto-Follow: smoothly pan camera when rider moves near map edges
+  useEffect(() => {
+    if (!mapRef.current || !bikePos || typeof window === 'undefined' || !window.google?.maps) return
+    const bounds = mapRef.current.getBounds()
+    if (!bounds) return
+    const ne = bounds.getNorthEast()
+    const sw = bounds.getSouthWest()
+    const latSpan = ne.lat() - sw.lat()
+    const lngSpan = ne.lng() - sw.lng()
+    const innerBounds = new window.google.maps.LatLngBounds(
+      { lat: sw.lat() + latSpan * 0.12, lng: sw.lng() + lngSpan * 0.12 },
+      { lat: ne.lat() - latSpan * 0.12, lng: ne.lng() - lngSpan * 0.12 }
+    )
+    if (!innerBounds.contains(bikePos)) {
+      mapRef.current.panTo(bikePos)
+    }
+  }, [bikePos])
+
   const centerOnRider = () => {
     const target = bikePos || storePos
     if (mapRef.current && target) {
@@ -239,17 +271,18 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     }
   }
 
-  // Heading-rotated navigation symbol for the moving rider
+  // Heading-rotated navigation symbol for the moving rider (Bright Yellow Arrow ONLY)
   const riderArrowIcon = useMemo<google.maps.Symbol | undefined>(() => {
     if (!isLoaded || typeof window === 'undefined' || !window.google?.maps) return undefined
     return {
       path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-      scale: 7,
+      scale: 7.5,
       rotation: heading || 0,
-      fillColor: SWIGGY_ORANGE,
+      fillColor: '#F59E0B',
       fillOpacity: 1,
-      strokeColor: '#ffffff',
+      strokeColor: '#FFFFFF',
       strokeWeight: 2.5,
+      anchor: new window.google.maps.Point(0, 2.5),
     }
   }, [isLoaded, heading])
 
@@ -295,7 +328,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
 
   const isDelivered = snapshot?.orderStatus === 'DELIVERED'
   const progressPercent = Math.round(effectiveProgress * 100)
-  const remainingMetres = snapshot?.remainingMetres ?? snapshot?.routeDistanceMetres
+  const remainingMetres = dynamicDistanceMetres ?? snapshot?.remainingMetres ?? snapshot?.routeDistanceMetres
   const remainingSeconds = snapshot?.remainingSeconds ?? snapshot?.routeDurationSeconds
   const etaMinsText = formatMins(remainingSeconds, remainingMetres)
   const distanceText = formatDistance(remainingMetres)
@@ -426,37 +459,14 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
                   />
                 )}
 
-                {/* Delivery Boy Bike Marker (smoothly gliding & heading rotated) */}
-                {bikePos && !isDelivered ? (
-                  <>
-                    <Marker
-                      position={bikePos}
-                      title={agent ? `${agent.name} (${agent.vehicleNo})` : 'Delivery Rider'}
-                      icon={riderArrowIcon}
-                      zIndex={60}
-                    />
-                    <Marker
-                      position={bikePos}
-                      icon={{
-                        url: '/bike-marker.png',
-                        scaledSize: new window.google.maps.Size(46, 46),
-                        anchor: new window.google.maps.Point(23, 48),
-                      }}
-                      zIndex={55}
-                    />
-                  </>
-                ) : (
-                  !isDelivered && (
-                    <Marker
-                      position={storePos}
-                      title="Rider at store"
-                      icon={{
-                        url: '/bike-marker.png',
-                        scaledSize: new window.google.maps.Size(42, 42),
-                      }}
-                      zIndex={50}
-                    />
-                  )
+                {/* Delivery Boy Live Navigation Arrow (Yellow Arrow ONLY - bike photo removed) */}
+                {bikePos && !isDelivered && (
+                  <Marker
+                    position={bikePos}
+                    title={agent ? `${agent.name} (${agent.vehicleNo})` : 'Delivery Rider'}
+                    icon={riderArrowIcon}
+                    zIndex={60}
+                  />
                 )}
               </GoogleMap>
 

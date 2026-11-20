@@ -17,6 +17,8 @@ import {
   GOOGLE_MAPS_SCRIPT_ID,
   GOOGLE_MAPS_VERSION,
   type LatLngPoint,
+  calculateProgressAlongRoute,
+  computeDistanceMetres,
 } from '@/lib/googleMapsConfig'
 import {
   FaPhone,
@@ -158,17 +160,27 @@ export const HyperlocalTracker = ({
     return []
   }, [snapshot?.routePolyline, roadRoute, storePos, destinationPos])
 
+  const dynamicDistanceMetres = useMemo(() => {
+    if (bikePos && destinationPos) {
+      return computeDistanceMetres(bikePos, destinationPos)
+    }
+    return snapshot?.remainingMetres ?? snapshot?.routeDistanceMetres ?? null
+  }, [bikePos, destinationPos, snapshot?.remainingMetres, snapshot?.routeDistanceMetres])
+
   const effectiveStatus = snapshot?.orderStatus || order.orderStatus
   const effectiveProgress = useMemo(() => {
     if (effectiveStatus === 'DELIVERED') return 1
-    if (snapshot?.progress != null) {
+    if (snapshot?.progress != null && snapshot.progress > 0) {
       return Math.max(0, Math.min(1, snapshot.progress))
     }
-    if (snapshot?.agentLocation?.progress != null) {
+    if (snapshot?.agentLocation?.progress != null && snapshot.agentLocation.progress > 0) {
       return Math.max(0, Math.min(1, snapshot.agentLocation.progress))
     }
-    return 0
-  }, [effectiveStatus, snapshot?.progress, snapshot?.agentLocation?.progress])
+    if (bikePos && destinationPos) {
+      return calculateProgressAlongRoute(bikePos, storePos, destinationPos)
+    }
+    return 0.08
+  }, [effectiveStatus, snapshot?.progress, snapshot?.agentLocation?.progress, bikePos, destinationPos, storePos])
 
   // Split polyline into completed (faded) & remaining (orange) segments
   const { completedPath, remainingPath } = useMemo(() => {
@@ -259,6 +271,24 @@ export const HyperlocalTracker = ({
     }
   }, [destinationPos, routePath.length, fitMapBounds])
 
+  // Auto-follow rider: smoothly pan camera when rider moves near map edges
+  useEffect(() => {
+    if (!mapRef.current || !bikePos || typeof window === 'undefined' || !window.google?.maps) return
+    const bounds = mapRef.current.getBounds()
+    if (!bounds) return
+    const ne = bounds.getNorthEast()
+    const sw = bounds.getSouthWest()
+    const latSpan = ne.lat() - sw.lat()
+    const lngSpan = ne.lng() - sw.lng()
+    const innerBounds = new window.google.maps.LatLngBounds(
+      { lat: sw.lat() + latSpan * 0.12, lng: sw.lng() + lngSpan * 0.12 },
+      { lat: ne.lat() - latSpan * 0.12, lng: ne.lng() - lngSpan * 0.12 }
+    )
+    if (!innerBounds.contains(bikePos)) {
+      mapRef.current.panTo(bikePos)
+    }
+  }, [bikePos])
+
   const centerOnRider = () => {
     const target = bikePos || storePos
     if (mapRef.current && target) {
@@ -267,23 +297,25 @@ export const HyperlocalTracker = ({
     }
   }
 
-  // Build heading-rotated navigation symbol for the moving rider
+  // Build heading-rotated navigation symbol for the moving rider (Bright Yellow Arrow ONLY)
   const riderArrowIcon = useMemo<google.maps.Symbol | undefined>(() => {
     if (!isLoaded || typeof window === 'undefined' || !window.google?.maps) return undefined
     return {
       path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-      scale: 6.5,
+      scale: 7.5,
       rotation: heading || 0,
-      fillColor: '#FC8019',
+      fillColor: '#F59E0B',
       fillOpacity: 1,
       strokeColor: '#ffffff',
       strokeWeight: 2.5,
+      anchor: new window.google.maps.Point(0, 2.5),
     }
   }, [isLoaded, heading])
 
   const agentInfo = snapshot?.agent || order.deliveryPartnerInfo || null
   const etaFormatted = formatTime(snapshot?.eta || snapshot?.expectedDeliveryDate || order.expectedDeliveryDate)
-  const remainingDistLabel = formatDistance(snapshot?.remainingMetres ?? snapshot?.routeDistanceMetres)
+  const effectiveDistance = dynamicDistanceMetres ?? snapshot?.remainingMetres ?? snapshot?.routeDistanceMetres
+  const remainingDistLabel = formatDistance(effectiveDistance)
   const remainingDurLabel = formatDuration(snapshot?.remainingSeconds ?? snapshot?.routeDurationSeconds)
   const progressPercent = Math.round(effectiveProgress * 100)
   const isDelivered = effectiveStatus === 'DELIVERED'
@@ -438,37 +470,14 @@ export const HyperlocalTracker = ({
                 />
               )}
 
-              {/* Smoothly Gliding & Heading-Rotated Rider Marker */}
-              {bikePos && !isDelivered ? (
-                <>
-                  <Marker
-                    position={bikePos}
-                    title={agentInfo ? `${agentInfo.name} (${agentInfo.vehicleNo})` : 'Delivery Rider'}
-                    icon={riderArrowIcon}
-                    zIndex={60}
-                  />
-                  <Marker
-                    position={bikePos}
-                    icon={{
-                      url: '/bike-marker.png',
-                      scaledSize: new window.google.maps.Size(44, 44),
-                      anchor: new window.google.maps.Point(22, 48),
-                    }}
-                    zIndex={55}
-                  />
-                </>
-              ) : (
-                !isDelivered && (
-                  <Marker
-                    position={storePos}
-                    title="Rider at store"
-                    icon={{
-                      url: '/bike-marker.png',
-                      scaledSize: new window.google.maps.Size(42, 42),
-                    }}
-                    zIndex={50}
-                  />
-                )
+              {/* Smoothly Gliding & Heading-Rotated Live Navigation Arrow (Yellow Arrow ONLY) */}
+              {bikePos && !isDelivered && (
+                <Marker
+                  position={bikePos}
+                  title={agentInfo ? `${agentInfo.name} (${agentInfo.vehicleNo})` : 'Delivery Rider'}
+                  icon={riderArrowIcon}
+                  zIndex={60}
+                />
               )}
             </GoogleMap>
 

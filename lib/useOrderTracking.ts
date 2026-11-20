@@ -72,14 +72,46 @@ export function useOrderTracking(
   const rafRef = useRef<number | null>(null)
   const lastEventKeyRef = useRef<{ key: string; time: number } | null>(null)
   const lastMessageTimeRef = useRef<number>(Date.now())
+  const lastRafStateUpdateRef = useRef<number>(0)
   const onEventRef = useRef(onEvent)
   onEventRef.current = onEvent
 
-  const resolvedToken =
-    explicitToken ?? (typeof window !== 'undefined' ? Cookies.get('accessToken') || '' : '')
+  const getLatestToken = useCallback(() => {
+    if (explicitToken) return explicitToken
+    if (typeof window !== 'undefined') {
+      return Cookies.get('accessToken') || ''
+    }
+    return ''
+  }, [explicitToken])
+
+  const refreshAuthToken = useCallback(async (): Promise<string | null> => {
+    if (typeof window === 'undefined') return null
+    const refreshToken = Cookies.get('refreshToken')
+    const userId = Cookies.get('userId')
+    if (!refreshToken || !userId) return null
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/auth/refresh-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken, userId }),
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      if (data?.data?.accessToken) {
+        Cookies.set('accessToken', data.data.accessToken)
+        if (data.data.refreshToken) {
+          Cookies.set('refreshToken', data.data.refreshToken, { expires: 7 })
+        }
+        return data.data.accessToken
+      }
+    } catch {
+      // silent
+    }
+    return null
+  }, [apiBaseUrl])
 
   const animateTo = useCallback(
-    (target: LatLng, nextHeading?: number | null, durationMs = 2500) => {
+    (target: LatLng, nextHeading?: number | null, durationMs = 2800) => {
       const targetLat = Number(target?.lat)
       const targetLng = Number(target?.lng)
       if (Number.isNaN(targetLat) || Number.isNaN(targetLng) || !targetLat || !targetLng) {
@@ -109,8 +141,8 @@ export function useOrderTracking(
 
       const step = (now: number) => {
         const p = Math.min((now - t0) / durationMs, 1)
-        // Ease-out cubic for natural deceleration at stops
-        const eased = 1 - Math.pow(1 - p, 3)
+        // Hermite Smoothstep curve (fluid continuous velocity between GPS pings)
+        const eased = p * p * (3 - 2 * p)
         const interpolated: LatLng = {
           lat: Number((startLat + (targetLat - startLat) * eased).toFixed(6)),
           lng: Number((startLng + (targetLng - startLng) * eased).toFixed(6)),
@@ -120,8 +152,13 @@ export function useOrderTracking(
 
         currentPosRef.current = interpolated
         currentHeadingRef.current = interpolatedHeading
-        setBikePos(interpolated)
-        if (nextHeading != null) setHeading(interpolatedHeading)
+
+        // Throttle React state re-renders to ~33ms (30 FPS) to prevent map stutter
+        if (now - lastRafStateUpdateRef.current >= 33 || p >= 1) {
+          lastRafStateUpdateRef.current = now
+          setBikePos(interpolated)
+          if (nextHeading != null) setHeading(interpolatedHeading)
+        }
 
         if (p < 1) {
           rafRef.current = requestAnimationFrame(step)
@@ -139,7 +176,8 @@ export function useOrderTracking(
   )
 
   const fetchSnapshot = useCallback(async () => {
-    if (!orderId || !resolvedToken || !enabled) return
+    let token = getLatestToken()
+    if (!orderId || !token || !enabled) return
     const primaryEndpoint =
       mode === 'admin'
         ? `${apiBaseUrl}/api/admin/orders/${orderId}/tracking`
@@ -151,12 +189,22 @@ export function useOrderTracking(
 
     try {
       let res = await fetch(primaryEndpoint, {
-        headers: { Authorization: `Bearer ${resolvedToken}` },
+        headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       })
+      if (res.status === 401) {
+        const refreshed = await refreshAuthToken()
+        if (refreshed) {
+          token = refreshed
+          res = await fetch(primaryEndpoint, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
+          })
+        }
+      }
       if (!res.ok && (res.status === 403 || res.status === 404)) {
         res = await fetch(fallbackEndpoint, {
-          headers: { Authorization: `Bearer ${resolvedToken}` },
+          headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
         })
       }
@@ -194,10 +242,11 @@ export function useOrderTracking(
     } finally {
       setLoading(false)
     }
-  }, [orderId, resolvedToken, enabled, mode, apiBaseUrl])
+  }, [orderId, getLatestToken, refreshAuthToken, enabled, mode, apiBaseUrl])
 
   useEffect(() => {
-    if (!orderId || !resolvedToken || !enabled) {
+    const initialToken = getLatestToken()
+    if (!orderId || !initialToken || !enabled) {
       setLoading(false)
       return
     }
@@ -317,10 +366,12 @@ export function useOrderTracking(
 
     const client = new Client({
       webSocketFactory: () => new SockJS(`${apiBaseUrl}/ws-delivery`),
-      connectHeaders: { Authorization: `Bearer ${resolvedToken}` },
+      connectHeaders: { Authorization: `Bearer ${getLatestToken()}` },
+      beforeConnect: () => {
+        client.connectHeaders = { Authorization: `Bearer ${getLatestToken()}` }
+      },
       reconnectDelay: 2000,
-      // heartbeatIncoming: 0 disables client-side disconnect if server broker drops heartbeats
-      heartbeatIncoming: 0,
+      heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       onConnect: () => {
         if (!active) return
@@ -337,9 +388,10 @@ export function useOrderTracking(
       onWebSocketClose: () => {
         if (active) setConnected(false)
       },
-      onStompError: (frame) => {
+      onStompError: async (frame) => {
         console.warn('STOMP tracking error:', frame.headers['message'])
         if (active) setConnected(false)
+        await refreshAuthToken()
       },
     })
 
@@ -350,20 +402,11 @@ export function useOrderTracking(
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       client.deactivate()
     }
-  }, [orderId, apiBaseUrl, resolvedToken, mode, enabled, fetchSnapshot, animateTo, snapshot?.orderNumber])
+  }, [orderId, apiBaseUrl, getLatestToken, refreshAuthToken, mode, enabled, fetchSnapshot, animateTo, snapshot?.orderNumber])
 
-  // 3. Fail-safe Watchdog + REST Fallback Polling (polls if disconnected OR if WebSocket stream stalls for >4s)
+  // 3. Fail-safe Watchdog + REST Fallback Polling (polls snapshot if disconnected OR if WebSocket stream stalls for >3.5s)
   useEffect(() => {
-    if (!enabled || !orderId || !resolvedToken) return
-
-    const primaryFallback =
-      mode === 'admin'
-        ? `${apiBaseUrl}/api/admin/orders/${orderId}/live-location`
-        : `${apiBaseUrl}/api/user/orders/${orderId}/live-location`
-    const secondaryFallback =
-      mode === 'admin'
-        ? `${apiBaseUrl}/api/user/orders/${orderId}/live-location`
-        : `${apiBaseUrl}/api/admin/orders/${orderId}/live-location`
+    if (!enabled || !orderId) return
 
     let cancelled = false
     const poll = async () => {
@@ -377,53 +420,78 @@ export function useOrderTracking(
 
       if (!isTrackable) return
 
-      const isStale = Date.now() - lastMessageTimeRef.current > 4000
-      // Poll if disconnected OR if no WebSocket message arrived in last 4 seconds
+      const isStale = Date.now() - lastMessageTimeRef.current > 3500
+      // Poll if disconnected OR if no WebSocket message arrived in last 3.5 seconds
       if (!connected || isStale) {
+        let token = getLatestToken()
+        if (!token) return
+
+        const trackingEndpoint =
+          mode === 'admin'
+            ? `${apiBaseUrl}/api/admin/orders/${orderId}/tracking`
+            : `${apiBaseUrl}/api/user/orders/${orderId}/tracking`
+
         try {
-          let res = await fetch(primaryFallback, {
-            headers: { Authorization: `Bearer ${resolvedToken}` },
+          let res = await fetch(trackingEndpoint, {
+            headers: { Authorization: `Bearer ${token}` },
             cache: 'no-store',
           })
-          if (!res.ok && (res.status === 403 || res.status === 404)) {
-            res = await fetch(secondaryFallback, {
-              headers: { Authorization: `Bearer ${resolvedToken}` },
-              cache: 'no-store',
-            })
+
+          if (res.status === 401) {
+            const refreshed = await refreshAuthToken()
+            if (refreshed) {
+              token = refreshed
+              res = await fetch(trackingEndpoint, {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store',
+              })
+            }
           }
+
           if (!res.ok || cancelled) return
-          const body: ApiResponse<LiveLocationDTO> = await res.json()
-          const loc = body?.data
-          if (body?.success && loc?.lat != null && loc?.lng != null) {
-            const latNum = Number(loc.lat)
-            const lngNum = Number(loc.lng)
-            if (!Number.isNaN(latNum) && !Number.isNaN(lngNum) && latNum !== 0 && lngNum !== 0) {
-              lastMessageTimeRef.current = Date.now()
-              animateTo({ lat: latNum, lng: lngNum }, loc.heading)
-              if (loc.speedKmh != null) setSpeedKmh(loc.speedKmh)
-              setSnapshot((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      progress: loc.progress != null ? Number(loc.progress) : prev.progress,
-                      remainingMetres: loc.remainingMetres ?? prev.remainingMetres,
-                      remainingSeconds: loc.remainingSeconds ?? prev.remainingSeconds,
-                      eta: loc.eta ?? prev.eta,
-                      agentLocation: {
-                        ...(prev.agentLocation || {}),
-                        lat: latNum,
-                        lng: lngNum,
-                        heading: loc.heading ?? prev.agentLocation?.heading,
-                        speedKmh: loc.speedKmh ?? prev.agentLocation?.speedKmh,
-                        progress: loc.progress != null ? Number(loc.progress) : prev.agentLocation?.progress,
-                        remainingMetres: loc.remainingMetres ?? prev.agentLocation?.remainingMetres,
-                        remainingSeconds: loc.remainingSeconds ?? prev.agentLocation?.remainingSeconds,
-                        eta: loc.eta ?? prev.agentLocation?.eta,
-                        recordedAt: loc.recordedAt ?? new Date().toISOString(),
-                      },
-                    }
-                  : prev
-              )
+          const body: ApiResponse<OrderTrackingSnapshotDTO> = await res.json()
+          const data = body?.data
+          if (body?.success && data) {
+            const loc = data.agentLocation || {
+              lat: data.agent?.currentLat,
+              lng: data.agent?.currentLng,
+              heading: data.agent?.heading,
+            }
+
+            if (loc?.lat != null && loc?.lng != null) {
+              const latNum = Number(loc.lat)
+              const lngNum = Number(loc.lng)
+              if (!Number.isNaN(latNum) && !Number.isNaN(lngNum) && latNum !== 0 && lngNum !== 0) {
+                lastMessageTimeRef.current = Date.now()
+                animateTo({ lat: latNum, lng: lngNum }, loc.heading)
+                if (data.agentLocation?.speedKmh != null) {
+                  setSpeedKmh(data.agentLocation.speedKmh)
+                }
+                setSnapshot((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        orderStatus: data.orderStatus || prev.orderStatus,
+                        progress: data.progress != null ? Number(data.progress) : prev.progress,
+                        remainingMetres: data.remainingMetres ?? prev.remainingMetres,
+                        remainingSeconds: data.remainingSeconds ?? prev.remainingSeconds,
+                        eta: data.eta ?? prev.eta,
+                        agentLocation: {
+                          ...(prev.agentLocation || {}),
+                          lat: latNum,
+                          lng: lngNum,
+                          heading: loc.heading ?? prev.agentLocation?.heading,
+                          speedKmh: data.agentLocation?.speedKmh ?? prev.agentLocation?.speedKmh,
+                          progress: data.progress != null ? Number(data.progress) : prev.agentLocation?.progress,
+                          remainingMetres: data.remainingMetres ?? prev.agentLocation?.remainingMetres,
+                          remainingSeconds: data.remainingSeconds ?? prev.agentLocation?.remainingSeconds,
+                          eta: data.eta ?? prev.agentLocation?.eta,
+                          recordedAt: data.agentLocation?.recordedAt ?? new Date().toISOString(),
+                        },
+                      }
+                    : data
+                )
+              }
             }
           }
         } catch {
@@ -432,12 +500,25 @@ export function useOrderTracking(
       }
     }
 
-    const timer = setInterval(poll, 3500)
+    const timer = setInterval(poll, 3000)
     return () => {
       cancelled = true
       clearInterval(timer)
     }
-  }, [enabled, connected, orderId, resolvedToken, snapshot?.liveTrackingActive, snapshot?.orderStatus, snapshot?.agentLocation, snapshot?.agent, mode, apiBaseUrl, animateTo])
+  }, [
+    enabled,
+    connected,
+    orderId,
+    getLatestToken,
+    refreshAuthToken,
+    snapshot?.liveTrackingActive,
+    snapshot?.orderStatus,
+    snapshot?.agentLocation,
+    snapshot?.agent,
+    mode,
+    apiBaseUrl,
+    animateTo,
+  ])
 
   return {
     snapshot,

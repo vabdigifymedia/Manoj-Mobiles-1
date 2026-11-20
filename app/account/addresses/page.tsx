@@ -6,7 +6,7 @@ import type { AddressResponseDTO } from '@/lib/types'
 import { FaMapLocationDot, FaPlus, FaPen, FaTrashCan } from 'react-icons/fa6'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useStore } from '@/components/store-provider'
-import { StoreLocationPicker } from '@/components/admin/StoreLocationPicker'
+import { AddressLocationPicker } from '@/components/address/AddressLocationPicker'
 
 export default function AddressesPage() {
   const { showToast } = useStore()
@@ -209,7 +209,7 @@ export default function AddressesPage() {
               <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                 <FaMapLocationDot className="text-primary" /> Pin Exact Location
               </h3>
-              <StoreLocationPicker 
+              <AddressLocationPicker 
                 lat={lat} 
                 lng={lng} 
                 onChange={(newLat, newLng) => {

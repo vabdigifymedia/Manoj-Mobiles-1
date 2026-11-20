@@ -184,3 +184,39 @@ export async function fetchRoadRoute(
   // 3. Fallback: straight line
   return [origin, destination]
 }
+
+/**
+ * Calculates straight-line distance in metres between two points using the Haversine formula.
+ */
+export function computeDistanceMetres(p1: LatLngPoint, p2: LatLngPoint): number {
+  if (!p1?.lat || !p1?.lng || !p2?.lat || !p2?.lng) return 0
+  const R = 6371e3 // Earth radius in metres
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const φ1 = toRad(p1.lat)
+  const φ2 = toRad(p2.lat)
+  const Δφ = toRad(p2.lat - p1.lat)
+  const Δλ = toRad(p2.lng - p1.lng)
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+/**
+ * Dynamically computes delivery progress (0.05 to 1.0) along the route
+ * between the store origin, the live rider position, and the destination.
+ */
+export function calculateProgressAlongRoute(
+  current: LatLngPoint,
+  start: LatLngPoint,
+  destination: LatLngPoint
+): number {
+  if (!current?.lat || !current?.lng || !destination?.lat || !destination?.lng) return 0.08
+  const totalDist = computeDistanceMetres(start, destination)
+  if (totalDist <= 0) return 0.08
+  const remDist = computeDistanceMetres(current, destination)
+  if (remDist <= 40) return 1.0 // Within 40 metres of destination -> Completed
+  const progress = (totalDist - remDist) / totalDist
+  return Math.max(0.08, Math.min(0.98, Number(progress.toFixed(2))))
+}
