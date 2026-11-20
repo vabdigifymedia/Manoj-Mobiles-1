@@ -244,3 +244,71 @@ export function calculateProgressAlongRoute(
   const progress = (totalDist - remDist) / totalDist
   return Math.max(0.08, Math.min(0.98, Number(progress.toFixed(2))))
 }
+
+/**
+ * Projects a point onto the closest segment of a polyline path and returns
+ * the projected point, the segment index, and the fractional index along the path.
+ * This is essential for snapping a rider's raw GPS coordinate onto the drawn road polyline.
+ */
+export function snapToPolyline(
+  point: LatLngPoint,
+  path: LatLngPoint[]
+): { snapped: LatLngPoint; segmentIndex: number; fractionalIndex: number; distanceMetres: number } | null {
+  if (!point || !path || path.length < 2) return null
+
+  let bestDist = Infinity
+  let bestSnapped: LatLngPoint = path[0]
+  let bestSegIdx = 0
+  let bestFraction = 0
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = path[i]
+    const b = path[i + 1]
+    const projected = projectPointOnSegment(point, a, b)
+    const d = computeDistanceMetres(point, projected.point)
+    if (d < bestDist) {
+      bestDist = d
+      bestSnapped = projected.point
+      bestSegIdx = i
+      bestFraction = projected.t
+    }
+  }
+
+  return {
+    snapped: bestSnapped,
+    segmentIndex: bestSegIdx,
+    fractionalIndex: bestSegIdx + bestFraction,
+    distanceMetres: bestDist,
+  }
+}
+
+/**
+ * Projects point P onto segment A→B, clamping to [A, B].
+ * Returns the projected LatLngPoint and parametric t ∈ [0, 1].
+ */
+function projectPointOnSegment(
+  p: LatLngPoint,
+  a: LatLngPoint,
+  b: LatLngPoint
+): { point: LatLngPoint; t: number } {
+  const dx = b.lng - a.lng
+  const dy = b.lat - a.lat
+  const lenSq = dx * dx + dy * dy
+  if (lenSq < 1e-14) return { point: a, t: 0 }
+  let t = ((p.lng - a.lng) * dx + (p.lat - a.lat) * dy) / lenSq
+  t = Math.max(0, Math.min(1, t))
+  return {
+    point: { lat: a.lat + dy * t, lng: a.lng + dx * t },
+    t,
+  }
+}
+
+/**
+ * Calculates the bearing at a specific fractional index along a polyline.
+ * Used to orient the rider arrow along the road direction.
+ */
+export function bearingAtIndex(path: LatLngPoint[], fractionalIndex: number): number {
+  if (!path || path.length < 2) return 0
+  const idx = Math.min(Math.floor(fractionalIndex), path.length - 2)
+  return calculateBearing(path[idx].lat, path[idx].lng, path[idx + 1].lat, path[idx + 1].lng)
+}

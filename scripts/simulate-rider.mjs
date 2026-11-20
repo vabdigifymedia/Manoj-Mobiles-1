@@ -152,12 +152,12 @@ async function fetchOrderRoute(orderId, token) {
       const json = await res.json()
       if (json.success && json.data) {
         const start = {
-          lat: json.data.store?.lat ?? 28.5355,
-          lng: json.data.store?.lng ?? 77.391,
+          lat: json.data.store?.lat ?? 28.5135,
+          lng: json.data.store?.lng ?? 77.2913,
         }
         const end = {
-          lat: json.data.destination?.lat ?? 28.5672,
-          lng: json.data.destination?.lng ?? 77.321,
+          lat: json.data.destination?.lat ?? 28.5856,
+          lng: json.data.destination?.lng ?? 77.4096,
         }
         let path = []
         if (json.data.routePolyline) {

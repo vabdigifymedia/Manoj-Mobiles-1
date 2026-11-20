@@ -19,6 +19,8 @@ import {
   type LatLngPoint,
   calculateProgressAlongRoute,
   computeDistanceMetres,
+  snapToPolyline,
+  bearingAtIndex,
 } from '@/lib/googleMapsConfig'
 import {
   FaPhone,
@@ -113,7 +115,8 @@ export const HyperlocalTracker = ({
     if (storeSettings?.storeLat && storeSettings?.storeLng) {
       return { lat: storeSettings.storeLat, lng: storeSettings.storeLng }
     }
-    return { lat: 28.5355, lng: 77.391 }
+    // Pul Pehlad Pur, South Delhi 110044
+    return { lat: 28.5135, lng: 77.2913 }
   }, [snapshot?.store?.lat, snapshot?.store?.lng, storeSettings?.storeLat, storeSettings?.storeLng])
 
   // Geocode address fallback if backend destination lat/lng is null
@@ -151,7 +154,7 @@ export const HyperlocalTracker = ({
     return null
   }, [snapshot?.destination?.lat, snapshot?.destination?.lng, order.address?.lat, order.address?.lng, geocodedDest])
 
-  // Fetch turn-by-turn road polyline (uses backend polyline, or Google Directions, or free OSRM engine)
+  // Fetch turn-by-turn road polyline from Store to Destination (cached, no unnecessary re-fetches)
   useEffect(() => {
     if (!destinationPos || !storePos) return
 
@@ -163,9 +166,11 @@ export const HyperlocalTracker = ({
       }
     }
 
+    if (roadRoute.length > 2) return
+
     let active = true
     fetchRoadRoute(storePos, destinationPos).then((points) => {
-      if (active && points.length > 1) {
+      if (active && points.length > 2) {
         setRoadRoute(points)
       }
     })
@@ -173,7 +178,7 @@ export const HyperlocalTracker = ({
     return () => {
       active = false
     }
-  }, [snapshot?.routePolyline, storePos, destinationPos, isLoaded])
+  }, [snapshot?.routePolyline, storePos, destinationPos, isLoaded, roadRoute.length])
 
   // Final turn-by-turn road polyline for map rendering (only actual road curves, never straight diagonal lines)
   const routePath = useMemo<LatLngPoint[]>(() => {
@@ -181,31 +186,59 @@ export const HyperlocalTracker = ({
       const decoded = decodeEncodedPolyline(snapshot.routePolyline)
       if (decoded.length > 2) return decoded
     }
-    if (roadRoute.length > 1) return roadRoute
+    if (roadRoute.length > 2) return roadRoute
     return []
   }, [snapshot?.routePolyline, roadRoute])
 
+  // Snap rider's raw GPS position onto the road polyline so the arrow glides along roads
+  const snapResult = useMemo(() => {
+    if (!bikePos || routePath.length < 2) return null
+    return snapToPolyline(bikePos, routePath)
+  }, [bikePos, routePath])
+
+  // The position to display on map: snapped to road if within 1200m, otherwise raw GPS
+  const displayBikePos = useMemo<LatLngPoint | null>(() => {
+    if (!bikePos) return null
+    if (snapResult && snapResult.distanceMetres < 1200) {
+      return snapResult.snapped
+    }
+    return bikePos
+  }, [bikePos, snapResult])
+
+  // Heading: orient rider arrow along the road curve when snapped, fallback to raw heading
+  const displayHeading = useMemo(() => {
+    if (snapResult && snapResult.distanceMetres < 1200 && routePath.length >= 2) {
+      return bearingAtIndex(routePath, snapResult.fractionalIndex)
+    }
+    return heading || 0
+  }, [snapResult, routePath, heading])
+
   const dynamicDistanceMetres = useMemo(() => {
-    if (bikePos && destinationPos) {
-      return computeDistanceMetres(bikePos, destinationPos)
+    if (displayBikePos && destinationPos) {
+      return computeDistanceMetres(displayBikePos, destinationPos)
     }
     return snapshot?.remainingMetres ?? snapshot?.routeDistanceMetres ?? null
-  }, [bikePos, destinationPos, snapshot?.remainingMetres, snapshot?.routeDistanceMetres])
+  }, [displayBikePos, destinationPos, snapshot?.remainingMetres, snapshot?.routeDistanceMetres])
 
   const effectiveStatus = snapshot?.orderStatus || order.orderStatus
   const effectiveProgress = useMemo(() => {
     if (effectiveStatus === 'DELIVERED') return 1
+    // Use snap fractional index along the road polyline for ultra-accurate progress
+    if (snapResult && snapResult.distanceMetres < 1200 && routePath.length >= 2) {
+      const p = snapResult.fractionalIndex / (routePath.length - 1)
+      return Math.max(0.08, Math.min(0.98, Number(p.toFixed(3))))
+    }
     if (snapshot?.progress != null && snapshot.progress > 0) {
       return Math.max(0, Math.min(1, snapshot.progress))
     }
     if (snapshot?.agentLocation?.progress != null && snapshot.agentLocation.progress > 0) {
       return Math.max(0, Math.min(1, snapshot.agentLocation.progress))
     }
-    if (bikePos && destinationPos) {
-      return calculateProgressAlongRoute(bikePos, storePos, destinationPos)
+    if (displayBikePos && destinationPos) {
+      return calculateProgressAlongRoute(displayBikePos, storePos, destinationPos)
     }
     return 0.08
-  }, [effectiveStatus, snapshot?.progress, snapshot?.agentLocation?.progress, bikePos, destinationPos, storePos])
+  }, [effectiveStatus, snapshot?.progress, snapshot?.agentLocation?.progress, snapResult, routePath, displayBikePos, destinationPos, storePos])
 
   // Split polyline into completed (faded) & remaining (orange) segments
   const { completedPath, remainingPath } = useMemo(() => {
@@ -213,33 +246,27 @@ export const HyperlocalTracker = ({
       return { completedPath: [] as LatLngPoint[], remainingPath: [] as LatLngPoint[] }
     }
 
-    let splitIndex = Math.floor((routePath.length - 1) * effectiveProgress)
-
-    // If progress isn't provided yet but we have bikePos, project onto nearest vertex
-    if (effectiveProgress === 0 && bikePos && routePath.length > 2) {
-      let closestIdx = 0
-      let minDist = Infinity
-      for (let i = 0; i < routePath.length; i++) {
-        const d =
-          Math.pow(routePath[i].lat - bikePos.lat, 2) +
-          Math.pow(routePath[i].lng - bikePos.lng, 2)
-        if (d < minDist) {
-          minDist = d
-          closestIdx = i
-        }
+    if (snapResult && snapResult.distanceMetres < 1200) {
+      const idx = snapResult.segmentIndex
+      const snapped = snapResult.snapped
+      return {
+        completedPath: [...routePath.slice(0, idx + 1), snapped],
+        remainingPath: [snapped, ...routePath.slice(idx + 1)],
       }
-      splitIndex = closestIdx
     }
 
-    splitIndex = Math.max(0, Math.min(routePath.length - 1, splitIndex))
+    const splitIndex = Math.max(
+      0,
+      Math.min(routePath.length - 1, Math.floor((routePath.length - 1) * effectiveProgress))
+    )
     return {
       completedPath: routePath.slice(0, splitIndex + 1),
       remainingPath: routePath.slice(splitIndex),
     }
-  }, [routePath, effectiveProgress, bikePos])
+  }, [routePath, effectiveProgress, snapResult])
 
   const defaultCenter = useMemo<LatLngPoint>(() => {
-    if (bikePos) return bikePos
+    if (displayBikePos) return displayBikePos
     if (destinationPos) {
       return {
         lat: (storePos.lat + destinationPos.lat) / 2,
@@ -247,7 +274,7 @@ export const HyperlocalTracker = ({
       }
     }
     return storePos
-  }, [bikePos, storePos, destinationPos])
+  }, [displayBikePos, storePos, destinationPos])
 
   const fitMapBounds = useCallback(
     (map: google.maps.Map) => {
@@ -260,8 +287,8 @@ export const HyperlocalTracker = ({
         bounds.extend(destinationPos)
         count++
       }
-      if (bikePos) {
-        bounds.extend(bikePos)
+      if (displayBikePos) {
+        bounds.extend(displayBikePos)
         count++
       }
       if (count > 1) {
@@ -271,7 +298,7 @@ export const HyperlocalTracker = ({
         map.setZoom(14)
       }
     },
-    [storePos, destinationPos, bikePos]
+    [storePos, destinationPos, displayBikePos]
   )
 
   const handleMapLoad = useCallback(
@@ -312,17 +339,18 @@ export const HyperlocalTracker = ({
     // After 18 seconds of user inactivity, automatically pan back to the rider
     resumeAutoFollowTimerRef.current = setTimeout(() => {
       userMovedMapRef.current = false
-      const target = bikePos || storePos
+      const target = displayBikePos || storePos
       if (mapRef.current && target) {
         mapRef.current.panTo(target)
       }
     }, 18000)
-  }, [bikePos, storePos])
+  }, [displayBikePos, storePos])
 
   // Auto-follow rider: smoothly pan camera when rider moves near map edges (only if user hasn't manually moved map in last 18s)
   useEffect(() => {
     if (userMovedMapRef.current) return
-    if (!mapRef.current || !bikePos || typeof window === 'undefined' || !window.google?.maps) return
+    const target = displayBikePos || bikePos
+    if (!mapRef.current || !target || typeof window === 'undefined' || !window.google?.maps) return
     const bounds = mapRef.current.getBounds()
     if (!bounds) return
     const ne = bounds.getNorthEast()
@@ -333,17 +361,17 @@ export const HyperlocalTracker = ({
       { lat: sw.lat() + latSpan * 0.12, lng: sw.lng() + lngSpan * 0.12 },
       { lat: ne.lat() - latSpan * 0.12, lng: ne.lng() - lngSpan * 0.12 }
     )
-    if (!innerBounds.contains(bikePos)) {
-      mapRef.current.panTo(bikePos)
+    if (!innerBounds.contains(target)) {
+      mapRef.current.panTo(target)
     }
-  }, [bikePos])
+  }, [displayBikePos, bikePos])
 
   const centerOnRider = () => {
     userMovedMapRef.current = false
     if (resumeAutoFollowTimerRef.current) {
       clearTimeout(resumeAutoFollowTimerRef.current)
     }
-    const target = bikePos || storePos
+    const target = displayBikePos || bikePos || storePos
     if (mapRef.current && target) {
       mapRef.current.panTo(target)
       mapRef.current.setZoom(16)
@@ -356,14 +384,14 @@ export const HyperlocalTracker = ({
     return {
       path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
       scale: 7.5,
-      rotation: heading || 0,
+      rotation: displayHeading || heading || 0,
       fillColor: '#F59E0B',
       fillOpacity: 1,
       strokeColor: '#ffffff',
       strokeWeight: 2.5,
       anchor: new window.google.maps.Point(0, 2.5),
     }
-  }, [isLoaded, heading])
+  }, [isLoaded, displayHeading, heading])
 
   const agentInfo = snapshot?.agent || order.deliveryPartnerInfo || null
   const etaFormatted = formatTime(snapshot?.eta || snapshot?.expectedDeliveryDate || order.expectedDeliveryDate)
@@ -526,9 +554,9 @@ export const HyperlocalTracker = ({
               )}
 
               {/* Smoothly Gliding & Heading-Rotated Live Navigation Arrow (Yellow Arrow ONLY) */}
-              {bikePos && !isDelivered && (
+              {displayBikePos && !isDelivered && (
                 <Marker
-                  position={bikePos}
+                  position={displayBikePos}
                   title={agentInfo ? `${agentInfo.name} (${agentInfo.vehicleNo})` : 'Delivery Rider'}
                   icon={riderArrowIcon}
                   zIndex={60}
@@ -538,7 +566,7 @@ export const HyperlocalTracker = ({
 
             {/* Floating Map Action Controls */}
             <div className="absolute bottom-3 left-3 flex items-center gap-2">
-              {bikePos && !isDelivered && (
+              {displayBikePos && !isDelivered && (
                 <button
                   type="button"
                   onClick={centerOnRider}

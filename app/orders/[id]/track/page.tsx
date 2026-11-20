@@ -31,6 +31,8 @@ import {
   type LatLngPoint,
   calculateProgressAlongRoute,
   computeDistanceMetres,
+  snapToPolyline,
+  bearingAtIndex,
 } from '@/lib/googleMapsConfig'
 import { StandardTracker } from '@/components/order/StandardTracker'
 import type { OrderResponseDTO } from '@/lib/types'
@@ -76,6 +78,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
   const hasFittedRef = useRef(false)
   const userMovedMapRef = useRef(false)
   const resumeAutoFollowTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const lastRouteOriginRef = useRef<LatLngPoint | null>(null)
 
   // Redirect to login if user is not authenticated
   useEffect(() => {
@@ -114,7 +117,8 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     if (snapshot?.store?.lat != null && snapshot?.store?.lng != null) {
       return { lat: snapshot.store.lat, lng: snapshot.store.lng }
     }
-    return { lat: 28.5355, lng: 77.391 }
+    // Pul Pehlad Pur, South Delhi 110044 (Store primary location)
+    return { lat: 28.5135, lng: 77.2913 }
   }, [snapshot?.store?.lat, snapshot?.store?.lng])
 
   // Geocode address fallback if backend destination lat/lng is null
@@ -146,7 +150,8 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     return null
   }, [snapshot?.destination?.lat, snapshot?.destination?.lng, geocodedDest])
 
-  // Fetch turn-by-turn road polyline (uses backend polyline, or Google Directions, or free OSRM engine)
+  // Fetch master turn-by-turn road polyline from Store to Destination
+  // Fetched once on mount/load and cached. Re-calculated ONLY if rider deviates >1.2km from the drawn route.
   useEffect(() => {
     if (!destinationPos || !storePos) return
 
@@ -159,10 +164,12 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
       }
     }
 
-    // Otherwise calculate turn-by-turn road route via Google Directions / OSRM
+    // Only fetch if roadRoute is not yet populated
+    if (roadRoute.length > 2) return
+
     let active = true
     fetchRoadRoute(storePos, destinationPos).then((points) => {
-      if (active && points.length > 1) {
+      if (active && points.length > 2) {
         setRoadRoute(points)
       }
     })
@@ -170,7 +177,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     return () => {
       active = false
     }
-  }, [snapshot?.routePolyline, storePos, destinationPos, isLoaded])
+  }, [snapshot?.routePolyline, storePos, destinationPos, isLoaded, roadRoute.length])
 
   // Final road polyline points for map rendering (only actual road curves, never straight diagonal lines)
   const routePoints = useMemo<LatLngPoint[]>(() => {
@@ -178,32 +185,85 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
       const decoded = decodeEncodedPolyline(snapshot.routePolyline)
       if (decoded.length > 2) return decoded
     }
-    if (roadRoute.length > 1) return roadRoute
+    if (roadRoute.length > 2) return roadRoute
     return []
   }, [snapshot?.routePolyline, roadRoute])
 
+  // Snap rider's raw GPS position onto the road polyline so the arrow glides along roads
+  const snapResult = useMemo(() => {
+    if (!bikePos || routePoints.length < 2) return null
+    return snapToPolyline(bikePos, routePoints)
+  }, [bikePos, routePoints])
+
+  // Re-calculate route from rider to destination ONLY if rider has taken a major detour (>1200m away from route)
+  useEffect(() => {
+    if (!destinationPos || !bikePos || routePoints.length < 2) return
+    if (snapResult && snapResult.distanceMetres > 1200) {
+      let active = true
+      fetchRoadRoute(bikePos, destinationPos).then((points) => {
+        if (active && points.length > 2) {
+          setRoadRoute(points)
+        }
+      })
+      return () => {
+        active = false
+      }
+    }
+  }, [bikePos, destinationPos, snapResult, routePoints.length])
+
+  // The position to display on map: snapped to road if within 1200m, otherwise raw GPS
+  const displayBikePos = useMemo<LatLng | null>(() => {
+    if (!bikePos) return null
+    if (snapResult && snapResult.distanceMetres < 1200) {
+      return snapResult.snapped
+    }
+    return bikePos
+  }, [bikePos, snapResult])
+
+  // Heading: orient rider arrow along the road curve when snapped, fallback to raw heading
+  const displayHeading = useMemo(() => {
+    if (snapResult && snapResult.distanceMetres < 1200 && routePoints.length >= 2) {
+      return bearingAtIndex(routePoints, snapResult.fractionalIndex)
+    }
+    return heading || 0
+  }, [snapResult, routePoints, heading])
+
   const dynamicDistanceMetres = useMemo(() => {
-    if (bikePos && destinationPos) {
-      return computeDistanceMetres(bikePos, destinationPos)
+    if (displayBikePos && destinationPos) {
+      return computeDistanceMetres(displayBikePos, destinationPos)
     }
     return snapshot?.remainingMetres ?? snapshot?.routeDistanceMetres ?? null
-  }, [bikePos, destinationPos, snapshot?.remainingMetres, snapshot?.routeDistanceMetres])
+  }, [displayBikePos, destinationPos, snapshot?.remainingMetres, snapshot?.routeDistanceMetres])
 
   const effectiveProgress = useMemo(() => {
     if (snapshot?.orderStatus === 'DELIVERED') return 1
+    // Use snap fractional index along the road polyline for ultra-accurate progress
+    if (snapResult && snapResult.distanceMetres < 1200 && routePoints.length >= 2) {
+      const p = snapResult.fractionalIndex / (routePoints.length - 1)
+      return Math.max(0.08, Math.min(0.98, Number(p.toFixed(3))))
+    }
     if (snapshot?.progress != null && snapshot.progress > 0) {
       return Math.max(0, Math.min(1, snapshot.progress))
     }
-    if (bikePos && destinationPos) {
-      return calculateProgressAlongRoute(bikePos, storePos, destinationPos)
+    if (displayBikePos && destinationPos) {
+      return calculateProgressAlongRoute(displayBikePos, storePos, destinationPos)
     }
     return 0.08
-  }, [snapshot?.orderStatus, snapshot?.progress, bikePos, destinationPos, storePos])
+  }, [snapshot?.orderStatus, snapshot?.progress, snapResult, routePoints, displayBikePos, destinationPos, storePos])
 
-  // Split polyline into completed (faded) and remaining (Swiggy orange #FC8019)
+  // Split polyline into completed (faded grey) and remaining (Swiggy orange #FC8019)
   const { completedPath, remainingPath } = useMemo(() => {
     if (routePoints.length < 2) {
       return { completedPath: [] as LatLngPoint[], remainingPath: [] as LatLngPoint[] }
+    }
+    // Split precisely at rider's snapped location on the road
+    if (snapResult && snapResult.distanceMetres < 1200) {
+      const idx = snapResult.segmentIndex
+      const snapped = snapResult.snapped
+      return {
+        completedPath: [...routePoints.slice(0, idx + 1), snapped],
+        remainingPath: [snapped, ...routePoints.slice(idx + 1)],
+      }
     }
     const splitIndex = Math.max(
       0,
@@ -213,10 +273,10 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
       completedPath: routePoints.slice(0, splitIndex + 1),
       remainingPath: routePoints.slice(splitIndex),
     }
-  }, [routePoints, effectiveProgress])
+  }, [routePoints, effectiveProgress, snapResult])
 
   const defaultCenter = useMemo<LatLngPoint>(() => {
-    if (bikePos) return bikePos
+    if (displayBikePos) return displayBikePos
     if (destinationPos) {
       return {
         lat: (storePos.lat + destinationPos.lat) / 2,
@@ -224,7 +284,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
       }
     }
     return storePos
-  }, [bikePos, destinationPos, storePos])
+  }, [displayBikePos, destinationPos, storePos])
 
   const fitBounds = useCallback(
     (map: google.maps.Map) => {
@@ -237,8 +297,8 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
         bounds.extend(destinationPos)
         count++
       }
-      if (bikePos) {
-        bounds.extend(bikePos)
+      if (displayBikePos) {
+        bounds.extend(displayBikePos)
         count++
       }
       if (count > 1) {
@@ -248,7 +308,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
         map.setZoom(14)
       }
     },
-    [storePos, destinationPos, bikePos]
+    [storePos, destinationPos, displayBikePos]
   )
 
   const onMapLoad = useCallback(
@@ -283,17 +343,18 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     // After 18 seconds of user inactivity, automatically pan back to the rider
     resumeAutoFollowTimerRef.current = setTimeout(() => {
       userMovedMapRef.current = false
-      const target = bikePos || storePos
+      const target = displayBikePos || storePos
       if (mapRef.current && target) {
         mapRef.current.panTo(target)
       }
     }, 18000)
-  }, [bikePos, storePos])
+  }, [displayBikePos, storePos])
 
   // Camera Auto-Follow: smoothly pan camera when rider moves near map edges (only if user hasn't manually moved map in last 18s)
   useEffect(() => {
     if (userMovedMapRef.current) return
-    if (!mapRef.current || !bikePos || typeof window === 'undefined' || !window.google?.maps) return
+    const target = displayBikePos || bikePos
+    if (!mapRef.current || !target || typeof window === 'undefined' || !window.google?.maps) return
     const bounds = mapRef.current.getBounds()
     if (!bounds) return
     const ne = bounds.getNorthEast()
@@ -304,17 +365,17 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
       { lat: sw.lat() + latSpan * 0.12, lng: sw.lng() + lngSpan * 0.12 },
       { lat: ne.lat() - latSpan * 0.12, lng: ne.lng() - lngSpan * 0.12 }
     )
-    if (!innerBounds.contains(bikePos)) {
-      mapRef.current.panTo(bikePos)
+    if (!innerBounds.contains(target)) {
+      mapRef.current.panTo(target)
     }
-  }, [bikePos])
+  }, [displayBikePos, bikePos])
 
   const centerOnRider = () => {
     userMovedMapRef.current = false
     if (resumeAutoFollowTimerRef.current) {
       clearTimeout(resumeAutoFollowTimerRef.current)
     }
-    const target = bikePos || storePos
+    const target = displayBikePos || bikePos || storePos
     if (mapRef.current && target) {
       mapRef.current.panTo(target)
       mapRef.current.setZoom(16)
@@ -327,14 +388,14 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     return {
       path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
       scale: 7.5,
-      rotation: heading || 0,
+      rotation: displayHeading || heading || 0,
       fillColor: '#F59E0B',
       fillOpacity: 1,
       strokeColor: '#FFFFFF',
       strokeWeight: 2.5,
       anchor: new window.google.maps.Point(0, 2.5),
     }
-  }, [isLoaded, heading])
+  }, [isLoaded, displayHeading, heading])
 
   if (loading && !snapshot) {
     return (
@@ -512,9 +573,9 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
                 )}
 
                 {/* Delivery Boy Live Navigation Arrow (Yellow Arrow ONLY - bike photo removed) */}
-                {bikePos && !isDelivered && (
+                {displayBikePos && !isDelivered && (
                   <Marker
-                    position={bikePos}
+                    position={displayBikePos}
                     title={agent ? `${agent.name} (${agent.vehicleNo})` : 'Delivery Rider'}
                     icon={riderArrowIcon}
                     zIndex={60}
@@ -524,7 +585,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
 
               {/* Floating Controls on Map */}
               <div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
-                {bikePos && !isDelivered && (
+                {displayBikePos && !isDelivered && (
                   <button
                     type="button"
                     onClick={centerOnRider}

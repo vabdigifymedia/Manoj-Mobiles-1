@@ -221,8 +221,9 @@ export default function AdminOrderDetailsPage() {
 
     if (!order) return
 
-    const baseStoreLat = 28.449032
-    const baseStoreLng = 76.767331
+    // Pul Pehlad Pur, South Delhi 110044 (Store primary location)
+    const baseStoreLat = 28.5135
+    const baseStoreLng = 77.2913
     const destLat = order.address?.lat ?? 28.5856
     const destLng = order.address?.lng ?? 77.4096
 
