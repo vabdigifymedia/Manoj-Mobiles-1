@@ -175,18 +175,15 @@ export const HyperlocalTracker = ({
     }
   }, [snapshot?.routePolyline, storePos, destinationPos, isLoaded])
 
-  // Final turn-by-turn road polyline for map rendering
+  // Final turn-by-turn road polyline for map rendering (only actual road curves, never straight diagonal lines)
   const routePath = useMemo<LatLngPoint[]>(() => {
     if (snapshot?.routePolyline) {
       const decoded = decodeEncodedPolyline(snapshot.routePolyline)
       if (decoded.length > 2) return decoded
     }
     if (roadRoute.length > 1) return roadRoute
-    if (destinationPos) {
-      return [storePos, destinationPos]
-    }
     return []
-  }, [snapshot?.routePolyline, roadRoute, storePos, destinationPos])
+  }, [snapshot?.routePolyline, roadRoute])
 
   const dynamicDistanceMetres = useMemo(() => {
     if (bikePos && destinationPos) {

@@ -15,6 +15,7 @@ import TrackingTimeline from '@/components/ui/order-history'
 import { HyperlocalTracker } from '@/components/order/HyperlocalTracker'
 import { StandardTracker } from '@/components/order/StandardTracker'
 import { ClipboardCheck, Package, Ship, Bike, Home } from 'lucide-react'
+import { fetchRoadRoute, calculateBearing } from '@/lib/googleMapsConfig'
 import {
   FaChevronLeft, FaClock, FaTruck,
   FaMotorcycle, FaWallet, FaMapPin, FaFileInvoice,
@@ -208,7 +209,7 @@ export default function AdminOrderDetailsPage() {
     }
   }, [])
 
-  const toggleContinuousSimulation = () => {
+  const toggleContinuousSimulation = async () => {
     if (isSimulatingLive) {
       stopContinuousSimulation()
       setDispatchMessage({
@@ -219,28 +220,54 @@ export default function AdminOrderDetailsPage() {
     }
 
     if (!order) return
+
+    const baseStoreLat = 28.449032
+    const baseStoreLng = 76.767331
+    const destLat = order.address?.lat ?? 28.5856
+    const destLng = order.address?.lng ?? 77.4096
+
+    setDispatchMessage({
+      type: 'success',
+      text: 'Calculating road route for live rider simulation...',
+    })
+
+    // Fetch turn-by-turn road polyline so rider follows the road line exactly
+    const roadPoints = await fetchRoadRoute(
+      { lat: baseStoreLat, lng: baseStoreLng },
+      { lat: destLat, lng: destLng }
+    )
+
     setIsSimulatingLive(true)
     setDispatchMessage({
       type: 'success',
-      text: 'Continuous rider movement started! Watch the bike glide in real-time on the customer tracking page.',
+      text: 'Continuous rider movement started along the road! Watch the bike glide in real-time on the customer tracking page.',
     })
 
-    const baseStoreLat = 28.5355
-    const baseStoreLng = 77.391
-    const destLat = order.address?.lat ?? 28.5672
-    const destLng = order.address?.lng ?? 77.321
-    const totalSteps = 30
+    const totalSteps = roadPoints.length > 2 ? Math.min(60, roadPoints.length) : 30
 
     simulationIntervalRef.current = setInterval(async () => {
       simulationStepRef.current = (simulationStepRef.current + 1) % totalSteps
       const progress = simulationStepRef.current / totalSteps
-      const lat = Number((baseStoreLat + (destLat - baseStoreLat) * progress).toFixed(5))
-      const lng = Number((baseStoreLng + (destLng - baseStoreLng) * progress).toFixed(5))
+      let lat: number
+      let lng: number
+      let heading = 295
+
+      if (roadPoints.length > 2) {
+        const idx = Math.min(roadPoints.length - 1, Math.floor(progress * (roadPoints.length - 1)))
+        const nextIdx = Math.min(roadPoints.length - 1, idx + 1)
+        lat = Number(roadPoints[idx].lat.toFixed(5))
+        lng = Number(roadPoints[idx].lng.toFixed(5))
+        heading = calculateBearing(roadPoints[idx].lat, roadPoints[idx].lng, roadPoints[nextIdx].lat, roadPoints[nextIdx].lng)
+      } else {
+        lat = Number((baseStoreLat + (destLat - baseStoreLat) * progress).toFixed(5))
+        lng = Number((baseStoreLng + (destLng - baseStoreLng) * progress).toFixed(5))
+      }
+
       try {
         await apiClient.pushDeliveryLiveLocation(order.id, {
           lat,
           lng,
-          heading: 295,
+          heading,
           speedKmh: 28,
         })
       } catch (err) {

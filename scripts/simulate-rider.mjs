@@ -163,6 +163,21 @@ async function fetchOrderRoute(orderId, token) {
         if (json.data.routePolyline) {
           path = decodePolyline(json.data.routePolyline)
         }
+        if (path.length <= 1) {
+          try {
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`
+            const osrmRes = await fetch(osrmUrl)
+            if (osrmRes.ok) {
+              const osrmData = await osrmRes.json()
+              const coords = osrmData?.routes?.[0]?.geometry?.coordinates
+              if (Array.isArray(coords) && coords.length > 1) {
+                path = coords.map(([lng, lat]) => ({ lat, lng }))
+              }
+            }
+          } catch {
+            // fallback
+          }
+        }
         return { start, end, path }
       }
     } catch {

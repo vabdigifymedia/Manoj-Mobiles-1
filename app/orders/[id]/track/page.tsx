@@ -172,18 +172,15 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     }
   }, [snapshot?.routePolyline, storePos, destinationPos, isLoaded])
 
-  // Final road polyline points for map rendering
+  // Final road polyline points for map rendering (only actual road curves, never straight diagonal lines)
   const routePoints = useMemo<LatLngPoint[]>(() => {
     if (snapshot?.routePolyline) {
       const decoded = decodeEncodedPolyline(snapshot.routePolyline)
       if (decoded.length > 2) return decoded
     }
     if (roadRoute.length > 1) return roadRoute
-    if (destinationPos) {
-      return [storePos, destinationPos]
-    }
     return []
-  }, [snapshot?.routePolyline, roadRoute, storePos, destinationPos])
+  }, [snapshot?.routePolyline, roadRoute])
 
   const dynamicDistanceMetres = useMemo(() => {
     if (bikePos && destinationPos) {
