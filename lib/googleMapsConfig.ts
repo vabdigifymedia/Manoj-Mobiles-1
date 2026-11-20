@@ -122,9 +122,9 @@ export function decodeEncodedPolyline(encoded: string): LatLngPoint[] {
 
 /**
  * Fetches turn-by-turn road polyline between origin and destination.
- * 1. Calls our Next.js server proxy /api/directions (Google Directions + OSRM server-side, no CORS).
- * 2. Tries browser Google Maps DirectionsService if available.
- * 3. Falls back to straight line [origin, destination] if both fail.
+ * 1. Tries Google Maps DirectionsService directly in the browser (uses Frontend Google Maps Key).
+ * 2. Falls back to Next.js server proxy /api/directions (Google Directions + OSRM server-side).
+ * 3. Falls back to straight line [origin, destination] only if both fail.
  */
 export async function fetchRoadRoute(
   origin: LatLngPoint,
@@ -134,26 +134,7 @@ export async function fetchRoadRoute(
     return []
   }
 
-  // 1. First priority: Server proxy /api/directions (tries server Google Directions then server OSRM, bypassing all browser CORS/ad-blockers)
-  try {
-    const res = await fetch(
-      `/api/directions?originLat=${origin.lat}&originLng=${origin.lng}&destLat=${destination.lat}&destLng=${destination.lng}`
-    )
-    if (res.ok) {
-      const data = await res.json()
-      if (data?.polyline) {
-        const decoded = decodeEncodedPolyline(data.polyline)
-        if (decoded.length > 2) return decoded
-      }
-      if (Array.isArray(data?.coordinates) && data.coordinates.length > 2) {
-        return data.coordinates
-      }
-    }
-  } catch {
-    // Continue to browser fallback
-  }
-
-  // 2. Second priority: Try Google Maps DirectionsService directly in browser
+  // 1. First priority: Google Maps DirectionsService directly in browser (uses frontend API key with valid browser referrers)
   if (typeof window !== 'undefined' && window.google?.maps?.DirectionsService) {
     try {
       const directionsService = new window.google.maps.DirectionsService()
@@ -175,6 +156,10 @@ export async function fetchRoadRoute(
         )
       })
 
+      if (result?.routes?.[0]?.overview_polyline) {
+        const decoded = decodeEncodedPolyline(result.routes[0].overview_polyline)
+        if (decoded.length > 2) return decoded
+      }
       if (result?.routes?.[0]?.overview_path?.length) {
         return result.routes[0].overview_path.map((pt) => ({
           lat: pt.lat(),
@@ -184,6 +169,25 @@ export async function fetchRoadRoute(
     } catch (err) {
       console.warn('Browser DirectionsService error:', err)
     }
+  }
+
+  // 2. Second priority: Server proxy /api/directions (Google Directions + OSRM server-side, bypassing browser ad-blockers)
+  try {
+    const res = await fetch(
+      `/api/directions?originLat=${origin.lat}&originLng=${origin.lng}&destLat=${destination.lat}&destLng=${destination.lng}`
+    )
+    if (res.ok) {
+      const data = await res.json()
+      if (data?.polyline) {
+        const decoded = decodeEncodedPolyline(data.polyline)
+        if (decoded.length > 2) return decoded
+      }
+      if (Array.isArray(data?.coordinates) && data.coordinates.length > 2) {
+        return data.coordinates
+      }
+    }
+  } catch {
+    // Continue to straight line fallback
   }
 
   // 3. Fallback: straight line
