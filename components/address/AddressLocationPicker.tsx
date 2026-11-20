@@ -59,6 +59,13 @@ export function AddressLocationPicker({ lat, lng, onChange }: AddressLocationPic
     setMap(null)
   }, [])
 
+  // Auto-initialize lat and lng on mount if not provided so coordinates are never omitted
+  useEffect(() => {
+    if (lat == null || lng == null) {
+      onChange(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng)
+    }
+  }, [lat, lng, onChange])
+
   // Update map center when props change initially
   useEffect(() => {
     if (lat && lng && map) {
@@ -280,10 +287,15 @@ export function AddressLocationPicker({ lat, lng, onChange }: AddressLocationPic
         </GoogleMap>
 
         {/* Helper Badge at bottom of map */}
-        <div className="absolute bottom-2 left-2 right-2 bg-background/90 backdrop-blur-xs border border-border/80 px-2.5 py-1.5 rounded-lg text-[10px] text-muted-foreground flex items-center justify-between font-medium">
-          <span>📍 Drag red pin or tap map to set exact delivery gate</span>
-          <span className="font-mono font-bold text-foreground">
-            {lat && lng ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : 'Tap to pin'}
+        <div className="absolute bottom-2 left-2 right-2 bg-background/95 backdrop-blur-xs border border-border/90 px-3 py-2 rounded-xl text-xs flex items-center justify-between font-semibold shadow-md">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="inline-block size-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="text-[11px] text-muted-foreground truncate">
+              {lat && lng ? '📍 Exact Gate Pinned' : '📍 Tap or drag pin to gate'}
+            </span>
+          </div>
+          <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400 shrink-0 ml-2">
+            {lat && lng ? `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}` : `${DEFAULT_CENTER.lat.toFixed(5)}, ${DEFAULT_CENTER.lng.toFixed(5)}`}
           </span>
         </div>
       </div>

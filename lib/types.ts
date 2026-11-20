@@ -792,6 +792,8 @@ export interface AddressRequestDTO {
   pincode: string
   lat?: number
   lng?: number
+  latitude?: number
+  longitude?: number
   isDefault?: boolean
 }
 
@@ -805,6 +807,8 @@ export interface AddressResponseDTO {
   pincode: string
   lat?: number
   lng?: number
+  latitude?: number
+  longitude?: number
   isDefault: boolean
 }
 

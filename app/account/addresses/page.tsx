@@ -63,16 +63,36 @@ export default function AddressesPage() {
     e.preventDefault()
     if (!addressLine || !city || !state || !pincode) return
     setSaving(true)
+
+    const effectiveLat = lat != null ? Number(lat) : 28.5355
+    const effectiveLng = lng != null ? Number(lng) : 77.3910
+
     try {
       if (editingId) {
         await apiClient.updateAddress(editingId, {
-          label, addressLine, city, state, pincode, lat, lng,
+          label,
+          addressLine,
+          city,
+          state,
+          pincode,
+          lat: effectiveLat,
+          lng: effectiveLng,
+          latitude: effectiveLat,
+          longitude: effectiveLng,
           isDefault: addresses.find(a => a.id === editingId)?.isDefault || false
         })
         showToast({ message: 'Address updated successfully', type: 'success' })
       } else {
         await apiClient.createAddress({
-          label, addressLine, city, state, pincode, lat, lng,
+          label,
+          addressLine,
+          city,
+          state,
+          pincode,
+          lat: effectiveLat,
+          lng: effectiveLng,
+          latitude: effectiveLat,
+          longitude: effectiveLng,
           isDefault: addresses.length === 0
         })
         showToast({ message: 'Address added successfully', type: 'success' })
@@ -93,8 +113,8 @@ export default function AddressesPage() {
     setCity(addr.city)
     setState(addr.state)
     setPincode(addr.pincode)
-    setLat(addr.lat)
-    setLng(addr.lng)
+    setLat(addr.lat ?? addr.latitude ?? 28.5355)
+    setLng(addr.lng ?? addr.longitude ?? 77.3910)
     setShowForm(true)
   }
 
@@ -105,8 +125,8 @@ export default function AddressesPage() {
     setCity('')
     setState('')
     setPincode('')
-    setLat(undefined)
-    setLng(undefined)
+    setLat(28.5355)
+    setLng(77.3910)
     setShowForm(true)
   }
 

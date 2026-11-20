@@ -212,6 +212,9 @@ export default function CheckoutPage() {
     if (!addressLine || !city || !state || !pincode) return
     setCreatingAddress(true)
     try {
+      const effectiveLat = lat != null ? Number(lat) : 28.5355
+      const effectiveLng = lng != null ? Number(lng) : 77.3910
+
       if (editingAddressId) {
         const res = await apiClient.updateAddress(editingAddressId, {
           label,
@@ -219,8 +222,10 @@ export default function CheckoutPage() {
           city,
           state,
           pincode,
-          lat,
-          lng,
+          lat: effectiveLat,
+          lng: effectiveLng,
+          latitude: effectiveLat,
+          longitude: effectiveLng,
           isDefault: addresses.find((a) => a.id === editingAddressId)?.isDefault || false,
         })
         setAddresses((prev) => prev.map((a) => (a.id === editingAddressId ? res.data.data : a)))
@@ -232,8 +237,10 @@ export default function CheckoutPage() {
           city,
           state,
           pincode,
-          lat,
-          lng,
+          lat: effectiveLat,
+          lng: effectiveLng,
+          latitude: effectiveLat,
+          longitude: effectiveLng,
           isDefault: addresses.length === 0,
         })
         const newAddr = res.data.data
