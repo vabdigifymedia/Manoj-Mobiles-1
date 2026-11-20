@@ -23,6 +23,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useOrderTracking, type LatLng } from '@/lib/useOrderTracking'
 import {
   decodeEncodedPolyline,
+  fetchRoadRoute,
   getGoogleMapThemeOptions,
   GOOGLE_MAPS_LIBRARIES,
   GOOGLE_MAPS_SCRIPT_ID,
@@ -67,6 +68,7 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
   const { isAuthenticated, loading: authLoading } = useAuth()
 
   const [orderFallback, setOrderFallback] = useState<OrderResponseDTO | null>(null)
+  const [roadRoute, setRoadRoute] = useState<LatLngPoint[]>([])
   const mapRef = useRef<google.maps.Map | null>(null)
   const hasFittedRef = useRef(false)
 
@@ -117,17 +119,44 @@ export default function OrderTrackPage({ params }: { params: Promise<{ id: strin
     return null
   }, [snapshot?.destination?.lat, snapshot?.destination?.lng])
 
-  // Decode route road polyline using google.maps.geometry.encoding.decodePath or pure TS decoder
+  // Fetch turn-by-turn road polyline (uses backend polyline, or Google Directions, or free OSRM engine)
+  useEffect(() => {
+    if (!destinationPos || !storePos) return
+
+    // If backend provided a detailed road polyline (> 2 points), use it directly
+    if (snapshot?.routePolyline) {
+      const decoded = decodeEncodedPolyline(snapshot.routePolyline)
+      if (decoded.length > 2) {
+        setRoadRoute(decoded)
+        return
+      }
+    }
+
+    // Otherwise calculate turn-by-turn road route via Google Directions / OSRM
+    let active = true
+    fetchRoadRoute(storePos, destinationPos).then((points) => {
+      if (active && points.length > 1) {
+        setRoadRoute(points)
+      }
+    })
+
+    return () => {
+      active = false
+    }
+  }, [snapshot?.routePolyline, storePos, destinationPos])
+
+  // Final road polyline points for map rendering
   const routePoints = useMemo<LatLngPoint[]>(() => {
     if (snapshot?.routePolyline) {
       const decoded = decodeEncodedPolyline(snapshot.routePolyline)
-      if (decoded.length > 1) return decoded
+      if (decoded.length > 2) return decoded
     }
+    if (roadRoute.length > 1) return roadRoute
     if (destinationPos) {
       return [storePos, destinationPos]
     }
     return []
-  }, [snapshot?.routePolyline, storePos, destinationPos])
+  }, [snapshot?.routePolyline, roadRoute, storePos, destinationPos])
 
   const effectiveProgress = useMemo(() => {
     if (snapshot?.orderStatus === 'DELIVERED') return 1

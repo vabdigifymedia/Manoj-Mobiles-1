@@ -119,3 +119,68 @@ export function decodeEncodedPolyline(encoded: string): LatLngPoint[] {
 
   return points
 }
+
+/**
+ * Fetches turn-by-turn road polyline between origin and destination.
+ * 1. Tries Google Maps DirectionsService if available in the browser.
+ * 2. Falls back to free public OSRM road routing engine (no API key required).
+ * 3. Falls back to straight line [origin, destination] if both fail.
+ */
+export async function fetchRoadRoute(
+  origin: LatLngPoint,
+  destination: LatLngPoint
+): Promise<LatLngPoint[]> {
+  if (!origin?.lat || !origin?.lng || !destination?.lat || !destination?.lng) {
+    return []
+  }
+
+  // 1. Try Google Maps DirectionsService in browser
+  if (typeof window !== 'undefined' && window.google?.maps?.DirectionsService) {
+    try {
+      const directionsService = new window.google.maps.DirectionsService()
+      const result = await new Promise<google.maps.DirectionsResult | null>((resolve) => {
+        directionsService.route(
+          {
+            origin: { lat: origin.lat, lng: origin.lng },
+            destination: { lat: destination.lat, lng: destination.lng },
+            travelMode: window.google.maps.TravelMode.DRIVING,
+          },
+          (res, status) => {
+            if (status === window.google.maps.DirectionsStatus.OK && res) {
+              resolve(res)
+            } else {
+              resolve(null)
+            }
+          }
+        )
+      })
+
+      if (result?.routes?.[0]?.overview_path?.length) {
+        return result.routes[0].overview_path.map((pt) => ({
+          lat: pt.lat(),
+          lng: pt.lng(),
+        }))
+      }
+    } catch {
+      // Fallback to OSRM below
+    }
+  }
+
+  // 2. Fallback to OpenStreetMap / OSRM public road routing API (no API key needed)
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`
+    const res = await fetch(url)
+    if (res.ok) {
+      const data = await res.json()
+      const coords = data?.routes?.[0]?.geometry?.coordinates
+      if (Array.isArray(coords) && coords.length > 1) {
+        return coords.map(([lng, lat]: [number, number]) => ({ lat, lng }))
+      }
+    }
+  } catch {
+    // Fallback to straight line
+  }
+
+  // 3. Fallback: straight line
+  return [origin, destination]
+}

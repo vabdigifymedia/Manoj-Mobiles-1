@@ -11,6 +11,7 @@ import { apiClient } from '@/lib/apiClient'
 import { useOrderTracking } from '@/lib/useOrderTracking'
 import {
   decodeEncodedPolyline,
+  fetchRoadRoute,
   getGoogleMapThemeOptions,
   GOOGLE_MAPS_LIBRARIES,
   GOOGLE_MAPS_SCRIPT_ID,
@@ -85,6 +86,7 @@ export const HyperlocalTracker = ({
   )
 
   const [storeSettings, setStoreSettings] = useState<StoreSettingResponseDTO | null>(null)
+  const [roadRoute, setRoadRoute] = useState<LatLngPoint[]>([])
   const mapRef = useRef<google.maps.Map | null>(null)
   const hasFittedBoundsRef = useRef(false)
 
@@ -119,17 +121,42 @@ export const HyperlocalTracker = ({
     return null
   }, [snapshot?.destination?.lat, snapshot?.destination?.lng, order.address?.lat, order.address?.lng])
 
-  // Decode route polyline from backend (straight-line fallback if unset)
+  // Fetch turn-by-turn road polyline (uses backend polyline, or Google Directions, or free OSRM engine)
+  useEffect(() => {
+    if (!destinationPos || !storePos) return
+
+    if (snapshot?.routePolyline) {
+      const decoded = decodeEncodedPolyline(snapshot.routePolyline)
+      if (decoded.length > 2) {
+        setRoadRoute(decoded)
+        return
+      }
+    }
+
+    let active = true
+    fetchRoadRoute(storePos, destinationPos).then((points) => {
+      if (active && points.length > 1) {
+        setRoadRoute(points)
+      }
+    })
+
+    return () => {
+      active = false
+    }
+  }, [snapshot?.routePolyline, storePos, destinationPos])
+
+  // Final turn-by-turn road polyline for map rendering
   const routePath = useMemo<LatLngPoint[]>(() => {
     if (snapshot?.routePolyline) {
       const decoded = decodeEncodedPolyline(snapshot.routePolyline)
-      if (decoded.length > 1) return decoded
+      if (decoded.length > 2) return decoded
     }
+    if (roadRoute.length > 1) return roadRoute
     if (destinationPos) {
       return [storePos, destinationPos]
     }
     return []
-  }, [snapshot?.routePolyline, storePos, destinationPos])
+  }, [snapshot?.routePolyline, roadRoute, storePos, destinationPos])
 
   const effectiveStatus = snapshot?.orderStatus || order.orderStatus
   const effectiveProgress = useMemo(() => {
