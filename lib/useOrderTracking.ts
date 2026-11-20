@@ -90,19 +90,20 @@ export function useOrderTracking(
     const userId = Cookies.get('userId')
     if (!refreshToken || !userId) return null
     try {
-      const res = await fetch(`${apiBaseUrl}/api/auth/refresh-token`, {
+      const res = await fetch(`${apiBaseUrl}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken, userId }),
       })
       if (!res.ok) return null
       const data = await res.json()
-      if (data?.data?.accessToken) {
-        Cookies.set('accessToken', data.data.accessToken)
-        if (data.data.refreshToken) {
+      const newToken = data?.data?.token || data?.data?.accessToken
+      if (newToken) {
+        Cookies.set('accessToken', newToken, { expires: 1 })
+        if (data.data?.refreshToken) {
           Cookies.set('refreshToken', data.data.refreshToken, { expires: 7 })
         }
-        return data.data.accessToken
+        return newToken
       }
     } catch {
       // silent
