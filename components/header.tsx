@@ -32,7 +32,7 @@ import {
   FaTableCellsLarge,
 } from 'react-icons/fa6'
 import { useTheme } from 'next-themes'
-import { useEffect, useState, useRef, useTransition } from 'react'
+import { useEffect, useState, useRef, useTransition, useCallback } from 'react'
 import { useStore } from './store-provider'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/apiClient'
@@ -207,7 +207,7 @@ export function Header() {
 
   // Mobile Menu & Modals State
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [pincode, setPincode] = useState('Bangalore - 560100')
+  const [pincode, setPincode] = useState('Select your delivery location')
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false)
   const [tempPincode, setTempPincode] = useState('')
   const [pincodeError, setPincodeError] = useState('')
@@ -297,13 +297,130 @@ export function Header() {
     scheduleMenuClose(180)
   }
 
-  // Load Saved Pincode
-  useEffect(() => {
-    const savedPincode = localStorage.getItem('user_pincode')
-    if (savedPincode) {
-      setPincode(savedPincode)
+  // Geolocation detection and reverse-geocoding function
+  const detectLocation = useCallback(async (isAuto = true) => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      if (!localStorage.getItem('user_pincode')) {
+        setPincode('Select your delivery location')
+      }
+      return
     }
+
+    setIsDetectingLocation(true)
+    setPincodeError('')
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords
+          const res = await fetch(`/api/reverse-geocode?lat=${latitude}&lng=${longitude}`)
+          if (res.ok) {
+            const data = await res.json()
+            if (data.formatted) {
+              setPincode(data.formatted)
+              localStorage.setItem('user_pincode', data.formatted)
+              localStorage.setItem('user_delivery_location', data.formatted)
+              if (!isAuto) {
+                // User manually clicked "Use My Current Location"
+                localStorage.removeItem('manual_location_set')
+              }
+              setIsDetectingLocation(false)
+              setIsLocationModalOpen(false)
+              return
+            }
+          }
+        } catch (e) {
+          console.error('Reverse geocode error:', e)
+        }
+
+        setIsDetectingLocation(false)
+        const saved = localStorage.getItem('user_pincode')
+        if (!saved) {
+          setPincode('Select your delivery location')
+        }
+      },
+      (err) => {
+        setIsDetectingLocation(false)
+        const saved = localStorage.getItem('user_pincode')
+        if (!saved) {
+          setPincode('Select your delivery location')
+        }
+        if (!isAuto) {
+          if (err.code === err.PERMISSION_DENIED) {
+            setPincodeError('Location permission was denied in your browser settings. Please enter your PIN code manually.')
+          } else {
+            setPincodeError('Unable to detect location. Please enter your PIN code manually.')
+          }
+        }
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 300000,
+      }
+    )
   }, [])
+
+  // Automatic Location Detection on Visit & Load Saved Location
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const saved = localStorage.getItem('user_delivery_location') || localStorage.getItem('user_pincode')
+    const isManual = localStorage.getItem('manual_location_set') === 'true'
+
+    if (saved) {
+      setPincode(saved)
+    } else {
+      setPincode('Select your delivery location')
+    }
+
+    // A manually selected location must not be silently overwritten by automatic detection
+    if (isManual && saved) {
+      return
+    }
+
+    // Use native Geolocation Permissions API to inspect status
+    if ('permissions' in navigator && navigator.permissions?.query) {
+      navigator.permissions
+        .query({ name: 'geolocation' })
+        .then((permissionStatus) => {
+          if (permissionStatus.state === 'granted') {
+            // Already granted: detect silently without user prompt
+            detectLocation(true)
+          } else if (permissionStatus.state === 'prompt') {
+            // First visit / permission not yet granted: trigger native browser permission popup
+            // Only prompt once per session so repeated page navigation does not repeatedly trigger prompt
+            if (!sessionStorage.getItem('manoj_geo_prompted')) {
+              sessionStorage.setItem('manoj_geo_prompted', 'true')
+              detectLocation(true)
+            }
+          } else if (permissionStatus.state === 'denied') {
+            // Permission denied: do not prompt; keep manual selection
+            if (!saved) {
+              setPincode('Select your delivery location')
+            }
+          }
+
+          // If user updates permission in browser settings
+          permissionStatus.onchange = () => {
+            if (permissionStatus.state === 'granted') {
+              detectLocation(true)
+            }
+          }
+        })
+        .catch(() => {
+          if (!sessionStorage.getItem('manoj_geo_prompted')) {
+            sessionStorage.setItem('manoj_geo_prompted', 'true')
+            detectLocation(true)
+          }
+        })
+    } else if ('geolocation' in navigator) {
+      if (!sessionStorage.getItem('manoj_geo_prompted')) {
+        sessionStorage.setItem('manoj_geo_prompted', 'true')
+        detectLocation(true)
+      }
+    }
+  }, [detectLocation])
 
   // Function to fetch store categories dynamically from backend
   const fetchStoreCategories = () => {
@@ -586,6 +703,8 @@ export function Header() {
     const finalVal = code.includes('-') ? code : `PIN - ${code}`
     setPincode(finalVal)
     localStorage.setItem('user_pincode', finalVal)
+    localStorage.setItem('user_delivery_location', finalVal)
+    localStorage.setItem('manual_location_set', 'true')
     setTempPincode('')
     setPincodeError('')
     setIsLocationModalOpen(false)
@@ -593,26 +712,8 @@ export function Header() {
 
   // Geolocation detection handler
   const handleDetectLocation = () => {
-    if (!navigator.geolocation) {
-      setPincodeError('Geolocation not supported by your browser')
-      return
-    }
-    setIsDetectingLocation(true)
-    setPincodeError('')
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        const detected = 'Bengaluru - 560100'
-        setPincode(detected)
-        localStorage.setItem('user_pincode', detected)
-        setIsDetectingLocation(false)
-        setIsLocationModalOpen(false)
-      },
-      () => {
-        setIsDetectingLocation(false)
-        setPincodeError('Unable to retrieve location. Please enter your PIN code manually.')
-      },
-      { timeout: 7000 }
-    )
+    localStorage.removeItem('manual_location_set')
+    detectLocation(false)
   }
 
   // Toggle mobile accordion category
@@ -683,18 +784,21 @@ export function Header() {
                 type="button"
                 onClick={() => setIsLocationModalOpen(true)}
                 className="shrink-0 flex items-center gap-2.5 text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                title="Change delivery location"
+                title={isDetectingLocation ? 'Detecting your location...' : `Delivery to ${pincode}`}
                 aria-label="Delivery location selector"
               >
-                <div className="size-8 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 grid place-items-center shrink-0 group-hover:scale-105 transition-transform">
+                <div className={`size-8 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 grid place-items-center shrink-0 group-hover:scale-105 transition-transform ${isDetectingLocation ? 'animate-pulse' : ''}`}>
                   <FaLocationDot size={16} />
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 leading-tight">
                     Delivery to
                   </span>
-                  <span className="text-xs lg:text-sm font-bold text-slate-900 dark:text-white leading-tight underline decoration-slate-300 dark:decoration-zinc-700 underline-offset-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate max-w-[130px] lg:max-w-[160px]">
-                    {pincode}
+                  <span 
+                    className="text-xs lg:text-sm font-bold text-slate-900 dark:text-white leading-tight underline decoration-slate-300 dark:decoration-zinc-700 underline-offset-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate max-w-[140px] lg:max-w-[190px]"
+                    title={isDetectingLocation ? 'Detecting your location...' : pincode}
+                  >
+                    {isDetectingLocation ? 'Detecting your location...' : pincode}
                   </span>
                 </div>
               </button>
@@ -1629,14 +1733,15 @@ export function Header() {
 
           {/* MOBILE SECOND ROW – Compact Delivery Location Strip */}
           <div className="border-t border-slate-100 dark:border-zinc-800/80 bg-slate-50/70 dark:bg-zinc-900/60 px-4 py-2 flex items-center gap-2">
-            <FaLocationDot size={14} className="text-blue-600 dark:text-blue-400 shrink-0" />
+            <FaLocationDot size={14} className={`text-blue-600 dark:text-blue-400 shrink-0 ${isDetectingLocation ? 'animate-pulse' : ''}`} />
             <span className="text-xs text-slate-500 dark:text-zinc-400 shrink-0">Delivery to</span>
             <button
               type="button"
               onClick={() => setIsLocationModalOpen(true)}
-              className="text-xs font-bold text-slate-900 dark:text-white underline decoration-slate-300 dark:decoration-zinc-700 underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400 truncate text-left max-w-[240px] cursor-pointer"
+              className="text-xs font-bold text-slate-900 dark:text-white underline decoration-slate-300 dark:decoration-zinc-700 underline-offset-2 hover:text-blue-600 dark:hover:text-blue-400 truncate text-left max-w-[240px] sm:max-w-[320px] cursor-pointer"
+              title={isDetectingLocation ? 'Detecting your location...' : pincode}
             >
-              {pincode}
+              {isDetectingLocation ? 'Detecting your location...' : pincode}
             </button>
           </div>
 
@@ -2015,7 +2120,9 @@ export function Header() {
             {/* Current Selected Location Indicator */}
             <div className="mb-4 p-3 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs">
               <span className="text-slate-500 dark:text-zinc-400">Current setting:</span>
-              <span className="font-bold text-slate-900 dark:text-white">{pincode}</span>
+              <span className="font-bold text-slate-900 dark:text-white truncate max-w-[240px]" title={pincode}>
+                {isDetectingLocation ? 'Detecting your location...' : pincode}
+              </span>
             </div>
 
             {/* Pincode Input Form */}
