@@ -86,8 +86,8 @@ export default async function HomePage() {
   const samsungBrand = findBrand(brandList, 'samsung')
   const appleBrand = findBrand(brandList, 'apple')
 
-  const samsungProducts = (samsungBrand ? selectByBrand(enrichedCatalog, samsungBrand) : selectByBrand(enrichedCatalog, 'samsung')).slice(0, 6)
-  const iphoneProducts = (appleBrand ? selectByBrand(enrichedCatalog, appleBrand) : selectByBrand(enrichedCatalog, 'apple')).slice(0, 6)
+  const samsungProducts = (samsungBrand ? selectByBrand(enrichedCatalog, samsungBrand) : selectByBrand(enrichedCatalog, 'samsung')).slice(0, 16)
+  const iphoneProducts = (appleBrand ? selectByBrand(enrichedCatalog, appleBrand) : selectByBrand(enrichedCatalog, 'apple')).slice(0, 16)
 
   // ---- Trending Phones (Admin-marked mobile phones) ----
   const trendingPhones = selectTrendingPhones(enrichedCatalog, trendingIds, 12)

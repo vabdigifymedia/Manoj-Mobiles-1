@@ -1134,7 +1134,7 @@ export function Header() {
 
                     items.push(
                       <div
-                        key={cat.id || cat.slug}
+                        key={`${cat.id || cat.slug || 'cat'}-${idx}`}
                         className="relative shrink-0 overflow-visible"
                         onMouseEnter={() => handleItemMouseEnter(cat.id, hasDropdown)}
                       >

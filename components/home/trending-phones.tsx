@@ -38,8 +38,8 @@ export function TrendingPhones({ products }: TrendingPhonesProps) {
 
       {/* Product Display: Horizontal Carousel on Mobile, Responsive Grid on Desktop */}
       <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide snap-x snap-mandatory sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 md:grid-cols-3 lg:grid-cols-4">
-        {products.map(product => (
-          <div key={product.id} className="min-w-[260px] sm:min-w-0 shrink-0 snap-start flex flex-col">
+        {products.map((product, idx) => (
+          <div key={`${product.id || 'trending'}-${idx}`} className="min-w-[260px] sm:min-w-0 shrink-0 snap-start flex flex-col">
             <ProductCard product={product} />
           </div>
         ))}

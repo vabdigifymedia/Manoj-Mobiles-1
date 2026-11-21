@@ -115,8 +115,8 @@ export function CategoryProductSection({ category, products }: CategorySectionPr
         ref={scrollRef}
         className="flex gap-3 md:gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:overflow-visible sm:pb-0"
       >
-        {products.map(product => (
-          <div key={product.id} className="w-[185px] sm:w-auto shrink-0 snap-start">
+        {products.map((product, idx) => (
+          <div key={`${product.id || 'cat-prod'}-${idx}`} className="w-[185px] sm:w-auto shrink-0 snap-start">
             <ProductCard product={product} />
           </div>
         ))}

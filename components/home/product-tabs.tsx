@@ -63,8 +63,8 @@ export function ProductTabs({ newArrivals, bestSellers, budgetPicks }: ProductTa
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
-          {currentProducts.map(product => (
-            <ProductCard key={product.id} product={product as any} />
+          {currentProducts.map((product, idx) => (
+            <ProductCard key={`${product.id || 'tab'}-${idx}`} product={product as any} />
           ))}
         </div>
       )}

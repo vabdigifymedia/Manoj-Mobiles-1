@@ -50,9 +50,7 @@ export function ShopByPrice() {
       <div className="flex items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div className="flex-1 h-px bg-slate-200 dark:bg-zinc-800 max-w-xs sm:max-w-sm md:max-w-md" />
         <div className="flex items-center gap-2.5 shrink-0 px-2">
-          <span className="grid place-items-center size-8 sm:size-9 rounded-xl bg-blue-600 text-white shadow-xs">
-            <FaTag size={14} className="-rotate-45" />
-          </span>
+          <FaTag className="text-blue-600 dark:text-blue-400 size-6 sm:size-7 -rotate-45 shrink-0" />
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             Shop By Price
           </h2>
@@ -72,20 +70,20 @@ export function ShopByPrice() {
             {/* Left Content Area */}
             <div className="relative z-10 flex flex-col justify-between h-full max-w-[58%] sm:max-w-[60%]">
               <div>
-                <p className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-zinc-100 leading-tight">
+                <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-zinc-100 leading-tight">
                   {card.prefix}
                 </p>
-                <h3 className="text-2xl sm:text-3xl lg:text-[26px] xl:text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight leading-tight mt-0.5">
+                <h3 className="text-3xl sm:text-4xl font-extrabold text-blue-600 dark:text-blue-500 tracking-tight leading-none mt-1">
                   {card.price}
                 </h3>
-                <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-zinc-400 mt-1.5 leading-snug">
+                <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-zinc-400 mt-2 leading-snug">
                   {card.subtitle}
                 </p>
               </div>
 
               {/* Shop Now Pill Button */}
               <div className="mt-4 sm:mt-5">
-                <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50/90 dark:bg-blue-950/70 border border-blue-200/70 dark:border-blue-800/60 text-blue-600 dark:text-blue-400 font-bold text-xs group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-200 shadow-2xs">
+                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-blue-50/90 dark:bg-blue-950/70 border border-blue-200/80 dark:border-blue-800/60 text-blue-600 dark:text-blue-400 font-bold text-xs sm:text-sm group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-200 shadow-2xs">
                   <span>{card.ctaText}</span>
                   <FaChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
                 </span>

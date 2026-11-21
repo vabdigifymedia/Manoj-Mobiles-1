@@ -46,9 +46,9 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
         className="flex md:grid md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-5 overflow-x-auto md:overflow-visible pb-3 md:pb-0 scroll-smooth scrollbar-hide snap-x"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {brands.map(brand => (
+        {brands.map((brand, idx) => (
           <Link
-            key={brand.id}
+            key={`${brand.id || brand.slug || 'brand'}-${idx}`}
             href={`/shop?brand=${brand.slug}`}
             title={brand.name}
             className="group flex flex-col items-center gap-2 shrink-0 md:shrink snap-start transition-transform duration-300 hover:-translate-y-1"
