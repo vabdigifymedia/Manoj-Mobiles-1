@@ -22,6 +22,7 @@ import { QuickFeatures } from '@/components/home/quick-features'
 import { BankOffers } from '@/components/home/bank-offers'
 import { TrendingPhones } from '@/components/home/trending-phones'
 import { BrandSpotlight } from '@/components/home/brand-spotlight'
+import { ShopByPrice } from '@/components/home/shop-by-price'
 import { BudgetPhones } from '@/components/home/budget-phones'
 import { EmiEligibilityBanner } from '@/components/home/emi-eligibility-banner'
 import { CategoryProductSection } from '@/components/home/category-section'
@@ -121,6 +122,9 @@ export default async function HomePage() {
 
       {/* Brand Spotlight - iPhone */}
       <BrandSpotlight brandName="Apple" title="Best Of Apple" products={iphoneProducts} />
+
+      {/* Shop By Price Section */}
+      <ShopByPrice />
 
       {/* Deal of the Day */}
       <DealOfTheDay banner={activeDeal} />

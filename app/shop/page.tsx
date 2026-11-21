@@ -74,13 +74,18 @@ export const metadata: Metadata = {
 }
 
 export default async function ShopPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const { q, brand, category, minPrice, maxPrice, trending } = await searchParams
+  const { q, brand, category, minPrice, maxPrice, trending, priceBracket, priceRange } = await searchParams
   const searchQuery = typeof q === 'string' ? q.trim() : ''
   const brandQuery = typeof brand === 'string' ? brand.trim() : ''
   const categoryQuery = typeof category === 'string' ? category.trim() : ''
   const minPriceQuery = typeof minPrice === 'string' ? minPrice.trim() : ''
   const maxPriceQuery = typeof maxPrice === 'string' ? maxPrice.trim() : ''
   const isTrendingQuery = trending === 'true'
+  const rawPriceBracket = typeof priceBracket === 'string'
+    ? priceBracket.trim().toLowerCase()
+    : typeof priceRange === 'string'
+    ? priceRange.trim().toLowerCase()
+    : ''
 
   const [brandsRes, categoriesRes] = await Promise.all([
     serverFetch<PageResponse<BrandResponseDTO>>('/api/public/brands?page=0&size=100'),
@@ -153,11 +158,22 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   if (activeCategoryObj) {
     candidateProducts = candidateProducts.filter(p => matchesCategory(p, activeCategoryObj))
-  } else if (parsedSearch?.categoryType === 'mobiles') {
+  } else if (
+    parsedSearch?.categoryType === 'mobiles' ||
+    ['mobiles', 'mobile', 'smartphones', 'smart-mobile', 'smart-mobiles', 'phones', 'phone'].includes(resolvedCategorySlug.toLowerCase()) ||
+    Boolean(rawPriceBracket)
+  ) {
     candidateProducts = candidateProducts.filter(isMobileProduct)
   }
 
-  if (effectiveMaxPrice !== undefined) {
+  // Pre-filter candidate products based on brand, category, and price buffer
+  if (rawPriceBracket === 'below-15000') {
+    candidateProducts = candidateProducts.filter(p => isMobileProduct(p) && (p.price || p.startingPrice) < 15000 * 1.5)
+  } else if (rawPriceBracket === '15000-30000') {
+    candidateProducts = candidateProducts.filter(p => isMobileProduct(p) && (p.price || p.startingPrice) <= 30000 * 1.5)
+  } else if (rawPriceBracket === 'above-30000') {
+    candidateProducts = candidateProducts.filter(p => isMobileProduct(p))
+  } else if (effectiveMaxPrice !== undefined) {
     candidateProducts = candidateProducts.filter(p => (p.price || p.startingPrice) <= effectiveMaxPrice! * 1.5)
   }
 
@@ -173,6 +189,9 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   let productsResData: CatalogProduct[] = candidateProducts
   if (parsedSearch) {
     productsResData = filterCatalogWithSmartSearch(candidateProducts, parsedSearch, detailsMap)
+  } else if (rawPriceBracket) {
+    // When filtering by price bracket, keep candidate products so variant-level checks accurately decide inclusion
+    productsResData = candidateProducts
   } else {
     productsResData = filterCatalog(candidateProducts, {
       brand: activeBrandObj ?? (brandQuery || null),
@@ -193,12 +212,23 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
     // Apply structured filters (Price, RAM, Storage) at the variant level
     const filteredVariants = p.variants.filter(v => {
-      // 1. Price check
-      if (effectiveMinPrice !== undefined && v.sellingPrice < effectiveMinPrice) {
-        return false
-      }
-      if (effectiveMaxPrice !== undefined && v.sellingPrice > effectiveMaxPrice) {
-        return false
+      // 1. Price check with exact mathematical conditions
+      if (rawPriceBracket === 'below-15000') {
+        // Below ₹15,000: strictly less than ₹15,000 (price < 15000)
+        if (v.sellingPrice >= 15000) return false
+      } else if (rawPriceBracket === '15000-30000') {
+        // ₹15,000 – ₹30,000: priced between ₹15,000 and ₹30,000 inclusive (price >= 15000 AND price <= 30000)
+        if (v.sellingPrice < 15000 || v.sellingPrice > 30000) return false
+      } else if (rawPriceBracket === 'above-30000') {
+        // Above ₹30,000: strictly greater than ₹30,000 (price > 30000)
+        if (v.sellingPrice <= 30000) return false
+      } else {
+        if (effectiveMinPrice !== undefined && v.sellingPrice < effectiveMinPrice) {
+          return false
+        }
+        if (effectiveMaxPrice !== undefined && v.sellingPrice > effectiveMaxPrice) {
+          return false
+        }
       }
 
       // 2. RAM check (skipped completely for Apple products)
@@ -302,12 +332,17 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     `shop-products-${todayIndia}`
   )
 
-  const hasFilters = brandQuery || categoryQuery || searchQuery || minPriceQuery || maxPriceQuery
+  const hasFilters = brandQuery || categoryQuery || searchQuery || minPriceQuery || maxPriceQuery || rawPriceBracket
 
   const activeCriteria: { label: string; value: string }[] = []
   if (parsedSearch?.brandName) activeCriteria.push({ label: 'Brand', value: parsedSearch.brandName })
-  if (parsedSearch?.maxPrice) activeCriteria.push({ label: 'Budget', value: `Under ₹${parsedSearch.maxPrice.toLocaleString('en-IN')}` })
-  if (parsedSearch?.minPrice) activeCriteria.push({ label: 'Min Price', value: `Above ₹${parsedSearch.minPrice.toLocaleString('en-IN')}` })
+  if (rawPriceBracket === 'below-15000') activeCriteria.push({ label: 'Price Range', value: 'Below ₹15,000' })
+  else if (rawPriceBracket === '15000-30000') activeCriteria.push({ label: 'Price Range', value: '₹15,000 – ₹30,000' })
+  else if (rawPriceBracket === 'above-30000') activeCriteria.push({ label: 'Price Range', value: 'Above ₹30,000' })
+  else {
+    if (parsedSearch?.maxPrice) activeCriteria.push({ label: 'Budget', value: `Under ₹${parsedSearch.maxPrice.toLocaleString('en-IN')}` })
+    if (parsedSearch?.minPrice) activeCriteria.push({ label: 'Min Price', value: `Above ₹${parsedSearch.minPrice.toLocaleString('en-IN')}` })
+  }
   if (parsedSearch?.ramLabel) activeCriteria.push({ label: 'RAM', value: parsedSearch.ramLabel })
   else if (parsedSearch?.ramGb && !parsedSearch.isApple) activeCriteria.push({ label: 'RAM', value: `${parsedSearch.ramGb}GB` })
   if (parsedSearch?.storageLabel) activeCriteria.push({ label: 'Storage', value: parsedSearch.storageLabel })
@@ -320,6 +355,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     ? `Results for "${searchQuery}"`
     : isTrendingQuery
     ? 'Trending Phones'
+    : rawPriceBracket === 'below-15000'
+    ? 'Phones Below ₹15,000'
+    : rawPriceBracket === '15000-30000'
+    ? 'Phones Between ₹15,000 – ₹30,000'
+    : rawPriceBracket === 'above-30000'
+    ? 'Premium Phones Above ₹30,000'
     : activeBrandObj
     ? `${activeBrandObj.name} Mobiles`
     : categoryQuery
@@ -330,6 +371,8 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     ? 'Search Results'
     : isTrendingQuery
     ? 'Featured & Trending'
+    : rawPriceBracket
+    ? 'Shop By Price'
     : activeBrandObj
     ? 'Brand Store'
     : hasFilters
