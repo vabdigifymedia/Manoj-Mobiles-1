@@ -131,6 +131,9 @@ export default function AdminCategoriesPage() {
 
       setShowForm(false)
       loadData()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('categories_updated'))
+      }
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } }
       setError(axiosErr?.response?.data?.message || 'Failed to save category')
@@ -144,6 +147,9 @@ export default function AdminCategoriesPage() {
     try {
       await apiClient.deleteCategory(id)
       loadData()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('categories_updated'))
+      }
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } }
       setError(axiosErr?.response?.data?.message || 'Failed to delete category')

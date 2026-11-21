@@ -119,6 +119,11 @@ export default function AdminBrandsPage() {
       if (savedBrandId) {
         await apiClient.saveBrandCategories(savedBrandId, form.categoryIds)
       }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('brands_updated'))
+        window.dispatchEvent(new CustomEvent('categories_updated'))
+      }
       
       setShowForm(false)
       loadData()
@@ -134,6 +139,10 @@ export default function AdminBrandsPage() {
     if (!confirm('Are you sure you want to delete this brand?')) return
     try {
       await apiClient.deleteBrand(id)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('brands_updated'))
+        window.dispatchEvent(new CustomEvent('categories_updated'))
+      }
       loadData()
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } }
