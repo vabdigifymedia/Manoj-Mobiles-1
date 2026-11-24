@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FaDesktop, FaMobileScreen, FaFire, FaArrowUpRightFromSquare, FaImage } from 'react-icons/fa6'
 import type { BannerRequestDTO } from '@/lib/types'
 
@@ -10,6 +10,7 @@ interface BannerLivePreviewProps {
 
 export function BannerLivePreview({ banner }: BannerLivePreviewProps) {
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop')
+  const [dimensions, setDimensions] = useState<{ width: number; height: number; ratio: number } | null>(null)
 
   const placement = banner.placement || 'hero'
   const isImageOnly =
@@ -22,15 +23,39 @@ export function BannerLivePreview({ banner }: BannerLivePreviewProps) {
   const displayImage =
     viewMode === 'mobile' && banner.mobileImageUrl ? banner.mobileImageUrl : banner.imageUrl
 
+  // Detect image natural dimensions dynamically
+  useEffect(() => {
+    if (!displayImage) {
+      setDimensions(null)
+      return
+    }
+    const img = new Image()
+    img.onload = () => {
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        setDimensions({
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          ratio: img.naturalWidth / img.naturalHeight,
+        })
+      }
+    }
+    img.src = displayImage
+  }, [displayImage])
+
   const getPlacementLabel = () => {
     if (placement === 'single') return 'Single Promotional Banner (Wide, Full-Width)'
     if (placement === 'grid') return `Five-Banner Grid (Position ${banner.gridPosition || 1})`
     return 'Hero Slider Banner (Auto-Dissolving 3–4s)'
   }
 
+  // Fallback aspect ratios by placement if not loaded yet
+  const fallbackRatio =
+    placement === 'single' ? 4.8 : placement === 'grid' ? (banner.gridPosition === 2 ? 1.84 : 0.873) : 3.05
+  const currentRatio = dimensions ? dimensions.ratio : fallbackRatio
+
   return (
     <div className="w-full rounded-2xl border border-border bg-card p-4 shadow-sm">
-      {/* Header with Viewport Switcher */}
+      {/* Header with Viewport Switcher & Dimensions Info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-border pb-3">
         <div>
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -40,7 +65,14 @@ export function BannerLivePreview({ banner }: BannerLivePreviewProps) {
             </span>
             Live Website Preview
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">{getPlacementLabel()}</p>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <p className="text-xs text-muted-foreground">{getPlacementLabel()}</p>
+            {dimensions && (
+              <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                {dimensions.width} × {dimensions.height}px ({dimensions.ratio.toFixed(2)}:1)
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Desktop / Mobile toggle pill */}
@@ -73,33 +105,31 @@ export function BannerLivePreview({ banner }: BannerLivePreviewProps) {
       </div>
 
       {/* Preview Container Frame */}
-      <div className="w-full flex justify-center bg-zinc-950/80 rounded-2xl p-3 sm:p-6 min-h-[200px] overflow-hidden">
+      <div className="w-full flex justify-center bg-zinc-950/80 rounded-2xl p-3 sm:p-6 min-h-[160px] overflow-hidden">
         <div
           className={`transition-all duration-300 ${
             viewMode === 'mobile' ? 'w-[320px] sm:w-[360px]' : 'w-full max-w-4xl'
           }`}
         >
           {!displayImage ? (
-            <div className="flex flex-col items-center justify-center min-h-[180px] rounded-2xl border border-dashed border-zinc-800 text-zinc-500 text-center p-6">
+            <div className="flex flex-col items-center justify-center min-h-[160px] rounded-2xl border border-dashed border-zinc-800 text-zinc-500 text-center p-6">
               <FaImage size={32} className="mb-2 opacity-50" />
               <p className="text-xs font-bold">No Banner Image Selected</p>
               <p className="text-[11px] text-zinc-600 mt-1">Upload an image to see live preview.</p>
             </div>
           ) : isImageOnly ? (
-            /* Option A: Pure Readymade Image Banner */
+            /* Option A: Pure Readymade Image Banner with Dynamic Aspect-Ratio & Zero Cropping */
             <div
-              className={`group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-xl transition-all w-full ${
-                placement === 'single'
-                  ? 'h-[140px] sm:h-[180px] md:h-[220px]'
-                  : placement === 'grid'
-                  ? 'h-[200px] sm:h-[260px]'
-                  : 'h-[180px] sm:h-[240px] md:h-[300px]'
-              }`}
+              className="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-xl transition-all w-full flex items-center justify-center"
+              style={{
+                aspectRatio: `${currentRatio}`,
+                maxHeight: '440px',
+              }}
             >
               <img
                 src={displayImage}
                 alt={banner.title || 'Banner'}
-                className="w-full h-full object-cover object-center block"
+                className="w-full h-full object-contain object-center block"
               />
 
               {/* Hover indicator showing link URL */}
@@ -142,11 +172,13 @@ export function BannerLivePreview({ banner }: BannerLivePreviewProps) {
                   </p>
                 )}
 
-                <div className="mt-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-xl bg-white px-5 py-2 text-xs font-bold text-black shadow-md">
-                    {banner.ctaText || 'Shop Now'} →
-                  </span>
-                </div>
+                {banner.linkUrl && (
+                  <div className="mt-4">
+                    <span className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black shadow-md">
+                      {banner.ctaText || 'Shop Now'} →
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}

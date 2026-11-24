@@ -20,6 +20,7 @@ interface BannerImageUploaderProps {
   onUploadSuccess: (url: string) => void
   onRemove: () => void
   onUploadingStateChange?: (isUploading: boolean) => void
+  onDimensionsDetected?: (dims: { width: number; height: number; aspectRatio: number }) => void
   folder?: string
 }
 
@@ -31,6 +32,7 @@ export function BannerImageUploader({
   onUploadSuccess,
   onRemove,
   onUploadingStateChange,
+  onDimensionsDetected,
   folder = 'banners',
 }: BannerImageUploaderProps) {
   const [file, setFile] = useState<File | null>(null)
@@ -41,7 +43,33 @@ export function BannerImageUploader({
   )
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [isDragging, setIsDragging] = useState<boolean>(false)
+  const [detectedDimensions, setDetectedDimensions] = useState<{
+    width: number
+    height: number
+    aspectRatio: number
+  } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Automatically detect dimensions when preview URL changes
+  useEffect(() => {
+    if (!previewUrl) {
+      setDetectedDimensions(null)
+      return
+    }
+    const img = new Image()
+    img.onload = () => {
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        const dims = {
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          aspectRatio: img.naturalWidth / img.naturalHeight,
+        }
+        setDetectedDimensions(dims)
+        onDimensionsDetected?.(dims)
+      }
+    }
+    img.src = previewUrl
+  }, [previewUrl, onDimensionsDetected])
 
   useEffect(() => {
     if (existingUrl && !file) {
@@ -138,6 +166,7 @@ export function BannerImageUploader({
     setProgress(0)
     setUploadState('IDLE')
     setErrorMessage('')
+    setDetectedDimensions(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
     onRemove()
   }
@@ -158,75 +187,86 @@ export function BannerImageUploader({
           </span>
         )}
       </div>
-      {helperText && (
-        <p className="text-xs text-muted-foreground mb-2 leading-relaxed">{helperText}</p>
-      )}
 
-      {/* Strictly hidden native file input */}
+      {helperText && <p className="text-xs text-muted-foreground mb-3">{helperText}</p>}
+
+      {/* Hidden File Input */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/jpg"
-        style={{ display: 'none' }}
         onChange={(e) => {
           if (e.target.files && e.target.files[0]) {
             handleFileSelect(e.target.files[0])
           }
         }}
+        className="hidden"
       />
 
-      {/* State 1: EMPTY / IDLE Dropzone Box */}
+      {/* State A: No image uploaded yet -> Drag & Drop Zone */}
       {uploadState === 'IDLE' && (
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={handleTriggerSelect}
-          className={`group relative cursor-pointer rounded-2xl border-2 border-dashed p-6 sm:p-8 text-center transition-all min-h-[200px] flex flex-col items-center justify-center ${
+          className={`cursor-pointer rounded-2xl border-2 border-dashed p-6 sm:p-8 text-center transition-all duration-200 flex flex-col items-center justify-center gap-3 ${
             isDragging
-              ? 'border-primary bg-primary/10 ring-4 ring-primary/20 scale-[1.01]'
-              : 'border-border bg-card hover:border-primary/60 hover:bg-muted/40 shadow-xs'
+              ? 'border-primary bg-primary/5 scale-[1.01]'
+              : 'border-border hover:border-primary/50 hover:bg-muted/40 bg-card'
           }`}
         >
-          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-            <FaImage size={24} />
+          <div className="size-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-xs">
+            <FaCloudArrowUp size={26} />
           </div>
-
-          <p className="mt-3 text-sm font-bold text-foreground">
-            {isDragging ? 'Drop your banner image here' : label}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Drag & drop your image here or
-          </p>
-
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-foreground">
+              Click to upload or drag & drop banner
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Supports JPG, PNG, WEBP up to 10MB • Dimensions are automatically detected
+            </p>
+          </div>
           <button
             type="button"
-            onClick={handleTriggerSelect}
-            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-xs"
+            className="mt-1 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
           >
             <FaArrowUpFromBracket size={12} />
-            <span>Choose Image</span>
+            <span>Select Image File</span>
           </button>
-
-          <p className="mt-4 text-[11px] font-semibold text-muted-foreground tracking-wider uppercase">
-            JPG • PNG • WEBP
-          </p>
         </div>
       )}
 
-      {/* State 2, 3, 4: SELECTED / UPLOADING / SUCCESS / ERROR (with Instant Preview) */}
-      {uploadState !== 'IDLE' && (
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-4">
-          {/* Banner Image Preview */}
-          <div className="relative w-full h-44 sm:h-48 rounded-xl overflow-hidden bg-zinc-950 border border-border flex items-center justify-center group">
+      {/* State B: Uploading, Success or Error -> Preview card with actions */}
+      {(uploadState === 'UPLOADING' || uploadState === 'SUCCESS' || uploadState === 'ERROR') && (
+        <div className="rounded-2xl border border-border bg-card p-4 space-y-4 shadow-sm">
+          {/* Image Preview Box with Dynamic Aspect-Ratio */}
+          <div
+            className="relative w-full rounded-xl overflow-hidden bg-zinc-950 flex items-center justify-center border border-border"
+            style={{
+              aspectRatio: detectedDimensions ? `${detectedDimensions.aspectRatio}` : '16 / 7',
+              maxHeight: '340px',
+              minHeight: '120px',
+            }}
+          >
             {previewUrl ? (
               <img
                 src={previewUrl}
-                alt="Banner Preview"
-                className="h-full w-full object-contain"
+                alt="Banner preview"
+                className="w-full h-full object-contain block"
               />
             ) : (
-              <FaImage size={32} className="text-muted-foreground opacity-50" />
+              <div className="text-muted-foreground flex flex-col items-center justify-center p-6">
+                <FaImage size={32} className="opacity-40 mb-2" />
+                <span className="text-xs">No preview available</span>
+              </div>
+            )}
+
+            {uploadState === 'UPLOADING' && (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center text-white p-4">
+                <div className="size-10 border-3 border-white/20 border-t-white rounded-full animate-spin mb-2" />
+                <span className="text-xs font-bold">Uploading {progress}%...</span>
+              </div>
             )}
 
             {uploadState === 'SUCCESS' && (
@@ -238,16 +278,23 @@ export function BannerImageUploader({
 
           {/* Details & Status Bar */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-xs font-bold text-foreground truncate max-w-[220px] sm:max-w-[320px]">
                   {file ? file.name : 'Uploaded Banner'}
                 </p>
-                {file && (
-                  <p className="text-[11px] text-muted-foreground font-semibold">
-                    {formatFileSize(file.size)}
-                  </p>
-                )}
+                <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                  {file && (
+                    <span className="text-[11px] text-muted-foreground font-semibold">
+                      {formatFileSize(file.size)}
+                    </span>
+                  )}
+                  {detectedDimensions && (
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      Auto-detected: {detectedDimensions.width} × {detectedDimensions.height}px (Ratio: {detectedDimensions.aspectRatio.toFixed(2)}:1)
+                    </span>
+                  )}
+                </div>
               </div>
 
               {uploadState === 'SUCCESS' && (
@@ -311,7 +358,7 @@ export function BannerImageUploader({
                 type="button"
                 onClick={handleRemove}
                 disabled={uploadState === 'UPLOADING'}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-destructive/30 text-destructive bg-destructive/5 px-3 py-1.5 text-xs font-bold hover:bg-destructive/10 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3.5 py-1.5 text-xs font-bold text-destructive hover:bg-destructive/20 disabled:opacity-50 transition-colors"
               >
                 <FaTrashCan size={12} />
                 <span>Remove</span>

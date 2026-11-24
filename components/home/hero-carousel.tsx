@@ -41,32 +41,73 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
   const total = activeBanners.length
 
   const [current, setCurrent] = useState(0)
+  const [previous, setPrevious] = useState<number | null>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [aspectRatios, setAspectRatios] = useState<Record<number, number>>({})
+  const [loadedImages, setLoadedImages] = useState<Record<number, boolean>>({})
   const touchStartX = useRef<number | null>(null)
+
+  // Pre-load all banner images and automatically detect their natural dimensions
+  useEffect(() => {
+    activeBanners.forEach((banner, index) => {
+      if (!banner.imageUrl) return
+      const img = new Image()
+      img.onload = () => {
+        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+          const ratio = img.naturalWidth / img.naturalHeight
+          setAspectRatios((prev) => ({ ...prev, [index]: ratio }))
+          setLoadedImages((prev) => ({ ...prev, [index]: true }))
+        }
+      }
+      img.src = banner.imageUrl
+    })
+  }, [activeBanners])
 
   // Ensure current index is within bounds if banner count changes
   useEffect(() => {
     if (current >= total && total > 0) {
       setCurrent(0)
+      setPrevious(null)
     }
   }, [total, current])
 
+  // Smooth slide change without ghosting:
+  // Incoming slide fades in on top of previous slide
+  const goToSlide = useCallback(
+    (newIndex: number) => {
+      if (newIndex === current || total <= 1 || isTransitioning) return
+      setPrevious(current)
+      setCurrent(newIndex)
+      setIsTransitioning(true)
+
+      const timer = setTimeout(() => {
+        setIsTransitioning(false)
+        setPrevious(null)
+      }, 650)
+      return () => clearTimeout(timer)
+    },
+    [current, total, isTransitioning]
+  )
+
   const next = useCallback(() => {
     if (total <= 1) return
-    setCurrent((c) => (c + 1) % total)
-  }, [total])
+    const nextIdx = (current + 1) % total
+    goToSlide(nextIdx)
+  }, [total, current, goToSlide])
 
   const prev = useCallback(() => {
     if (total <= 1) return
-    setCurrent((c) => (c - 1 + total) % total)
-  }, [total])
+    const prevIdx = (current - 1 + total) % total
+    goToSlide(prevIdx)
+  }, [total, current, goToSlide])
 
-  // Automatically change banners every 3.5 seconds (3–4 seconds requirement)
+  // Automatically change banners every 3.5 seconds
   useEffect(() => {
-    if (isHovered || total <= 1) return
+    if (isHovered || total <= 1 || isTransitioning) return
     const timer = setInterval(next, 3500)
     return () => clearInterval(timer)
-  }, [next, isHovered, total])
+  }, [next, isHovered, total, isTransitioning])
 
   // Touch Swipe Handlers for Mobile devices
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -116,33 +157,49 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
     )
   }
 
-  // If only one active hero banner exists, display it statically without unnecessary animation
+  // Active slide aspect ratio or sensible fallback
+  const activeRatio = aspectRatios[current] || 3.05
+
+  // If only one active hero banner exists, display it statically with dynamic aspect ratio
   if (total === 1) {
     const single = activeBanners[0]
     return (
-      <div className={`banner-container relative isolate z-0 overflow-hidden rounded-2xl sm:rounded-3xl h-[190px] xs:h-[230px] sm:h-[300px] md:h-[400px] lg:h-[460px] xl:h-[480px] w-full group shadow-xl bg-zinc-950 border border-border select-none ${className || ''}`}>
+      <div
+        className={`banner-container relative isolate z-0 overflow-hidden rounded-2xl sm:rounded-3xl w-full group shadow-xl bg-zinc-950 border border-border select-none transition-[aspect-ratio] duration-500 ease-in-out ${className || ''}`}
+        style={{
+          aspectRatio: `${activeRatio}`,
+          maxHeight: 'min(75vh, 600px)',
+          minHeight: '130px',
+        }}
+      >
         <BannerLinkWrapper href={single.linkUrl} className="block w-full h-full group/link">
           <div className="relative w-full h-full overflow-hidden bg-zinc-950 flex items-center justify-center">
-            {/* Ambient backdrop */}
+            {/* Subtle ambient backdrop to seamlessly integrate image edges */}
             <img
               src={single.imageUrl}
               alt=""
               aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-110 pointer-events-none"
+              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-25 scale-105 pointer-events-none"
             />
             <picture className="relative z-10 block w-full h-full">
               {single.mobileImageUrl && (
                 <source media="(max-width: 639px)" srcSet={single.mobileImageUrl} />
               )}
               {/*
-                Image Display Fix:
-                Uses object-contain with ambient backdrop to ensure 100% of the image
-                (including text, logos, products, specs) is completely visible without cropping.
+                Dynamic Image Display:
+                object-contain ensures 100% of the image (products, specs, logos, text)
+                is completely visible without any cropping or distortion.
               */}
               <img
                 src={single.imageUrl}
                 alt={single.title || 'Manoj Mobiles Hero Banner'}
                 className="w-full h-full object-contain object-center block"
+                onLoad={(e) => {
+                  const img = e.currentTarget
+                  if (img.naturalWidth && img.naturalHeight) {
+                    setAspectRatios((prev) => ({ ...prev, 0: img.naturalWidth / img.naturalHeight }))
+                  }
+                }}
               />
             </picture>
           </div>
@@ -151,10 +208,15 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
     )
   }
 
-  // Multiple banners: Smooth dissolve / crossfade transitions
+  // Multiple banners: Smooth ghost-free crossfade transitions with dynamic container aspect ratio
   return (
     <div
-      className={`banner-container relative isolate z-0 overflow-hidden rounded-2xl sm:rounded-3xl h-[190px] xs:h-[230px] sm:h-[300px] md:h-[400px] lg:h-[460px] xl:h-[480px] w-full group shadow-xl bg-zinc-950 border border-border select-none ${className || ''}`}
+      className={`banner-container relative isolate z-0 overflow-hidden rounded-2xl sm:rounded-3xl w-full group shadow-xl bg-zinc-950 border border-border select-none transition-[aspect-ratio] duration-500 ease-in-out ${className || ''}`}
+      style={{
+        aspectRatio: `${activeRatio}`,
+        maxHeight: 'min(75vh, 600px)',
+        minHeight: '130px',
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
@@ -162,32 +224,45 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
       role="region"
       aria-label="Homepage Hero Carousel"
     >
-      {/* Dissolving Slides Container */}
-      <div className="relative w-full h-full">
+      {/* Slides Container */}
+      <div className="relative w-full h-full overflow-hidden">
         {activeBanners.map((banner, index) => {
-          const isActive = index === current
+          const isCurrent = index === current
+          const isPrevious = index === previous
+          const isVisible = isCurrent || isPrevious
+
+          if (!isVisible) return null
+
           const isImageOnly =
             banner.bannerMode === 'IMAGE_ONLY' ||
             !banner.subtitle ||
             banner.badgeText === '[IMAGE_ONLY]'
 
+          // Solid ghost-free crossfade logic:
+          // Incoming slide (isCurrent) fades in from opacity 0 to 1 at z-10.
+          // Previous slide (isPrevious) stays solid at opacity 1 beneath it (z-0) until incoming slide finishes.
+          const slideZIndex = isCurrent ? 10 : 0
+          const slideOpacity = isCurrent ? (isTransitioning ? 'opacity-100' : 'opacity-100') : 'opacity-100'
+
           return (
             <div
               key={banner.id || index}
-              className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
-                isActive ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
-              }`}
-              aria-hidden={!isActive}
+              className={`absolute inset-0 w-full h-full transition-opacity duration-600 ease-in-out ${slideOpacity} pointer-events-auto`}
+              style={{
+                zIndex: slideZIndex,
+              }}
+              aria-hidden={!isCurrent}
             >
               {isImageOnly ? (
-                /* Pure Readymade Image Banner with Ambient Background & Full Contain Visibility */
+                /* Pure Readymade Image Banner with Dynamic Aspect-Ratio & Complete Visibility */
                 <BannerLinkWrapper href={banner.linkUrl} className="block w-full h-full group/link">
                   <div className="relative w-full h-full overflow-hidden bg-zinc-950 flex items-center justify-center">
+                    {/* Subtle ambient backdrop */}
                     <img
                       src={banner.imageUrl}
                       alt=""
                       aria-hidden="true"
-                      className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-110 pointer-events-none"
+                      className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-25 scale-105 pointer-events-none"
                     />
                     <picture className="relative z-10 block w-full h-full">
                       {banner.mobileImageUrl && (
@@ -196,7 +271,16 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
                       <img
                         src={banner.imageUrl}
                         alt={banner.title || `Banner ${index + 1}`}
-                        className="w-full h-full object-contain object-center block transition-transform duration-500 group-hover/link:scale-[1.008]"
+                        className="w-full h-full object-contain object-center block transition-transform duration-500 group-hover/link:scale-[1.006]"
+                        onLoad={(e) => {
+                          const img = e.currentTarget
+                          if (img.naturalWidth && img.naturalHeight) {
+                            setAspectRatios((prev) => ({
+                              ...prev,
+                              [index]: img.naturalWidth / img.naturalHeight,
+                            }))
+                          }
+                        }}
                       />
                     </picture>
                   </div>
@@ -242,7 +326,7 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
         })}
       </div>
 
-      {/* Manual Navigation Arrows (Subtle on hover) */}
+      {/* Manual Navigation Arrows (Subtle on hover, accessible on focus) */}
       <button
         type="button"
         onClick={prev}
@@ -262,12 +346,12 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
       </button>
 
       {/* Subtle Bottom Pagination Indicators */}
-      <div className="absolute bottom-2.5 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto">
+      <div className="absolute bottom-2 sm:bottom-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto">
         {activeBanners.map((_, i) => (
           <button
             key={i}
             type="button"
-            onClick={() => setCurrent(i)}
+            onClick={() => goToSlide(i)}
             className={`h-2 rounded-full transition-all duration-300 ${
               i === current ? 'w-6 bg-white shadow-xs' : 'w-2 bg-white/40 hover:bg-white/70'
             }`}

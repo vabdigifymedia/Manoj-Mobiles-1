@@ -574,7 +574,7 @@ export default function AdminBannersPage() {
                       : '400 × 380 px'
                     : BANNER_DIMENSIONS.hero.desktop.label
                 }
-                helperText="Upload JPG, PNG, or WEBP image. Images are scaled with object-contain to prevent cutting text/logos."
+                helperText="Upload any JPG, PNG, or WEBP image. Image dimensions are automatically detected, and container proportions adjust dynamically without cropping."
                 existingUrl={form.imageUrl}
                 onUploadSuccess={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
                 onRemove={() => setForm((prev) => ({ ...prev, imageUrl: '' }))}
@@ -1429,7 +1429,7 @@ function GridSlotEditor({
         <BannerImageUploader
           label="Banner Image *"
           recommendedSize={info.rec}
-          helperText="Images use object-contain so logos, products, and text are never cropped."
+          helperText="Image dimensions are automatically detected. The grid container dynamically adapts to fit your image with zero cropping."
           existingUrl={imageUrl}
           onUploadSuccess={(url) => setImageUrl(url)}
           onRemove={() => setImageUrl('')}
