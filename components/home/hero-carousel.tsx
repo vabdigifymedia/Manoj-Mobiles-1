@@ -45,10 +45,9 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [aspectRatios, setAspectRatios] = useState<Record<number, number>>({})
-  const [loadedImages, setLoadedImages] = useState<Record<number, boolean>>({})
   const touchStartX = useRef<number | null>(null)
 
-  // Pre-load all banner images and automatically detect their natural dimensions
+  // Pre-load all banner images and detect their natural aspect ratio
   useEffect(() => {
     activeBanners.forEach((banner, index) => {
       if (!banner.imageUrl) return
@@ -57,10 +56,14 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
         if (img.naturalWidth > 0 && img.naturalHeight > 0) {
           const ratio = img.naturalWidth / img.naturalHeight
           setAspectRatios((prev) => ({ ...prev, [index]: ratio }))
-          setLoadedImages((prev) => ({ ...prev, [index]: true }))
         }
       }
       img.src = banner.imageUrl
+
+      if (banner.mobileImageUrl) {
+        const mobImg = new Image()
+        mobImg.src = banner.mobileImageUrl
+      }
     })
   }, [activeBanners])
 
@@ -84,7 +87,7 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
       const timer = setTimeout(() => {
         setIsTransitioning(false)
         setPrevious(null)
-      }, 650)
+      }, 550)
       return () => clearTimeout(timer)
     },
     [current, total, isTransitioning]
@@ -131,7 +134,7 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
   // Fallback when no active hero banners exist
   if (total === 0) {
     return (
-      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-zinc-900 to-black px-6 py-12 text-white sm:px-10 sm:py-14 lg:min-h-[420px] lg:px-14 lg:py-16 shadow-xl border border-zinc-800 ${className || ''}`}>
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-zinc-900 to-black px-6 py-12 text-white sm:px-10 sm:py-14 lg:min-h-[400px] lg:px-14 lg:py-16 shadow-lg border border-border/60 ${className || ''}`}>
         <div className="relative z-10 max-w-lg">
           <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1 text-xs font-bold tracking-wide backdrop-blur-sm">
             <FaFire size={13} className="text-orange-400" /> Manoj Mobiles
@@ -149,73 +152,46 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
             Shop latest phones →
           </Link>
         </div>
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute -right-20 -top-20 size-80 rounded-full bg-white/20" />
-          <div className="absolute -bottom-10 -left-10 size-60 rounded-full bg-white/10" />
-        </div>
       </div>
     )
   }
 
-  // Active slide aspect ratio or sensible fallback
-  const activeRatio = aspectRatios[current] || 3.05
-
-  // If only one active hero banner exists, display it statically with dynamic aspect ratio
+  // If only one active hero banner exists:
+  // Render naturally with 100% full width and auto height (ZERO black bars)
   if (total === 1) {
     const single = activeBanners[0]
     return (
       <div
-        className={`banner-container relative isolate z-0 overflow-hidden rounded-2xl sm:rounded-3xl w-full group shadow-xl bg-zinc-950 border border-border select-none transition-[aspect-ratio] duration-500 ease-in-out ${className || ''}`}
-        style={{
-          aspectRatio: `${activeRatio}`,
-          maxHeight: 'min(75vh, 600px)',
-          minHeight: '130px',
-        }}
+        className={`banner-container relative w-full overflow-hidden rounded-2xl sm:rounded-3xl shadow-md border border-border/70 group select-none bg-transparent ${className || ''}`}
       >
-        <BannerLinkWrapper href={single.linkUrl} className="block w-full h-full group/link">
-          <div className="relative w-full h-full overflow-hidden bg-zinc-950 flex items-center justify-center">
-            {/* Subtle ambient backdrop to seamlessly integrate image edges */}
+        <BannerLinkWrapper href={single.linkUrl} className="block w-full">
+          <picture className="block w-full">
+            {single.mobileImageUrl && (
+              <source media="(max-width: 639px)" srcSet={single.mobileImageUrl} />
+            )}
             <img
               src={single.imageUrl}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-25 scale-105 pointer-events-none"
+              alt={single.title || 'Manoj Mobiles Hero Banner'}
+              className="w-full h-auto block object-contain"
+              loading="eager"
             />
-            <picture className="relative z-10 block w-full h-full">
-              {single.mobileImageUrl && (
-                <source media="(max-width: 639px)" srcSet={single.mobileImageUrl} />
-              )}
-              {/*
-                Dynamic Image Display:
-                object-contain ensures 100% of the image (products, specs, logos, text)
-                is completely visible without any cropping or distortion.
-              */}
-              <img
-                src={single.imageUrl}
-                alt={single.title || 'Manoj Mobiles Hero Banner'}
-                className="w-full h-full object-contain object-center block"
-                onLoad={(e) => {
-                  const img = e.currentTarget
-                  if (img.naturalWidth && img.naturalHeight) {
-                    setAspectRatios((prev) => ({ ...prev, 0: img.naturalWidth / img.naturalHeight }))
-                  }
-                }}
-              />
-            </picture>
-          </div>
+          </picture>
         </BannerLinkWrapper>
       </div>
     )
   }
 
-  // Multiple banners: Smooth ghost-free crossfade transitions with dynamic container aspect ratio
+  // Active slide ratio
+  const activeRatio = aspectRatios[current]
+
+  // Multiple banners:
+  // Natural image width (100%) with dynamic height matching the active image
+  // Zero black bars on desktop and mobile
   return (
     <div
-      className={`banner-container relative isolate z-0 overflow-hidden rounded-2xl sm:rounded-3xl w-full group shadow-xl bg-zinc-950 border border-border select-none transition-[aspect-ratio] duration-500 ease-in-out ${className || ''}`}
+      className={`banner-container relative w-full overflow-hidden rounded-2xl sm:rounded-3xl shadow-md border border-border/70 group select-none bg-transparent transition-[aspect-ratio] duration-500 ease-in-out ${className || ''}`}
       style={{
-        aspectRatio: `${activeRatio}`,
-        maxHeight: 'min(75vh, 600px)',
-        minHeight: '130px',
+        aspectRatio: activeRatio ? `${activeRatio}` : undefined,
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -225,7 +201,7 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
       aria-label="Homepage Hero Carousel"
     >
       {/* Slides Container */}
-      <div className="relative w-full h-full overflow-hidden">
+      <div className="relative w-full h-full">
         {activeBanners.map((banner, index) => {
           const isCurrent = index === current
           const isPrevious = index === previous
@@ -238,52 +214,41 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
             !banner.subtitle ||
             banner.badgeText === '[IMAGE_ONLY]'
 
-          // Solid ghost-free crossfade logic:
-          // Incoming slide (isCurrent) fades in from opacity 0 to 1 at z-10.
-          // Previous slide (isPrevious) stays solid at opacity 1 beneath it (z-0) until incoming slide finishes.
-          const slideZIndex = isCurrent ? 10 : 0
-          const slideOpacity = isCurrent ? (isTransitioning ? 'opacity-100' : 'opacity-100') : 'opacity-100'
+          // Solid ghost-free crossfade:
+          // Incoming slide (isCurrent) has z-10 and fades in over previous slide (z-0)
+          const zIndex = isCurrent ? 10 : 0
+          const opacity = isCurrent ? 'opacity-100' : 'opacity-100'
 
           return (
             <div
               key={banner.id || index}
-              className={`absolute inset-0 w-full h-full transition-opacity duration-600 ease-in-out ${slideOpacity} pointer-events-auto`}
-              style={{
-                zIndex: slideZIndex,
-              }}
+              className={`absolute inset-0 w-full h-full transition-opacity duration-500 ease-in-out ${opacity}`}
+              style={{ zIndex }}
               aria-hidden={!isCurrent}
             >
               {isImageOnly ? (
-                /* Pure Readymade Image Banner with Dynamic Aspect-Ratio & Complete Visibility */
-                <BannerLinkWrapper href={banner.linkUrl} className="block w-full h-full group/link">
-                  <div className="relative w-full h-full overflow-hidden bg-zinc-950 flex items-center justify-center">
-                    {/* Subtle ambient backdrop */}
+                /* Pure Readymade Image Banner with 100% Full-Width Display */
+                <BannerLinkWrapper href={banner.linkUrl} className="block w-full h-full">
+                  <picture className="block w-full h-full">
+                    {banner.mobileImageUrl && (
+                      <source media="(max-width: 639px)" srcSet={banner.mobileImageUrl} />
+                    )}
                     <img
                       src={banner.imageUrl}
-                      alt=""
-                      aria-hidden="true"
-                      className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-25 scale-105 pointer-events-none"
+                      alt={banner.title || `Banner ${index + 1}`}
+                      className="w-full h-full object-contain block"
+                      loading={index === 0 ? 'eager' : 'lazy'}
+                      onLoad={(e) => {
+                        const img = e.currentTarget
+                        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                          setAspectRatios((prev) => ({
+                            ...prev,
+                            [index]: img.naturalWidth / img.naturalHeight,
+                          }))
+                        }
+                      }}
                     />
-                    <picture className="relative z-10 block w-full h-full">
-                      {banner.mobileImageUrl && (
-                        <source media="(max-width: 639px)" srcSet={banner.mobileImageUrl} />
-                      )}
-                      <img
-                        src={banner.imageUrl}
-                        alt={banner.title || `Banner ${index + 1}`}
-                        className="w-full h-full object-contain object-center block transition-transform duration-500 group-hover/link:scale-[1.006]"
-                        onLoad={(e) => {
-                          const img = e.currentTarget
-                          if (img.naturalWidth && img.naturalHeight) {
-                            setAspectRatios((prev) => ({
-                              ...prev,
-                              [index]: img.naturalWidth / img.naturalHeight,
-                            }))
-                          }
-                        }}
-                      />
-                    </picture>
-                  </div>
+                  </picture>
                 </BannerLinkWrapper>
               ) : (
                 /* Text + Image Composition Banner */
@@ -292,7 +257,7 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
                     <img
                       src={banner.imageUrl}
                       alt={banner.title || 'Banner'}
-                      className="w-full h-full object-cover object-right opacity-80"
+                      className="w-full h-full object-cover object-right opacity-85"
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/80 to-transparent" />
                   </div>
@@ -324,6 +289,19 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
             </div>
           )
         })}
+
+        {/* In-flow sizer image ensuring the container naturally adapts height even before JS executes */}
+        <picture className="invisible block w-full pointer-events-none select-none">
+          {activeBanners[current]?.mobileImageUrl && (
+            <source media="(max-width: 639px)" srcSet={activeBanners[current].mobileImageUrl} />
+          )}
+          <img
+            src={activeBanners[current]?.imageUrl}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-auto block"
+          />
+        </picture>
       </div>
 
       {/* Manual Navigation Arrows (Subtle on hover, accessible on focus) */}
@@ -346,7 +324,7 @@ export function HeroCarousel({ banners, className }: HeroCarouselProps) {
       </button>
 
       {/* Subtle Bottom Pagination Indicators */}
-      <div className="absolute bottom-2 sm:bottom-3.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto">
+      <div className="absolute bottom-2.5 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto">
         {activeBanners.map((_, i) => (
           <button
             key={i}

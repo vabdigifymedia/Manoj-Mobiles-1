@@ -28,7 +28,7 @@ function GridBannerCard({
 
   const content = (
     <div
-      className={`group relative overflow-hidden rounded-2xl md:rounded-3xl border border-border bg-card shadow-xs hover:shadow-md transition-all duration-300 w-full h-full flex items-center justify-center ${
+      className={`group relative w-full h-full overflow-hidden rounded-2xl md:rounded-3xl border border-border/70 shadow-xs hover:shadow-md transition-all duration-300 ${
         className || ''
       }`}
       style={{
@@ -41,14 +41,13 @@ function GridBannerCard({
         )}
         {/*
           Dynamic Image Display Fix:
-          - Uses object-contain on both mobile and desktop
-          - Preserves 100% of promotional images without clipping outer edges, text, or products
-          - Subtle hover zoom for interactivity
+          Container aspect ratio matches the image aspect ratio, so object-contain
+          fills the card 100% from edge to edge with zero white borders and zero cropping.
         */}
         <img
           src={banner.imageUrl}
           alt={banner.title || 'Special Promotion'}
-          className="w-full h-full object-contain object-center block transition-transform duration-500 ease-out group-hover:scale-[1.008]"
+          className="w-full h-full object-contain object-center block transition-transform duration-500 ease-out group-hover:scale-[1.01]"
           loading={priority ? 'eager' : 'lazy'}
           onLoad={(e) => {
             const img = e.currentTarget
@@ -88,16 +87,16 @@ export function FiveBannerGrid({ banners, title, className }: FiveBannerGridProp
   // Normalize and parse banners
   const parsed = (banners || []).map(parseBanner).filter((b) => b.isActive && b.imageUrl)
 
-  // Track natural aspect ratios for each grid position to allow dynamic sizing
+  // Track natural aspect ratios for each grid position to eliminate empty spaces
   const [aspectRatios, setAspectRatios] = useState<Record<number, number>>({
-    1: 0.873, // Default vertical ratio
-    2: 1.84,  // Default horizontal top ratio
-    3: 0.873, // Default bottom-left ratio
-    4: 0.873, // Default bottom-right ratio
-    5: 0.873, // Default vertical ratio
+    1: 0.873, // Default vertical/portrait ratio (1100x1260)
+    2: 1.84,  // Default horizontal top ratio (920x500)
+    3: 0.873, // Default bottom-left ratio (1100x1260)
+    4: 0.873, // Default bottom-right ratio (1100x1260)
+    5: 0.873, // Default vertical/portrait ratio (1100x1260)
   })
 
-  // Pre-probe dimensions of all banners
+  // Pre-probe dimensions of all banners on mount
   useEffect(() => {
     parsed.forEach((b) => {
       const pos = b.gridPosition || 1
@@ -140,157 +139,145 @@ export function FiveBannerGrid({ banners, title, className }: FiveBannerGridProp
       {pos1 || pos2 || pos3 || pos4 || pos5 ? (
         <>
           {/*
-            Desktop & Tablet Layout (CSS Grid):
-            - 4 columns, 2 rows
-            - Pos 1 (Left vertical): Col 1, Rows 1-2 (fully visible, zero edge-clipping)
-            - Pos 2 (Center top): Cols 2-3, Row 1 (wide banner)
-            - Pos 5 (Right vertical): Col 4, Rows 1-2 (fully visible, zero edge-clipping)
-            - Pos 3 & Pos 4 (Center bottom): Cols 2 & 3, Row 2
-            - Dynamic height: adapts between 440px and 540px based on container width
+            Desktop Layout (CSS Grid Collage):
+            - 4 columns across full content width
+            - Left: Position 1 (Large vertical banner)
+            - Center: Position 2 (Wide horizontal on top) + Position 3 & 4 (side-by-side on bottom)
+            - Right: Position 5 (Large vertical banner)
+            - Containers match individual image aspect ratios with ZERO white borders
           */}
-          <div className="hidden md:grid md:grid-cols-4 md:grid-rows-2 h-[440px] lg:h-[490px] xl:h-[530px] gap-3.5 lg:gap-4 w-full">
+          <div className="hidden md:grid md:grid-cols-4 gap-3.5 lg:gap-4 w-full items-start">
             {/* Position 1: Large vertical on the left */}
-            <div className="col-span-1 row-span-2 h-full w-full">
-              <GridBannerCard
-                banner={pos1}
-                className="h-full w-full"
-                priority
-                onDimensions={handleDim(1)}
-              />
-            </div>
+            {pos1 && (
+              <div className="col-span-1 w-full">
+                <GridBannerCard
+                  banner={pos1}
+                  priority
+                  aspectRatio={aspectRatios[1]}
+                  onDimensions={handleDim(1)}
+                />
+              </div>
+            )}
 
-            {/* Position 2: Horizontal banner at the top-middle (spans 2 center columns) */}
-            <div className="col-span-2 row-span-1 h-full w-full">
-              <GridBannerCard
-                banner={pos2}
-                className="h-full w-full"
-                onDimensions={handleDim(2)}
-              />
+            {/* Center Column: Position 2 (top) + Position 3 & 4 (bottom) */}
+            <div className="col-span-2 flex flex-col gap-3.5 lg:gap-4 w-full">
+              {/* Position 2: Horizontal banner at the top-middle */}
+              {pos2 && (
+                <div className="w-full">
+                  <GridBannerCard
+                    banner={pos2}
+                    aspectRatio={aspectRatios[2]}
+                    onDimensions={handleDim(2)}
+                  />
+                </div>
+              )}
+
+              {/* Position 3 & 4: Side-by-side bottom center banners */}
+              {(pos3 || pos4) && (
+                <div className="grid grid-cols-2 gap-3.5 lg:gap-4 w-full">
+                  {pos3 && (
+                    <div className={`${pos4 ? 'col-span-1' : 'col-span-2'} w-full`}>
+                      <GridBannerCard
+                        banner={pos3}
+                        aspectRatio={aspectRatios[3]}
+                        onDimensions={handleDim(3)}
+                      />
+                    </div>
+                  )}
+                  {pos4 && (
+                    <div className={`${pos3 ? 'col-span-1' : 'col-span-2'} w-full`}>
+                      <GridBannerCard
+                        banner={pos4}
+                        aspectRatio={aspectRatios[4]}
+                        onDimensions={handleDim(4)}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Position 5: Large vertical on the right */}
-            <div className="col-span-1 row-span-2 h-full w-full">
-              <GridBannerCard
-                banner={pos5}
-                className="h-full w-full"
-                priority
-                onDimensions={handleDim(5)}
-              />
-            </div>
-
-            {/* Position 3: Small banner at bottom-middle-left */}
-            <div className="col-span-1 row-span-1 h-full w-full">
-              <GridBannerCard
-                banner={pos3}
-                className="h-full w-full"
-                onDimensions={handleDim(3)}
-              />
-            </div>
-
-            {/* Position 4: Small banner at bottom-middle-right */}
-            <div className="col-span-1 row-span-1 h-full w-full">
-              <GridBannerCard
-                banner={pos4}
-                className="h-full w-full"
-                onDimensions={handleDim(4)}
-              />
-            </div>
+            {pos5 && (
+              <div className="col-span-1 w-full">
+                <GridBannerCard
+                  banner={pos5}
+                  priority
+                  aspectRatio={aspectRatios[5]}
+                  onDimensions={handleDim(5)}
+                />
+              </div>
+            )}
           </div>
 
           {/*
             Mobile Layout (Clean, Responsive, Zero-Overlap):
-            - No rigid hardcoded pixel heights
-            - Each container height automatically adapts to its image's natural aspect ratio
-            - Pos 2 spans full width across the top
-            - Pos 1 & Pos 5 placed side-by-side in balanced 2-column layout
-            - Pos 3 & Pos 4 placed side-by-side in balanced 2-column layout
-            - Zero horizontal overflow
-            - Generous spacing preventing interference with floating widgets
+            - Full available mobile width
+            - Position 2 spans full width across top
+            - Position 1 & Position 5 side-by-side in balanced 2-column arrangement
+            - Position 3 & Position 4 side-by-side in balanced 2-column arrangement
+            - Each card matches its own image aspect ratio with zero white space
+            - Generous bottom spacing preventing interference with floating widgets
           */}
-          <div className="flex flex-col gap-3 md:hidden w-full">
+          <div className="flex flex-col gap-2.5 sm:gap-3.5 md:hidden w-full pb-6">
             {/* Position 2: Wide horizontal banner */}
             {pos2 && (
-              <div
-                className="w-full overflow-hidden rounded-2xl"
-                style={{
-                  aspectRatio: aspectRatios[2] ? `${aspectRatios[2]}` : '1.84',
-                }}
-              >
+              <div className="w-full">
                 <GridBannerCard
                   banner={pos2}
-                  className="w-full h-full"
+                  aspectRatio={aspectRatios[2]}
                   onDimensions={handleDim(2)}
                 />
               </div>
             )}
 
-            {/* Position 1 & Position 5: The two vertical banners side-by-side */}
+            {/* Position 1 & Position 5: The two showcase banners side-by-side */}
             {(pos1 || pos5) && (
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 w-full">
-                {pos1 ? (
-                  <div
-                    className={`${pos5 ? 'col-span-1' : 'col-span-2'} w-full overflow-hidden rounded-2xl`}
-                    style={{
-                      aspectRatio: aspectRatios[1] ? `${aspectRatios[1]}` : '0.873',
-                    }}
-                  >
+                {pos1 && (
+                  <div className={`${pos5 ? 'col-span-1' : 'col-span-2'} w-full`}>
                     <GridBannerCard
                       banner={pos1}
-                      className="w-full h-full"
+                      aspectRatio={aspectRatios[1]}
                       onDimensions={handleDim(1)}
                     />
                   </div>
-                ) : null}
+                )}
 
-                {pos5 ? (
-                  <div
-                    className={`${pos1 ? 'col-span-1' : 'col-span-2'} w-full overflow-hidden rounded-2xl`}
-                    style={{
-                      aspectRatio: aspectRatios[5] ? `${aspectRatios[5]}` : '0.873',
-                    }}
-                  >
+                {pos5 && (
+                  <div className={`${pos1 ? 'col-span-1' : 'col-span-2'} w-full`}>
                     <GridBannerCard
                       banner={pos5}
-                      className="w-full h-full"
+                      aspectRatio={aspectRatios[5]}
                       onDimensions={handleDim(5)}
                     />
                   </div>
-                ) : null}
+                )}
               </div>
             )}
 
             {/* Position 3 & Position 4: The two bottom banners side-by-side */}
             {(pos3 || pos4) && (
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 w-full">
-                {pos3 ? (
-                  <div
-                    className={`${pos4 ? 'col-span-1' : 'col-span-2'} w-full overflow-hidden rounded-2xl`}
-                    style={{
-                      aspectRatio: aspectRatios[3] ? `${aspectRatios[3]}` : '0.873',
-                    }}
-                  >
+                {pos3 && (
+                  <div className={`${pos4 ? 'col-span-1' : 'col-span-2'} w-full`}>
                     <GridBannerCard
                       banner={pos3}
-                      className="w-full h-full"
+                      aspectRatio={aspectRatios[3]}
                       onDimensions={handleDim(3)}
                     />
                   </div>
-                ) : null}
+                )}
 
-                {pos4 ? (
-                  <div
-                    className={`${pos3 ? 'col-span-1' : 'col-span-2'} w-full overflow-hidden rounded-2xl`}
-                    style={{
-                      aspectRatio: aspectRatios[4] ? `${aspectRatios[4]}` : '0.873',
-                    }}
-                  >
+                {pos4 && (
+                  <div className={`${pos3 ? 'col-span-1' : 'col-span-2'} w-full`}>
                     <GridBannerCard
                       banner={pos4}
-                      className="w-full h-full"
+                      aspectRatio={aspectRatios[4]}
                       onDimensions={handleDim(4)}
                     />
                   </div>
-                ) : null}
+                )}
               </div>
             )}
           </div>
@@ -309,8 +296,8 @@ export function FiveBannerGrid({ banners, title, className }: FiveBannerGridProp
           }`}
         >
           {parsed.map((banner, idx) => (
-            <div key={banner.id || idx} className="w-full h-[220px] sm:h-[260px] md:h-[300px]">
-              <GridBannerCard banner={banner} className="h-full w-full" />
+            <div key={banner.id || idx} className="w-full">
+              <GridBannerCard banner={banner} />
             </div>
           ))}
         </div>
