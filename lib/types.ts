@@ -610,6 +610,7 @@ export interface CartResponseDTO {
 }
 
 // --- Banner ---
+export type BannerPlacement = 'hero' | 'single' | 'grid'
 export type BannerType = 'HERO_SLIDER' | 'DEAL_OF_THE_DAY' | 'PROMO_STRIP' | 'CATEGORY_FEATURE'
 
 export interface BannerRequestDTO {
@@ -622,6 +623,12 @@ export interface BannerRequestDTO {
   ctaText?: string
   bannerType: BannerType
   bannerMode?: 'IMAGE_ONLY' | 'TEXT_IMAGE'
+  placement?: BannerPlacement
+  gridPosition?: number
+  gridId?: string
+  sectionId?: string
+  sectionName?: string
+  internalName?: string
   bgGradient?: string
   displayOrder?: number
   isActive?: boolean
@@ -640,6 +647,12 @@ export interface BannerResponseDTO {
   ctaText?: string
   bannerType: BannerType
   bannerMode?: 'IMAGE_ONLY' | 'TEXT_IMAGE'
+  placement?: BannerPlacement
+  gridPosition?: number
+  gridId?: string
+  sectionId?: string
+  sectionName?: string
+  internalName?: string
   bgGradient?: string
   displayOrder: number
   isActive: boolean

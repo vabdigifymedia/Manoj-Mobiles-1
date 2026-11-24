@@ -11,7 +11,7 @@ export function EmiEligibilityBanner() {
   ]
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-6 md:py-8 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-4 py-6 md:py-8 sm:px-6 lg:px-8 xl:px-10">
       <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 md:p-10 shadow-xs">
         <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
           {/* Left Column: Content */}

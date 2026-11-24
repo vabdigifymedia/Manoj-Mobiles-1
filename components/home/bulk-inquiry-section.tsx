@@ -8,7 +8,7 @@ export function BulkInquirySection() {
   const { openBulkInquiry } = useBulkInquiry()
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-8 lg:px-8 my-4">
+    <section className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10 my-4">
       {/* Light Professional E-Commerce Container */}
       <div className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-900/60 p-6 sm:p-8 md:p-10 text-slate-900 dark:text-white shadow-xs">
         

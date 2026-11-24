@@ -31,7 +31,7 @@ export function ProductTabs({ newArrivals, bestSellers, budgetPicks }: ProductTa
   const currentProducts = products[activeTab]
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-16 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-4 pb-16 sm:px-6 lg:px-8 xl:px-10">
       <div className="mb-6">
         <p className="text-xs font-bold uppercase tracking-[.18em] text-primary">Curated for you</p>
         <h2 className="mt-1 text-2xl font-black">Shop by Collection</h2>

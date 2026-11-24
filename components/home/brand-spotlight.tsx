@@ -151,7 +151,7 @@ export function BrandSpotlight({ brandName, title, products }: BrandSpotlightPro
   if (!products || products.length === 0) return null
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-10 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-4 pb-10 sm:px-6 lg:px-8 xl:px-10">
       <div className="flex flex-col md:flex-row gap-4 md:gap-8 lg:gap-12">
         {/* Left Info Column */}
         <div className="flex flex-col md:w-[280px] lg:w-[320px] shrink-0 md:border-r border-border pb-4 md:pb-0 md:pr-6 lg:pr-8">

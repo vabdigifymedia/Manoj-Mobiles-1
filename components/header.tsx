@@ -744,7 +744,7 @@ export function Header() {
       {/* Top Announcement Bar */}
       {announcementActive && (
         <div className="hidden md:block bg-blue-600 dark:bg-blue-700 px-4 py-1.5 text-center text-xs font-semibold text-white tracking-wide">
-          <div className="mx-auto max-w-7xl flex items-center justify-center gap-2">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 flex items-center justify-center gap-2">
             <span className="inline-block size-1.5 rounded-full bg-blue-200 animate-pulse" />
             {announcementLink ? (
               <Link href={announcementLink} className="hover:underline">{announcementText}</Link>
@@ -768,7 +768,7 @@ export function Header() {
           
           {/* DESKTOP TOP ROW */}
           <div className="border-b border-slate-100 dark:border-zinc-800/70">
-            <div className="mx-auto max-w-7xl px-4 lg:px-8 py-3 flex items-center justify-between gap-4 lg:gap-6">
+            <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-3 flex items-center justify-between gap-4 lg:gap-6">
               
               {/* 1. Brand Logo */}
               <Link href="/" className="shrink-0 flex items-center select-none group" aria-label="Manoj Mobiles Home">
@@ -1146,7 +1146,7 @@ export function Header() {
             className="bg-white dark:bg-zinc-950 border-b border-slate-100 dark:border-zinc-800/80 relative z-40 overflow-visible"
             onMouseLeave={() => scheduleMenuClose(180)}
           >
-            <div className="mx-auto max-w-7xl px-4 lg:px-8 py-1 lg:py-1.5 flex items-center justify-between gap-3 lg:gap-6 overflow-visible relative">
+            <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10 py-1 lg:py-1.5 flex items-center justify-between gap-3 lg:gap-6 overflow-visible relative">
               
               <div ref={categoryNavRef} className="flex items-center flex-wrap lg:flex-nowrap gap-1.5 overflow-visible min-w-0">
                 
@@ -1326,7 +1326,7 @@ export function Header() {
                     filter: 'drop-shadow(0 25px 25px rgba(0, 0, 0, 0.2))',
                   }}
                 >
-                  <div className="mx-auto max-w-7xl px-4 lg:px-8">
+                  <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
                     <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-b-3xl shadow-2xl overflow-hidden flex min-h-[360px] max-h-[500px]">
                       
                       {/* Left Sidebar: Categories List */}
@@ -1544,7 +1544,7 @@ export function Header() {
                     filter: 'drop-shadow(0 25px 25px rgba(0, 0, 0, 0.2))',
                   }}
                 >
-                  <div className="mx-auto max-w-7xl px-4 lg:px-8">
+                  <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
                     <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-b-3xl shadow-2xl overflow-hidden p-6">
                       
                       {/* Category Header */}

@@ -19,3 +19,4 @@ scripts/scrape-flipkart.mjs
 .env
 logs/
 *.log
+data/emi-documents/

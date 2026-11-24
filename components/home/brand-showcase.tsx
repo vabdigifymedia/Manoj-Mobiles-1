@@ -22,7 +22,7 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-16 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-4 pb-16 sm:px-6 lg:px-8 xl:px-10">
       {/* Header */}
       <div className="flex items-end justify-between gap-4 mb-7">
         <div>

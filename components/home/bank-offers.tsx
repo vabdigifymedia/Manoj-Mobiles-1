@@ -17,7 +17,7 @@ export function BankOffers() {
   ]
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-4 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
       <div className="flex gap-4 overflow-x-auto pb-2 snap-x scrollbar-hide md:grid md:grid-cols-2 md:overflow-visible md:pb-0">
         {offers.map((offer, idx) => (
           <div 

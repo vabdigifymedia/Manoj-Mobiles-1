@@ -45,7 +45,7 @@ const PRICE_CATEGORIES: PriceCategoryCard[] = [
 
 export function ShopByPrice() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-8 md:py-12 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-4 py-8 md:py-12 sm:px-6 lg:px-8 xl:px-10">
       {/* 1. Centered Section Heading with Divider Lines and Tag Icon */}
       <div className="flex items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div className="flex-1 h-px bg-slate-200 dark:bg-zinc-800 max-w-xs sm:max-w-sm md:max-w-md" />

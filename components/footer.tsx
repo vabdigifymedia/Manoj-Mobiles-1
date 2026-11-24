@@ -68,7 +68,7 @@ export function Footer() {
     <footer id="site-footer" className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 mt-auto">
       {/* Top Trust Ribbon */}
       <div className="border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/60 py-6">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center sm:text-left">
             <div className="flex items-center gap-3 justify-center sm:justify-start">
               <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400">
@@ -113,7 +113,7 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-14 lg:px-8">
+      <div className="mx-auto max-w-[1440px] px-4 py-14 sm:px-6 lg:px-8 xl:px-10">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1.2fr]">
           {/* Brand Col */}
           <div className="pr-0 lg:pr-8">

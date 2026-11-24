@@ -52,7 +52,7 @@ export function DealOfTheDay({ banner }: { banner: BannerResponseDTO | null }) {
 
   if (isImageOnly) {
     return (
-      <section className="mx-auto max-w-7xl px-4 pb-12 lg:px-8">
+      <section className="mx-auto max-w-[1440px] px-4 pb-12 sm:px-6 lg:px-8 xl:px-10">
         <Link href={banner.linkUrl || '/shop'} className="block overflow-hidden rounded-3xl shadow-xl group">
           <img
             src={banner.imageUrl}
@@ -65,7 +65,7 @@ export function DealOfTheDay({ banner }: { banner: BannerResponseDTO | null }) {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-12 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-4 pb-12 sm:px-6 lg:px-8 xl:px-10">
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 p-8 lg:p-10 shadow-xl">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -right-20 -top-20 size-80 rounded-full bg-white/30" />

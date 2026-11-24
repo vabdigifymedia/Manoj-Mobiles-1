@@ -634,6 +634,52 @@ export const apiClient = {
   reorderBanners: (dto: import('./types').ReorderRequestDTO) =>
     axiosInstance.put<ApiResponse<void>>('/api/admin/banners/reorder', dto),
 
+  // --- Homepage Layout & Section Position Manager ---
+  getHomepageLayout: async (): Promise<{ success: boolean; data: import('./homepageLayoutTypes').HomepageSectionConfig[]; message?: string }> => {
+    try {
+      const token = Cookies.get('accessToken')
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+      const res = await fetch('/api/admin/homepage-layout', { cache: 'no-store', headers })
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: Failed to fetch layout`)
+      }
+      return await res.json()
+    } catch (err: any) {
+      console.error('getHomepageLayout error:', err)
+      return { success: false, data: [] }
+    }
+  },
+
+  saveHomepageLayout: async (sections: import('./homepageLayoutTypes').HomepageSectionConfig[]): Promise<{ success: boolean; data?: any; message?: string }> => {
+    const token = Cookies.get('accessToken')
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+    const res = await fetch('/api/admin/homepage-layout', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ sections }),
+    })
+    const json = await res.json()
+    if (!res.ok || !json.success) {
+      throw new Error(json.message || `HTTP ${res.status}: Failed to publish homepage layout`)
+    }
+    return json
+  },
+
+  getPublicHomepageLayout: async (): Promise<{ success: boolean; data: import('./homepageLayoutTypes').HomepageSectionConfig[]; message?: string }> => {
+    try {
+      const res = await fetch('/api/public/homepage-layout', { cache: 'no-store' })
+      return await res.json()
+    } catch {
+      return { success: false, data: [] }
+    }
+  },
+
   // --- Store Settings ---
   getPublicStoreSettings: () =>
     axiosInstance.get<ApiResponse<import('./types').StoreSettingResponseDTO>>('/api/public/settings'),

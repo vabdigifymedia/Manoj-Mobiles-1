@@ -65,7 +65,7 @@ export function CategoryProductSection({ category, products }: CategorySectionPr
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-14 sm:pb-16 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-4 pb-14 sm:pb-16 sm:px-6 lg:px-8 xl:px-10">
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-8">
         <div>

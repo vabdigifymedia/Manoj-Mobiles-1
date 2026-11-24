@@ -10,7 +10,7 @@ export function FaqAccordion({ faqs }: { faqs: FaqResponseDTO[] }) {
   if (faqs.length === 0) return null
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-20 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-4 pb-20 sm:px-6 lg:px-8 xl:px-10">
       <div className="text-center mb-10">
         <h2 className="text-3xl font-black">Frequently Asked Questions</h2>
         <p className="mt-3 text-muted-foreground">Everything you need to know before buying</p>

@@ -11,7 +11,7 @@ export function QuickFeatures() {
   ]
 
   return (
-    <section className="mx-auto max-w-7xl px-2 pt-6 pb-2 lg:px-8">
+    <section className="mx-auto max-w-[1440px] px-4 pt-6 pb-2 sm:px-6 lg:px-8 xl:px-10">
       <div className="grid grid-cols-4 gap-2 md:gap-6">
         {features.map((feature, idx) => (
           <div

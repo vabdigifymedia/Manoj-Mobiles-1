@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-24T10:30:00.000Z",
+  "publishedAt": "2026-11-24T10:30:00.000Z",
+  "sections": [
+    {
+      "id": "hero-slider",
+      "name": "Main Hero Slider",
+      "internalName": "Main Hero Slider",
+      "type": "hero",
+      "enabled": true,
+      "order": 1
+    },
+    {
+      "id": "single-promo-381690e8-5f66-4e76-818c-f9a331dd9e65",
+      "bannerId": "381690e8-5f66-4e76-818c-f9a331dd9e65",
+      "name": "Promotional Banner 01",
+      "internalName": "Promotional Banner 01",
+      "type": "single-promo",
+      "enabled": true,
+      "order": 2
+    },
+    {
+      "id": "single-promo-fd886ce7-3e89-478d-974d-6dde1c53e2f7",
+      "bannerId": "fd886ce7-3e89-478d-974d-6dde1c53e2f7",
+      "name": "Promotional Banner 02",
+      "internalName": "Promotional Banner 02",
+      "type": "single-promo",
+      "enabled": true,
+      "order": 3
+    },
+    {
+      "id": "five-grid-grid-default",
+      "gridId": "grid-default",
+      "name": "Five-Banner Promotional Grid",
+      "internalName": "Five-Banner Promotional Grid",
+      "type": "five-grid",
+      "enabled": true,
+      "order": 4
+    },
+    {
+      "id": "quick-features",
+      "name": "Easy EMI & Bank Highlights",
+      "internalName": "Easy EMI & Bank Highlights",
+      "type": "system",
+      "enabled": true,
+      "order": 5
+    },
+    {
+      "id": "bank-offers",
+      "name": "Bank Offers Slider",
+      "internalName": "Bank Offers Slider",
+      "type": "system",
+      "enabled": true,
+      "order": 6
+    },
+    {
+      "id": "brand-showcase",
+      "name": "Shop by Brand Showcase",
+      "internalName": "Shop by Brand Showcase",
+      "type": "system",
+      "enabled": true,
+      "order": 7
+    },
+    {
+      "id": "trending-phones",
+      "name": "Trending Phones",
+      "internalName": "Trending Phones",
+      "type": "system",
+      "enabled": true,
+      "order": 8
+    },
+    {
+      "id": "brand-spotlight-samsung",
+      "name": "Best Of Samsung Spotlight",
+      "internalName": "Best Of Samsung Spotlight",
+      "type": "system",
+      "enabled": true,
+      "order": 9
+    },
+    {
+      "id": "brand-spotlight-apple",
+      "name": "Best Of Apple Spotlight",
+      "internalName": "Best Of Apple Spotlight",
+      "type": "system",
+      "enabled": true,
+      "order": 10
+    },
+    {
+      "id": "shop-by-price",
+      "name": "Shop By Price",
+      "internalName": "Shop By Price",
+      "type": "system",
+      "enabled": true,
+      "order": 11
+    },
+    {
+      "id": "deal-of-the-day",
+      "name": "Deal of the Day",
+      "internalName": "Deal of the Day",
+      "type": "system",
+      "enabled": true,
+      "order": 12
+    },
+    {
+      "id": "emi-eligibility",
+      "name": "Instant EMI Eligibility Calculator",
+      "internalName": "Instant EMI Eligibility Calculator",
+      "type": "system",
+      "enabled": true,
+      "order": 13
+    },
+    {
+      "id": "budget-phones",
+      "name": "Budget Phones Showcase",
+      "internalName": "Budget Phones Showcase",
+      "type": "system",
+      "enabled": true,
+      "order": 14
+    },
+    {
+      "id": "categories",
+      "name": "Shop by Category",
+      "internalName": "Shop by Category",
+      "type": "system",
+      "enabled": true,
+      "order": 15
+    },
+    {
+      "id": "category-sections",
+      "name": "Dynamic Category Product Sections",
+      "internalName": "Dynamic Category Product Sections",
+      "type": "system",
+      "enabled": true,
+      "order": 16
+    },
+    {
+      "id": "product-tabs",
+      "name": "Product Tabs (New, Best, Budget)",
+      "internalName": "Product Tabs (New, Best, Budget)",
+      "type": "system",
+      "enabled": true,
+      "order": 17
+    },
+    {
+      "id": "instagram-reels",
+      "name": "Instagram Reels Video Showcase",
+      "internalName": "Instagram Reels Video Showcase",
+      "type": "system",
+      "enabled": true,
+      "order": 18
+    },
+    {
+      "id": "why-shop-with-us",
+      "name": "Why Shop With Us (Features Carousel)",
+      "internalName": "Why Shop With Us (Features Carousel)",
+      "type": "system",
+      "enabled": true,
+      "order": 19
+    },
+    {
+      "id": "store-info",
+      "name": "Store Location & WhatsApp Expert",
+      "internalName": "Store Location & WhatsApp Expert",
+      "type": "system",
+      "enabled": true,
+      "order": 20
+    },
+    {
+      "id": "faqs",
+      "name": "Frequently Asked Questions (FAQ)",
+      "internalName": "Frequently Asked Questions (FAQ)",
+      "type": "system",
+      "enabled": true,
+      "order": 21
+    }
+  ]
+}

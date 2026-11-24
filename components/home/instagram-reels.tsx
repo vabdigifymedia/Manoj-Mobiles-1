@@ -49,7 +49,7 @@ export function InstagramReels({ reels }: { reels: InstagramReelResponseDTO[] })
   };
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 lg:px-8 overflow-hidden">
+    <section className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-8 xl:px-10 overflow-hidden">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-3xl font-black flex items-center gap-3">

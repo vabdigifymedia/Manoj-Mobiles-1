@@ -28,6 +28,16 @@ const nextConfig = {
         source: '/api/admin/common-images',
         destination: '/feature-images-admin',
       },
+      // Local (Next.js) routes for Homepage Layout Position Manager — resolved
+      // BEFORE the /api/* backend proxy below so they are never shadowed or 404'd by Spring Boot.
+      {
+        source: '/api/admin/homepage-layout',
+        destination: '/homepage-layout-admin',
+      },
+      {
+        source: '/api/public/homepage-layout',
+        destination: '/homepage-layout-public',
+      },
       {
         source: '/api/:path*',
         destination: `${backendUrl}/api/:path*`,
