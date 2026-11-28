@@ -505,7 +505,7 @@ export interface LiveLocationDTO {
 export interface OrderResponseDTO {
   id: string
   orderNumber: string
-  orderStatus: 'PLACED' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'RETURNED'
+  orderStatus: 'PLACED' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'RETURNED' | 'PAYMENT_FAILED'
   deliveryType?: 'HYPERLOCAL' | 'STANDARD'
   trackingId?: string | null
   courierPartner?: string | null

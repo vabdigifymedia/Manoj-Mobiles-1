@@ -17,6 +17,7 @@ const statusConfig: Record<string, { color: string; icon: React.ElementType }> =
   OUT_FOR_DELIVERY: { color: 'bg-cyan-100 text-cyan-700', icon: FaTruckFast },
   DELIVERED: { color: 'bg-emerald-100 text-emerald-700', icon: FaCircleCheck },
   CANCELLED: { color: 'bg-red-100 text-red-700', icon: FaCircleXmark },
+  PAYMENT_FAILED: { color: 'bg-red-100 text-red-700', icon: FaCircleXmark },
   RETURNED: { color: 'bg-gray-100 text-gray-700', icon: FaArrowRotateLeft },
 }
 

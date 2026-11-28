@@ -91,8 +91,50 @@ export default function OrderDetailsPage() {
         </div>
       </div>
 
+      {/* Payment Verification / Failure Banner for Online Orders */}
+      {order.paymentMethod !== 'COD' &&
+        (order.orderStatus === 'PAYMENT_FAILED' ||
+          order.paymentStatus === 'FAILED' ||
+          (order.paymentStatus === 'PENDING' && order.orderStatus === 'PLACED')) && (
+          <div
+            className={`rounded-3xl border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+              order.orderStatus === 'PAYMENT_FAILED' || order.paymentStatus === 'FAILED'
+                ? 'border-rose-500/30 bg-rose-500/10'
+                : 'border-blue-500/30 bg-blue-500/10 dark:border-zinc-700 dark:bg-zinc-900'
+            }`}
+          >
+            <div>
+              <p className="text-sm font-black text-foreground">
+                {order.orderStatus === 'PAYMENT_FAILED' || order.paymentStatus === 'FAILED'
+                  ? 'Online Payment Failed'
+                  : 'Online Payment Pending Confirmation'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {order.orderStatus === 'PAYMENT_FAILED' || order.paymentStatus === 'FAILED'
+                  ? 'Your payment was not completed. Please place a fresh order to continue.'
+                  : 'Verify your transaction status with Pine Labs or retry payment.'}
+              </p>
+            </div>
+            {order.orderStatus === 'PAYMENT_FAILED' || order.paymentStatus === 'FAILED' ? (
+              <Link
+                href="/checkout"
+                className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-colors text-center"
+              >
+                Place a Fresh Order
+              </Link>
+            ) : (
+              <Link
+                href={`/orders/${order.id}/payment-status`}
+                className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-colors text-center"
+              >
+                Verify / Retry Payment
+              </Link>
+            )}
+          </div>
+        )}
+
       {/* Dynamic Tracker */}
-      {order.orderStatus !== 'CANCELLED' && (
+      {order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'PAYMENT_FAILED' && (
         order.deliveryType === 'HYPERLOCAL' ? (
           <HyperlocalTracker order={order} mode="user" onStatusChange={handleTrackingEvent} />
         ) : (
@@ -104,7 +146,7 @@ export default function OrderDetailsPage() {
         <div className="md:col-span-2 space-y-8">
           
           {/* Order Progress Timeline */}
-          {order.orderStatus !== 'CANCELLED' && (
+          {order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'PAYMENT_FAILED' && (
             <div className="bg-white dark:bg-zinc-900 border border-border rounded-3xl p-6 shadow-sm">
               <h3 className="text-lg font-black tracking-tight mb-6">Order Progress</h3>
               <TrackingTimeline 
@@ -191,7 +233,13 @@ export default function OrderDetailsPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
-                <span className={`font-bold ${order.paymentStatus === 'SUCCESS' ? 'text-emerald-600' : 'text-orange-600'}`}>{order.paymentStatus}</span>
+                <span className={`font-bold ${
+                  order.paymentStatus === 'SUCCESS'
+                    ? 'text-emerald-600'
+                    : order.paymentStatus === 'FAILED'
+                      ? 'text-rose-600'
+                      : 'text-orange-600'
+                }`}>{order.paymentStatus}</span>
               </div>
             </div>
             <hr className="border-border my-2" />

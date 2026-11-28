@@ -316,30 +316,46 @@ export default function CheckoutPage() {
     }
 
     setPlacingOrder(true)
+    let redirectingToGateway = false
     try {
       const isOnline = paymentMethod !== 'COD'
       const res = await apiClient.placeOrder({
         addressId: selectedAddressId,
         paymentMethod: isOnline ? 'ONLINE' : 'COD',
         deliveryType: selectedDeliveryType ?? undefined,
-        returnUrl: isOnline ? window.location.origin + '/api/payment/callback' : undefined,
+        returnUrl: isOnline ? `${window.location.origin}/payment/callback` : undefined,
       })
       const order = res.data.data
 
-      fetchCart()
-
-      if (isOnline && order.paymentUrl) {
-        showToast({ message: 'Redirecting to secure payment...', type: 'success' })
-        sessionStorage.setItem('lastOrderId', order.id)
-        window.location.href = order.paymentUrl
-      } else {
-        showToast({ message: 'Order placed successfully!', type: 'success' })
-        router.push(order?.id ? `/orders/${order.id}/track` : '/account/orders')
+      if (isOnline) {
+        if (order?.id) {
+          sessionStorage.setItem('pendingPaymentOrderId', order.id)
+          sessionStorage.removeItem('lastOrderId')
+        }
+        if (order?.paymentUrl) {
+          redirectingToGateway = true
+          showToast({ message: 'Redirecting to Pine Labs secure payment...', type: 'info' })
+          window.location.href = order.paymentUrl
+          return
+        }
+        if (order?.id) {
+          router.push(`/orders/${order.id}/payment-status`)
+          return
+        }
+        showToast({ message: 'Payment link could not be generated. Please check your orders.', type: 'error' })
+        router.push('/account/orders')
+        return
       }
+
+      await fetchCart()
+      showToast({ message: 'Order placed successfully!', type: 'success' })
+      router.push(order?.id ? `/orders/${order.id}/tracking` : '/account/orders')
     } catch (err: any) {
       showToast({ message: err.response?.data?.message || 'Failed to place order', type: 'error' })
     } finally {
-      setPlacingOrder(false)
+      if (!redirectingToGateway) {
+        setPlacingOrder(false)
+      }
     }
   }
 
@@ -776,7 +792,7 @@ export default function CheckoutPage() {
                         {
                           id: 'ONLINE' as const,
                           label: 'Pay Online',
-                          desc: 'Cards, UPI, Wallets',
+                          desc: 'Cards, UPI, Wallets via Pine Labs',
                           icon: FaCreditCard,
                           disabled: false,
                         },

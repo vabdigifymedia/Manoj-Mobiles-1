@@ -16,6 +16,7 @@ type StoreContextType = {
   addToCart: (variantId: string, qty?: number, itemMeta?: Partial<CartItemResponseDTO>) => void
   removeFromCart: (variantId: string) => void
   updateQuantity: (variantId: string, delta: number) => void
+  clearCart: () => Promise<void>
   showToast: (options: ToastOptions) => void
   fetchCart: () => Promise<void>
   cartTotal: number
@@ -431,8 +432,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const clearCart = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(GUEST_CART_KEY)
+    }
+    setCart({ id: 'empty', items: [], cartTotal: 0 })
+    if (isAuthenticated) {
+      try {
+        await apiClient.clearCart()
+      } catch {
+        // Ignore if backend already cleared cart upon payment verification
+      }
+      await fetchCart()
+    }
+  }
+
   return (
-    <StoreContext.Provider value={{ cart, cartCount, cartTotal, addToCart, removeFromCart, updateQuantity, showToast, fetchCart, wishlist, toggleWishlist, removeFromWishlist, compareItems, addToCompare, removeFromCompare, toggleCompare, isInCompare, clearCompare }}>
+    <StoreContext.Provider value={{ cart, cartCount, cartTotal, addToCart, removeFromCart, updateQuantity, clearCart, showToast, fetchCart, wishlist, toggleWishlist, removeFromWishlist, compareItems, addToCompare, removeFromCompare, toggleCompare, isInCompare, clearCompare }}>
       {children}
       
       {/* Toast UI - Fixed Top Right */}

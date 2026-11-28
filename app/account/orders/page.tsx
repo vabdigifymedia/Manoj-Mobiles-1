@@ -11,6 +11,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     DELIVERED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400',
     OUT_FOR_DELIVERY: 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400',
     CANCELLED: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400',
+    PAYMENT_FAILED: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400',
   }
   return (
     <span className={`px-3 py-1 text-xs font-black tracking-wider uppercase rounded-full ${colors[status] || 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400'}`}>

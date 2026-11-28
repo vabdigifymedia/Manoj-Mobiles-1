@@ -531,8 +531,11 @@ export const apiClient = {
   placeOrder: (dto: import('./types').PlaceOrderRequestDTO) =>
     axiosInstance.post<ApiResponse<import('./types').OrderResponseDTO>>('/api/user/orders', dto),
 
-  mockPayment: (orderId: string) =>
-    axiosInstance.post<ApiResponse<import('./types').OrderResponseDTO>>(`/api/user/orders/${orderId}/mock-payment`),
+  verifyPayment: (orderId: string) =>
+    axiosInstance.post<ApiResponse<import('./types').OrderResponseDTO>>(`/api/user/orders/${orderId}/verify-payment`),
+
+  retryPayment: (orderId: string) =>
+    axiosInstance.post<ApiResponse<import('./types').OrderResponseDTO>>(`/api/user/orders/${orderId}/retry-payment`),
 
   cancelOrder: (orderId: string, reason: string) =>
     axiosInstance.post<ApiResponse<import('./types').OrderResponseDTO>>(`/api/user/orders/${orderId}/cancel`, { reason }),
