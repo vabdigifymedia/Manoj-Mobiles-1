@@ -595,7 +595,7 @@ export default function AdminOrderDetailsPage() {
       </div>
 
       {/* LIVE TRACKING VIEW FOR ADMIN */}
-      {order.orderStatus !== 'CANCELLED' && (
+      {order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'PAYMENT_FAILED' && (
         order.deliveryType === 'HYPERLOCAL' ? (
           <HyperlocalTracker order={order} mode="admin" onStatusChange={handleTrackingEvent} />
         ) : (
@@ -820,18 +820,21 @@ export default function AdminOrderDetailsPage() {
           )}
 
           {/* Shiprocket Courier Dispatch & Tracking Panel (STANDARD Delivery) */}
-          {order.deliveryType === 'STANDARD' && (
-            <div className="bg-blue-50/80 dark:bg-blue-950/20 p-6 rounded-3xl border border-blue-200 dark:border-blue-900/50 shadow-sm space-y-5">
-              <div className="flex items-center justify-between">
-                <h4 className="text-base font-black text-blue-900 dark:text-blue-300 flex items-center gap-2">
-                  <FaTruckFast className="text-blue-600 dark:text-blue-400" /> Shiprocket Courier
+          {order.deliveryType === 'STANDARD' && order.orderStatus !== 'PAYMENT_FAILED' && (
+            <div className="bg-gradient-to-br from-blue-50/80 to-white dark:from-zinc-900 dark:to-zinc-900 p-5 sm:p-6 rounded-3xl border border-blue-200/80 dark:border-border shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="text-sm font-black tracking-tight text-foreground flex items-center gap-2 whitespace-nowrap">
+                  <span className="grid size-7 place-items-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-zinc-800 dark:text-zinc-100 shrink-0">
+                    <FaTruckFast size={13} />
+                  </span>
+                  <span>Shiprocket Courier</span>
                 </h4>
                 {order.trackingId ? (
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                  <span className="whitespace-nowrap shrink-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                     Dispatched
                   </span>
                 ) : (
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                  <span className="whitespace-nowrap shrink-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
                     Ready to Dispatch
                   </span>
                 )}
@@ -842,59 +845,45 @@ export default function AdminOrderDetailsPage() {
                 (order.orderStatus === 'PLACED' ||
                   order.orderStatus === 'CONFIRMED' ||
                   order.orderStatus === 'PACKED') ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3.5">
                     <p className="text-xs text-muted-foreground font-medium leading-relaxed">
                       Dispatch package with Shiprocket. Check real-time serviceability and rates for pincode{' '}
                       <span className="font-mono font-bold text-foreground">{order.address?.pincode || 'N/A'}</span>.
                     </p>
 
-                    {/* Dimensions & Weight Inputs */}
-                    <div className="bg-white/80 dark:bg-zinc-900/80 rounded-2xl p-4 border border-blue-100 dark:border-blue-900/40 space-y-3">
+                    {/* Dimensions & Weight Inputs (2x2 grid for sidebar readability) */}
+                    <div className="bg-white dark:bg-zinc-950/60 rounded-2xl p-4 border border-blue-100 dark:border-zinc-800 space-y-3">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                        <FaRulerCombined size={11} className="text-blue-500" /> Package Dimensions &amp; Weight
+                        <FaRulerCombined size={11} className="text-blue-500 dark:text-zinc-400 shrink-0" />
+                        <span>Package Dimensions &amp; Weight</span>
                       </p>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                        <div>
-                          <label className="text-[10px] font-bold text-muted-foreground uppercase">Length (cm)</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={lengthCm}
-                            onChange={(e) => setLengthCm(e.target.value)}
-                            className="w-full mt-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-mono font-bold focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-muted-foreground uppercase">Breadth (cm)</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={breadthCm}
-                            onChange={(e) => setBreadthCm(e.target.value)}
-                            className="w-full mt-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-mono font-bold focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-muted-foreground uppercase">Height (cm)</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={heightCm}
-                            onChange={(e) => setHeightCm(e.target.value)}
-                            className="w-full mt-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-mono font-bold focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-muted-foreground uppercase">Weight (kg)</label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            min="0.1"
-                            value={weightKg}
-                            onChange={(e) => setWeightKg(e.target.value)}
-                            className="w-full mt-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-mono font-bold focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { label: 'Length', unit: 'cm', value: lengthCm, setter: setLengthCm, min: '1', step: '1' },
+                          { label: 'Breadth', unit: 'cm', value: breadthCm, setter: setBreadthCm, min: '1', step: '1' },
+                          { label: 'Height', unit: 'cm', value: heightCm, setter: setHeightCm, min: '1', step: '1' },
+                          { label: 'Weight', unit: 'kg', value: weightKg, setter: setWeightKg, min: '0.1', step: '0.1' },
+                        ].map((field) => (
+                          <div key={field.label}>
+                            <label className="block text-[11px] font-bold text-muted-foreground whitespace-nowrap">
+                              {field.label}
+                            </label>
+                            <div className="relative mt-1">
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                min={field.min}
+                                step={field.step}
+                                value={field.value}
+                                onChange={(e) => field.setter(e.target.value)}
+                                className="w-full pl-3 pr-9 py-2 rounded-xl border border-border bg-background text-sm font-mono font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                              <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-muted-foreground">
+                                {field.unit}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -903,7 +892,7 @@ export default function AdminOrderDetailsPage() {
                       type="button"
                       onClick={handleCheckCourierRates}
                       disabled={checkingRates || dispatchingCourier}
-                      className="w-full flex items-center justify-center gap-2 bg-background hover:bg-muted text-foreground border border-blue-200 dark:border-blue-800 font-bold py-2.5 rounded-xl transition-colors text-xs shadow-2xs disabled:opacity-50"
+                      className="w-full flex items-center justify-center gap-2 bg-white hover:bg-blue-50/70 text-foreground border border-blue-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 dark:border-zinc-700 font-bold py-2.5 rounded-xl transition-colors text-xs shadow-2xs disabled:opacity-50"
                     >
                       <FaRotate size={11} className={checkingRates ? 'animate-spin text-blue-500' : ''} />
                       {checkingRates ? 'Checking Courier Rates...' : 'Check Courier Rates'}
@@ -911,7 +900,7 @@ export default function AdminOrderDetailsPage() {
 
                     {/* Available Rates Picker */}
                     {ratesChecked && courierRates.length > 0 && (
-                      <div className="bg-white/90 dark:bg-zinc-900/90 rounded-2xl p-4 border border-blue-100 dark:border-blue-900/40 space-y-2.5 max-h-56 overflow-y-auto">
+                      <div className="bg-white dark:bg-zinc-950/60 rounded-2xl p-4 border border-blue-100 dark:border-zinc-800 space-y-2.5 max-h-60 overflow-y-auto">
                         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                           Select Preferred Courier Partner
                         </p>
@@ -929,7 +918,7 @@ export default function AdminOrderDetailsPage() {
                                 onClick={() => setSelectedCourierId(cId)}
                                 className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
                                   isSelected
-                                    ? 'bg-blue-500/10 border-blue-500/60 ring-1 ring-blue-500'
+                                    ? 'bg-blue-500/10 border-blue-500/60 ring-1 ring-blue-500 dark:bg-zinc-800 dark:border-zinc-400 dark:ring-zinc-400'
                                     : 'bg-background hover:bg-muted border-border'
                                 }`}
                               >
@@ -939,7 +928,7 @@ export default function AdminOrderDetailsPage() {
                                     name="courierSelection"
                                     checked={isSelected}
                                     onChange={() => setSelectedCourierId(cId)}
-                                    className="accent-blue-600 size-3.5 shrink-0"
+                                    className="accent-blue-600 dark:accent-white size-3.5 shrink-0"
                                   />
                                   <div className="min-w-0">
                                     <p className="font-bold text-foreground truncate">{name}</p>
@@ -961,7 +950,7 @@ export default function AdminOrderDetailsPage() {
                       type="button"
                       onClick={handleDispatchCourier}
                       disabled={dispatchingCourier || checkingRates}
-                      className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50"
+                      className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-bold py-3 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50"
                     >
                       <FaTruckFast size={14} />
                       {dispatchingCourier ? 'Dispatching with Shiprocket...' : 'Ship with Shiprocket'}
@@ -976,38 +965,38 @@ export default function AdminOrderDetailsPage() {
                 /* State B: Order DISPATCHED (trackingId / AWB exists) */
                 <div className="space-y-4">
                   {/* Courier Partner & AWB Card */}
-                  <div className="bg-white/90 dark:bg-zinc-900/90 rounded-2xl p-4 border border-blue-100 dark:border-blue-900/40 space-y-3">
-                    <div className="flex items-center justify-between">
+                  <div className="bg-white dark:bg-zinc-950/60 rounded-2xl p-4 border border-blue-100 dark:border-zinc-800 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         Courier Partner
                       </span>
-                      <span className="text-xs font-bold text-foreground">
+                      <span className="text-xs font-bold text-foreground text-right">
                         {order.courierPartner || 'Shiprocket Standard'}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AWB Code</p>
-                        <p className="font-mono font-bold text-sm text-foreground select-all">{order.trackingId}</p>
+                        <p className="font-mono font-bold text-sm text-foreground select-all truncate">{order.trackingId}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleCopyAwb(order.trackingId!)}
-                        className="p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground text-xs font-bold flex items-center gap-1 transition-colors"
+                        className="p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground text-xs font-bold flex items-center gap-1 transition-colors shrink-0"
                         title="Copy AWB code"
                       >
                         <FaCopy size={12} />
-                        {copiedAwb && <span className="text-[10px] text-emerald-600">Copied</span>}
+                        {copiedAwb && <span className="text-[10px] text-emerald-600 dark:text-emerald-400">Copied</span>}
                       </button>
                     </div>
 
                     {(order.shiprocketStatus || adminCourierTracking?.shiprocketStatus) && (
-                      <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                           Shiprocket Status
                         </span>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:bg-zinc-800 dark:text-zinc-200">
                           {order.shiprocketStatus || adminCourierTracking?.shiprocketStatus}
                         </span>
                       </div>
@@ -1020,7 +1009,7 @@ export default function AdminOrderDetailsPage() {
                       type="button"
                       onClick={handleDownloadShippingLabel}
                       disabled={generatingLabel}
-                      className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition-colors shadow-xs text-xs disabled:opacity-50"
+                      className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 font-bold py-2.5 rounded-xl transition-colors shadow-xs text-xs disabled:opacity-50"
                     >
                       <FaDownload size={11} />
                       {generatingLabel
@@ -1044,16 +1033,16 @@ export default function AdminOrderDetailsPage() {
                   </div>
 
                   {/* Refresh Courier Tracking & Live Scans */}
-                  <div className="pt-2 border-t border-blue-200 dark:border-blue-800/60 space-y-3">
+                  <div className="pt-2 border-t border-blue-200/70 dark:border-zinc-800 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                        <FaTruckFast size={12} className="text-blue-500" /> Live Scans
+                        <FaTruckFast size={12} className="text-blue-500 dark:text-zinc-300" /> Live Scans
                       </span>
                       <button
                         type="button"
                         onClick={handleRefreshCourierTracking}
                         disabled={refreshingCourierTracking}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-zinc-200 hover:underline disabled:opacity-50"
                       >
                         <FaRotate size={11} className={refreshingCourierTracking ? 'animate-spin' : ''} />
                         {refreshingCourierTracking ? 'Syncing...' : 'Refresh Scans'}
@@ -1061,7 +1050,7 @@ export default function AdminOrderDetailsPage() {
                     </div>
 
                     {adminCourierTracking?.scans && adminCourierTracking.scans.length > 0 ? (
-                      <div className="bg-white/80 dark:bg-zinc-900/80 rounded-2xl p-3 border border-blue-100 dark:border-blue-900/40 space-y-2.5 max-h-48 overflow-y-auto">
+                      <div className="bg-white dark:bg-zinc-950/60 rounded-2xl p-3 border border-blue-100 dark:border-zinc-800 space-y-2.5 max-h-48 overflow-y-auto">
                         {adminCourierTracking.scans.map((scan, idx) => (
                           <div key={idx} className="text-xs border-b border-border/40 pb-2 last:border-0 last:pb-0">
                             <div className="flex items-center justify-between gap-1">
@@ -1076,15 +1065,15 @@ export default function AdminOrderDetailsPage() {
                             </div>
                             {scan.location && (
                               <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                                <FaMapPin size={9} className="text-blue-500" /> {scan.location}
+                                <FaMapPin size={9} className="text-blue-500 dark:text-zinc-400" /> {scan.location}
                               </p>
                             )}
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-[11px] text-muted-foreground text-center font-medium bg-white/50 dark:bg-zinc-900/50 py-2.5 rounded-xl border border-border/50">
-                        Click "Refresh Scans" to sync live tracking activities from Shiprocket.
+                      <p className="text-[11px] text-muted-foreground text-center font-medium bg-white/70 dark:bg-zinc-950/40 py-2.5 px-3 rounded-xl border border-border/50">
+                        Click &quot;Refresh Scans&quot; to sync live tracking activities from Shiprocket.
                       </p>
                     )}
                   </div>
