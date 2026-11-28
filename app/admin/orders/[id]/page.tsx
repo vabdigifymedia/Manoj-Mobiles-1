@@ -9,6 +9,10 @@ import type {
   DeliveryPartnerDTO,
   DeliveryAgentResponseDTO,
   TrackingEventDTO,
+  CourierRateOptionDTO,
+  CourierTrackingResponseDTO,
+  CourierDispatchRequestDTO,
+  CourierScanActivityDTO,
 } from '@/lib/types'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import TrackingTimeline from '@/components/ui/order-history'
@@ -20,7 +24,9 @@ import {
   FaChevronLeft, FaClock, FaTruck,
   FaMotorcycle, FaWallet, FaMapPin, FaFileInvoice,
   FaCircleCheck, FaTriangleExclamation, FaBox, FaBolt,
-  FaLocationCrosshairs
+  FaLocationCrosshairs, FaArrowUpRightFromSquare, FaRotate,
+  FaWeightHanging, FaRulerCombined, FaTag, FaCopy, FaDownload,
+  FaTruckFast,
 } from 'react-icons/fa6'
 
 const statusOrder = ['PLACED', 'CONFIRMED', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'];
@@ -42,6 +48,23 @@ export default function AdminOrderDetailsPage() {
   const [isSimulatingLive, setIsSimulatingLive] = useState(false)
   const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const simulationStepRef = useRef(0)
+
+  // --- Shiprocket Courier State ---
+  const [lengthCm, setLengthCm] = useState<number | string>(20)
+  const [breadthCm, setBreadthCm] = useState<number | string>(15)
+  const [heightCm, setHeightCm] = useState<number | string>(10)
+  const [weightKg, setWeightKg] = useState<number | string>(0.5)
+  const [checkingRates, setCheckingRates] = useState(false)
+  const [courierRates, setCourierRates] = useState<CourierRateOptionDTO[]>([])
+  const [selectedCourierId, setSelectedCourierId] = useState<number | string>('')
+  const [ratesChecked, setRatesChecked] = useState(false)
+  const [dispatchingCourier, setDispatchingCourier] = useState(false)
+  const [generatingLabel, setGeneratingLabel] = useState(false)
+  const [refreshingCourierTracking, setRefreshingCourierTracking] = useState(false)
+  const [adminCourierTracking, setAdminCourierTracking] = useState<CourierTrackingResponseDTO | null>(null)
+  const [courierError, setCourierError] = useState<string | null>(null)
+  const [courierSuccess, setCourierSuccess] = useState<string | null>(null)
+  const [copiedAwb, setCopiedAwb] = useState(false)
 
   useEffect(() => {
     fetchOrder()
@@ -132,6 +155,131 @@ export default function AdminOrderDetailsPage() {
     } finally {
       setAutoDispatching(false)
     }
+  }
+
+  // --- Shiprocket Courier Handlers ---
+  const handleCheckCourierRates = async () => {
+    if (!order?.address?.pincode) {
+      setCourierError('Delivery address pincode is required to check courier rates.')
+      return
+    }
+    setCheckingRates(true)
+    setCourierError(null)
+    setCourierSuccess(null)
+    try {
+      const isCod = order.paymentMethod === 'COD'
+      const res = await apiClient.getCourierServiceability(order.address.pincode, isCod)
+      const raw = res.data?.data as any
+      const list: CourierRateOptionDTO[] =
+        raw?.availableCouriers ||
+        raw?.courierCompanies ||
+        raw?.data?.available_courier_companies ||
+        raw?.available_courier_companies ||
+        (Array.isArray(raw) ? raw : [])
+
+      setCourierRates(list)
+      setRatesChecked(true)
+      if (raw?.recommendedCourierId) {
+        setSelectedCourierId(raw.recommendedCourierId)
+      } else if (list.length > 0) {
+        const first = list[0] as any
+        setSelectedCourierId(first.courierCompanyId ?? first.courier_company_id ?? first.id ?? '')
+      }
+      if (list.length === 0) {
+        setCourierError(`No courier service available for pincode ${order.address.pincode}.`)
+      }
+    } catch (err: any) {
+      setCourierError(err.response?.data?.message || 'Failed to check courier rates.')
+    } finally {
+      setCheckingRates(false)
+    }
+  }
+
+  const handleDispatchCourier = async () => {
+    if (!order) return
+    setDispatchingCourier(true)
+    setCourierError(null)
+    setCourierSuccess(null)
+    try {
+      const payload: CourierDispatchRequestDTO = {
+        courierId: selectedCourierId || undefined,
+        lengthCm: Number(lengthCm) || 20,
+        breadthCm: Number(breadthCm) || 15,
+        heightCm: Number(heightCm) || 10,
+        weightKg: Number(weightKg) || 0.5,
+      }
+      const res = await apiClient.dispatchCourierOrder(order.id, payload)
+      setCourierSuccess('Order successfully dispatched with Shiprocket! AWB assigned.')
+      await fetchOrder()
+    } catch (err: any) {
+      setCourierError(err.response?.data?.message || 'Failed to dispatch via Shiprocket.')
+    } finally {
+      setDispatchingCourier(false)
+    }
+  }
+
+  const handleDownloadShippingLabel = async () => {
+    if (!order) return
+    if (order.shippingLabelUrl) {
+      window.open(order.shippingLabelUrl, '_blank')
+      return
+    }
+    setGeneratingLabel(true)
+    setCourierError(null)
+    try {
+      const res = await apiClient.getCourierShippingLabel(order.id)
+      const labelUrl =
+        (res.data?.data as any)?.shippingLabelUrl ||
+        (res.data?.data as any)?.labelUrl ||
+        (res.data?.data as any)?.label_url ||
+        (typeof res.data?.data === 'string' ? res.data.data : null)
+      if (labelUrl) {
+        window.open(labelUrl, '_blank')
+        await fetchOrder()
+      } else {
+        setCourierError('Shipping label is not ready yet. Please try again shortly.')
+      }
+    } catch (err: any) {
+      setCourierError(err.response?.data?.message || 'Failed to fetch shipping label.')
+    } finally {
+      setGeneratingLabel(false)
+    }
+  }
+
+  const handleRefreshCourierTracking = async () => {
+    if (!order) return
+    setRefreshingCourierTracking(true)
+    setCourierError(null)
+    try {
+      const res = await apiClient.getAdminCourierTracking(order.id)
+      const raw = res.data?.data as any
+      const scansList: CourierScanActivityDTO[] =
+        raw?.scans ||
+        raw?.activities ||
+        raw?.scanHistory ||
+        raw?.tracking_data?.shipment_track_activities ||
+        (Array.isArray(raw) ? raw : [])
+
+      setAdminCourierTracking({
+        trackingId: raw?.trackingId || raw?.awb_code || order.trackingId || undefined,
+        courierPartner: raw?.courierPartner || raw?.courier_name || order.courierPartner || undefined,
+        courierTrackingUrl: raw?.courierTrackingUrl || raw?.track_url || order.courierTrackingUrl || undefined,
+        shiprocketStatus: raw?.shiprocketStatus || raw?.current_status || raw?.status || order.shiprocketStatus || undefined,
+        currentStatus: raw?.currentStatus || raw?.current_status,
+        scans: scansList,
+        etd: raw?.etd || raw?.expected_delivery_date,
+      })
+    } catch (err: any) {
+      setCourierError(err.response?.data?.message || 'Failed to refresh tracking.')
+    } finally {
+      setRefreshingCourierTracking(false)
+    }
+  }
+
+  const handleCopyAwb = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedAwb(true)
+    setTimeout(() => setCopiedAwb(false), 2000)
   }
 
   const handleAssignAgent = async () => {
@@ -671,6 +819,292 @@ export default function AdminOrderDetailsPage() {
             </div>
           )}
 
+          {/* Shiprocket Courier Dispatch & Tracking Panel (STANDARD Delivery) */}
+          {order.deliveryType === 'STANDARD' && (
+            <div className="bg-blue-50/80 dark:bg-blue-950/20 p-6 rounded-3xl border border-blue-200 dark:border-blue-900/50 shadow-sm space-y-5">
+              <div className="flex items-center justify-between">
+                <h4 className="text-base font-black text-blue-900 dark:text-blue-300 flex items-center gap-2">
+                  <FaTruckFast className="text-blue-600 dark:text-blue-400" /> Shiprocket Courier
+                </h4>
+                {order.trackingId ? (
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                    Dispatched
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                    Ready to Dispatch
+                  </span>
+                )}
+              </div>
+
+              {/* State A: Order NOT yet dispatched with courier (No trackingId) */}
+              {!order.trackingId ? (
+                (order.orderStatus === 'PLACED' ||
+                  order.orderStatus === 'CONFIRMED' ||
+                  order.orderStatus === 'PACKED') ? (
+                  <div className="space-y-4">
+                    <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+                      Dispatch package with Shiprocket. Check real-time serviceability and rates for pincode{' '}
+                      <span className="font-mono font-bold text-foreground">{order.address?.pincode || 'N/A'}</span>.
+                    </p>
+
+                    {/* Dimensions & Weight Inputs */}
+                    <div className="bg-white/80 dark:bg-zinc-900/80 rounded-2xl p-4 border border-blue-100 dark:border-blue-900/40 space-y-3">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <FaRulerCombined size={11} className="text-blue-500" /> Package Dimensions &amp; Weight
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase">Length (cm)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={lengthCm}
+                            onChange={(e) => setLengthCm(e.target.value)}
+                            className="w-full mt-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-mono font-bold focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase">Breadth (cm)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={breadthCm}
+                            onChange={(e) => setBreadthCm(e.target.value)}
+                            className="w-full mt-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-mono font-bold focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase">Height (cm)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={heightCm}
+                            onChange={(e) => setHeightCm(e.target.value)}
+                            className="w-full mt-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-mono font-bold focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase">Weight (kg)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0.1"
+                            value={weightKg}
+                            onChange={(e) => setWeightKg(e.target.value)}
+                            className="w-full mt-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-mono font-bold focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Check Rates Button */}
+                    <button
+                      type="button"
+                      onClick={handleCheckCourierRates}
+                      disabled={checkingRates || dispatchingCourier}
+                      className="w-full flex items-center justify-center gap-2 bg-background hover:bg-muted text-foreground border border-blue-200 dark:border-blue-800 font-bold py-2.5 rounded-xl transition-colors text-xs shadow-2xs disabled:opacity-50"
+                    >
+                      <FaRotate size={11} className={checkingRates ? 'animate-spin text-blue-500' : ''} />
+                      {checkingRates ? 'Checking Courier Rates...' : 'Check Courier Rates'}
+                    </button>
+
+                    {/* Available Rates Picker */}
+                    {ratesChecked && courierRates.length > 0 && (
+                      <div className="bg-white/90 dark:bg-zinc-900/90 rounded-2xl p-4 border border-blue-100 dark:border-blue-900/40 space-y-2.5 max-h-56 overflow-y-auto">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Select Preferred Courier Partner
+                        </p>
+                        <div className="space-y-2">
+                          {courierRates.map((c: any) => {
+                            const cId = c.courierCompanyId ?? c.courier_company_id ?? c.id
+                            const isSelected = String(selectedCourierId) === String(cId)
+                            const rateAmount = c.rate ?? c.freight_charge ?? 0
+                            const days = c.estimatedDeliveryDays ?? c.etd ?? '2-4 days'
+                            const name = c.courierName ?? c.courier_name ?? 'Courier Partner'
+
+                            return (
+                              <label
+                                key={cId}
+                                onClick={() => setSelectedCourierId(cId)}
+                                className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                                  isSelected
+                                    ? 'bg-blue-500/10 border-blue-500/60 ring-1 ring-blue-500'
+                                    : 'bg-background hover:bg-muted border-border'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <input
+                                    type="radio"
+                                    name="courierSelection"
+                                    checked={isSelected}
+                                    onChange={() => setSelectedCourierId(cId)}
+                                    className="accent-blue-600 size-3.5 shrink-0"
+                                  />
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-foreground truncate">{name}</p>
+                                    <p className="text-[10px] text-muted-foreground font-mono">ETD: {days}</p>
+                                  </div>
+                                </div>
+                                <span className="font-black text-foreground shrink-0 ml-2">
+                                  {formatINR(Number(rateAmount))}
+                                </span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Primary Ship with Shiprocket Button */}
+                    <button
+                      type="button"
+                      onClick={handleDispatchCourier}
+                      disabled={dispatchingCourier || checkingRates}
+                      className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50"
+                    >
+                      <FaTruckFast size={14} />
+                      {dispatchingCourier ? 'Dispatching with Shiprocket...' : 'Ship with Shiprocket'}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Shipment can be dispatched when status is Confirmed or Packed.
+                  </p>
+                )
+              ) : (
+                /* State B: Order DISPATCHED (trackingId / AWB exists) */
+                <div className="space-y-4">
+                  {/* Courier Partner & AWB Card */}
+                  <div className="bg-white/90 dark:bg-zinc-900/90 rounded-2xl p-4 border border-blue-100 dark:border-blue-900/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Courier Partner
+                      </span>
+                      <span className="text-xs font-bold text-foreground">
+                        {order.courierPartner || 'Shiprocket Standard'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AWB Code</p>
+                        <p className="font-mono font-bold text-sm text-foreground select-all">{order.trackingId}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAwb(order.trackingId!)}
+                        className="p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-muted-foreground text-xs font-bold flex items-center gap-1 transition-colors"
+                        title="Copy AWB code"
+                      >
+                        <FaCopy size={12} />
+                        {copiedAwb && <span className="text-[10px] text-emerald-600">Copied</span>}
+                      </button>
+                    </div>
+
+                    {(order.shiprocketStatus || adminCourierTracking?.shiprocketStatus) && (
+                      <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Shiprocket Status
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                          {order.shiprocketStatus || adminCourierTracking?.shiprocketStatus}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons: Label & External Tracking */}
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleDownloadShippingLabel}
+                      disabled={generatingLabel}
+                      className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition-colors shadow-xs text-xs disabled:opacity-50"
+                    >
+                      <FaDownload size={11} />
+                      {generatingLabel
+                        ? 'Fetching Label...'
+                        : order.shippingLabelUrl
+                          ? 'Download Shipping Label'
+                          : 'Generate & Download Label'}
+                    </button>
+
+                    {order.courierTrackingUrl && (
+                      <a
+                        href={order.courierTrackingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 bg-background hover:bg-muted text-foreground border border-border font-bold py-2.5 rounded-xl transition-colors text-xs"
+                      >
+                        <span>Track on Courier Portal</span>
+                        <FaArrowUpRightFromSquare size={11} />
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Refresh Courier Tracking & Live Scans */}
+                  <div className="pt-2 border-t border-blue-200 dark:border-blue-800/60 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <FaTruckFast size={12} className="text-blue-500" /> Live Scans
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRefreshCourierTracking}
+                        disabled={refreshingCourierTracking}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+                      >
+                        <FaRotate size={11} className={refreshingCourierTracking ? 'animate-spin' : ''} />
+                        {refreshingCourierTracking ? 'Syncing...' : 'Refresh Scans'}
+                      </button>
+                    </div>
+
+                    {adminCourierTracking?.scans && adminCourierTracking.scans.length > 0 ? (
+                      <div className="bg-white/80 dark:bg-zinc-900/80 rounded-2xl p-3 border border-blue-100 dark:border-blue-900/40 space-y-2.5 max-h-48 overflow-y-auto">
+                        {adminCourierTracking.scans.map((scan, idx) => (
+                          <div key={idx} className="text-xs border-b border-border/40 pb-2 last:border-0 last:pb-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="font-bold text-foreground line-clamp-1">
+                                {scan.activity || scan.status || 'Scan update'}
+                              </span>
+                              {scan.date && (
+                                <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                                  {new Date(scan.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                </span>
+                              )}
+                            </div>
+                            {scan.location && (
+                              <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <FaMapPin size={9} className="text-blue-500" /> {scan.location}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground text-center font-medium bg-white/50 dark:bg-zinc-900/50 py-2.5 rounded-xl border border-border/50">
+                        Click "Refresh Scans" to sync live tracking activities from Shiprocket.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Feedback Notifications */}
+              {courierError && (
+                <div className="rounded-xl px-3.5 py-2.5 text-xs font-bold bg-destructive/10 text-destructive border border-destructive/20">
+                  {courierError}
+                </div>
+              )}
+              {courierSuccess && (
+                <div className="rounded-xl px-3.5 py-2.5 text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                  {courierSuccess}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Payment Info */}
           <div className="bg-white dark:bg-zinc-900 border border-border p-6 rounded-3xl shadow-sm">
             <h4 className="font-black text-base tracking-tight flex items-center gap-2 mb-6"><FaWallet className="text-primary" /> Payment Info</h4>
@@ -706,22 +1140,33 @@ export default function AdminOrderDetailsPage() {
             </h4>
 
             {order.deliveryType === 'STANDARD' ? (
-              <div className="space-y-5">
+              <div className="space-y-4">
                 <div>
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Courier Partner</p>
                   <p className="font-bold text-sm bg-slate-50 dark:bg-zinc-800 px-3 py-2 rounded-lg">{order.courierPartner || 'Not assigned yet'}</p>
                 </div>
                 {order.trackingId && (
                   <div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Tracking ID</p>
-                    <a
-                      href={`https://www.google.com/search?q=track+${order.trackingId}+${order.courierPartner || ''}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-block font-mono text-sm text-blue-600 hover:underline bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg font-bold"
-                    >
-                      {order.trackingId}
-                    </a>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">AWB / Tracking ID</p>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={order.courierTrackingUrl || `https://www.google.com/search?q=track+${order.trackingId}+${order.courierPartner || ''}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 font-mono text-sm text-blue-600 dark:text-blue-400 hover:underline bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg font-bold"
+                      >
+                        <span>{order.trackingId}</span>
+                        <FaArrowUpRightFromSquare size={11} />
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {order.shiprocketStatus && (
+                  <div>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Shiprocket Status</p>
+                    <span className="inline-block text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                      {order.shiprocketStatus}
+                    </span>
                   </div>
                 )}
               </div>

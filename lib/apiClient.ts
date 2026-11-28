@@ -415,6 +415,18 @@ export const apiClient = {
   getAdminDeliveryAgents: (page = 0, size = 100) =>
     axiosInstance.get<ApiResponse<PageResponse<import('./types').DeliveryAgentResponseDTO>>>(`/api/admin/delivery-agents?page=${page}&size=${size}`),
 
+  // --- Shiprocket Courier (Admin) ---
+  getCourierServiceability: (deliveryPincode: string, cod = false) =>
+    axiosInstance.get<ApiResponse<import('./types').CourierServiceabilityResponseDTO>>(
+      `/api/admin/orders/courier/serviceability?deliveryPincode=${encodeURIComponent(deliveryPincode)}&cod=${cod}`
+    ),
+  dispatchCourierOrder: (orderId: string, dto: import('./types').CourierDispatchRequestDTO = {}) =>
+    axiosInstance.post<ApiResponse<OrderResponseDTO>>(`/api/admin/orders/${orderId}/courier/dispatch`, dto),
+  getCourierShippingLabel: (orderId: string) =>
+    axiosInstance.post<ApiResponse<any>>(`/api/admin/orders/${orderId}/courier/label`),
+  getAdminCourierTracking: (orderId: string) =>
+    axiosInstance.get<ApiResponse<import('./types').CourierTrackingResponseDTO>>(`/api/admin/orders/${orderId}/courier/track`),
+
   // --- Dashboard ---
   getDashboardStats: () =>
     axiosInstance.get<ApiResponse<DashboardStatsDTO>>('/api/admin/analytics/dashboard'),
@@ -509,6 +521,9 @@ export const apiClient = {
 
   getOrderTracking: (orderId: string) =>
     axiosInstance.get<ApiResponse<import('./types').OrderTrackingSnapshotDTO>>(`/api/user/orders/${orderId}/tracking`),
+
+  getUserCourierTracking: (orderId: string) =>
+    axiosInstance.get<ApiResponse<import('./types').CourierTrackingResponseDTO>>(`/api/user/orders/${orderId}/courier-tracking`),
 
   getOrderLiveLocation: (orderId: string) =>
     axiosInstance.get<ApiResponse<import('./types').LiveLocationDTO>>(`/api/user/orders/${orderId}/live-location`),

@@ -393,6 +393,11 @@ export interface OrderTrackingSnapshotDTO {
   eta?: string | null
   trackingId?: string | null
   courierPartner?: string | null
+  shiprocketOrderId?: number | string | null
+  shiprocketShipmentId?: number | string | null
+  shippingLabelUrl?: string | null
+  courierTrackingUrl?: string | null
+  shiprocketStatus?: string | null
   store?: TrackingLocationPointDTO | null
   destination?: TrackingLocationPointDTO | null
   routePolyline?: string | null
@@ -504,6 +509,11 @@ export interface OrderResponseDTO {
   deliveryType?: 'HYPERLOCAL' | 'STANDARD'
   trackingId?: string | null
   courierPartner?: string | null
+  shiprocketOrderId?: number | string | null
+  shiprocketShipmentId?: number | string | null
+  shippingLabelUrl?: string | null
+  courierTrackingUrl?: string | null
+  shiprocketStatus?: string | null
   deliveryPartnerInfo?: DeliveryPartnerDTO | null
   totalAmount: number
   discountAmount?: number
@@ -978,3 +988,65 @@ export interface UpdatePincodeRequestDTO {
   codAvailable?: boolean
   isActive?: boolean
 }
+
+// --- Shiprocket Courier Dispatch & Tracking ---
+export interface CourierRateOptionDTO {
+  courierCompanyId: number | string
+  courierName: string
+  rate: number
+  estimatedDeliveryDays?: string | number
+  etd?: string
+  rating?: number
+  codCharges?: number
+  isCodAvailable?: boolean
+  callBeforeDelivery?: string
+}
+
+export interface CourierServiceabilityResponseDTO {
+  deliveryPincode: string
+  pickupPincode?: string
+  cod?: boolean
+  availableCouriers?: CourierRateOptionDTO[]
+  courierCompanies?: CourierRateOptionDTO[]
+  recommendedCourierId?: number | string
+}
+
+export interface CourierDispatchRequestDTO {
+  courierId?: number | string
+  lengthCm?: number
+  breadthCm?: number
+  heightCm?: number
+  weightKg?: number
+}
+
+export interface CourierDispatchResponseDTO {
+  shiprocketOrderId?: number | string
+  shiprocketShipmentId?: number | string
+  trackingId?: string
+  courierPartner?: string
+  courierTrackingUrl?: string
+  shippingLabelUrl?: string
+  shiprocketStatus?: string
+  status?: string
+}
+
+export interface CourierScanActivityDTO {
+  date: string
+  status?: string
+  activity: string
+  location?: string
+  srStatus?: string
+  srStatusLabel?: string
+}
+
+export interface CourierTrackingResponseDTO {
+  trackingId?: string
+  courierPartner?: string
+  courierTrackingUrl?: string
+  shiprocketStatus?: string
+  currentStatus?: string
+  scans?: CourierScanActivityDTO[]
+  activities?: CourierScanActivityDTO[]
+  etd?: string
+}
+
